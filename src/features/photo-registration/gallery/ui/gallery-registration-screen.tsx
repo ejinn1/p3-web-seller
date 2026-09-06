@@ -17,6 +17,7 @@ import { GalleryPhotoDetailSheet } from "@/features/photo-registration/gallery/u
 import { GalleryPhotoPreview } from "@/features/photo-registration/gallery/ui/gallery-photo-preview";
 import { GalleryPhotoUploadField } from "@/features/photo-registration/gallery/ui/gallery-photo-upload-field";
 import { useStoreManagementStatusQuery } from "@/features/store/model/store-queries";
+import { useSortableList } from "@/hooks/use-sortable-list";
 
 type PendingPhoto = {
   assetId: string;
@@ -31,8 +32,11 @@ type PreviewPhoto = {
   detailUrl?: string;
   featured: boolean;
   galleryItemId?: string;
+  id: string;
   isProcessing: boolean;
   previewUrl?: string;
+  status?: "VISIBLE" | "HIDDEN";
+  storedSortOrder?: number;
   sortOrder: number;
 };
 
@@ -47,6 +51,9 @@ export function GalleryRegistrationScreen() {
   const [uploadedPhotos, setUploadedPhotos] = useState<PendingPhoto[]>([]);
   const [selectedPhoto, setSelectedPhoto] = useState<PreviewPhoto | null>(null);
   const [isPhotoDetailSheetOpen, setIsPhotoDetailSheetOpen] = useState(false);
+  const [sortOrderById, setSortOrderById] = useState<Record<string, number>>(
+    {},
+  );
   const localPreviewUrls = useRef(new Set<string>());
   const uploadedAssetQueries = useAssetQueries(
     uploadedPhotos.map((photo) => photo.assetId),
@@ -79,15 +86,18 @@ export function GalleryRegistrationScreen() {
           ]),
           featured: item.featured,
           galleryItemId: item.id,
+          id: item.id,
           isProcessing: !item.deliveryUrl,
           previewUrl: getAssetDeliveryUrl(item.deliveryUrl, item.variants, [
             "THUMBNAIL",
             "MEDIUM",
             "LARGE",
           ]),
-          sortOrder: item.sortOrder,
+          sortOrder: sortOrderById[item.id] ?? item.sortOrder,
+          status: item.status,
+          storedSortOrder: item.sortOrder,
         })),
-    [galleryItemsQuery.data, replacedGalleryItemIds],
+    [galleryItemsQuery.data, replacedGalleryItemIds, sortOrderById],
   );
   const nextSortOrder =
     Math.max(
@@ -106,9 +116,10 @@ export function GalleryRegistrationScreen() {
       assetId: photo.assetId,
       detailUrl: photo.localPreviewUrl,
       featured: photo.featured,
+      id: photo.assetId,
       isProcessing: assetById.get(photo.assetId)?.status !== "READY",
       previewUrl: photo.localPreviewUrl,
-      sortOrder: photo.sortOrder,
+      sortOrder: sortOrderById[photo.assetId] ?? photo.sortOrder,
     })),
   ].sort((first, second) => first.sortOrder - second.sortOrder);
   const hasProcessingPhotos = pendingPhotos.some(
@@ -117,6 +128,10 @@ export function GalleryRegistrationScreen() {
   const hasFailedPhoto = pendingPhotos.some(
     (photo) => assetById.get(photo.assetId)?.status === "FAILED",
   );
+  const hasSortChanges = savedPhotos.some(
+    (photo) => photo.sortOrder !== photo.storedSortOrder,
+  );
+  const hasPendingChanges = pendingPhotos.length > 0 || hasSortChanges;
   const isLoading = galleryItemsQuery.isLoading;
   const isSubmitting =
     uploadAssetMutation.isPending ||
@@ -128,6 +143,19 @@ export function GalleryRegistrationScreen() {
     createGalleryItemMutation.error ??
     deleteGalleryItemMutation.error ??
     updateGalleryItemMutation.error;
+
+  const handleReorder = (reorderedPhotos: PreviewPhoto[]) => {
+    setSortOrderById(
+      Object.fromEntries(
+        reorderedPhotos.map((photo, index) => [photo.id, index]),
+      ),
+    );
+  };
+  const { activeId, getSortableItemProps } = useSortableList({
+    getId: (photo: PreviewPhoto) => photo.id,
+    items: previewPhotos,
+    onReorder: handleReorder,
+  });
 
   useEffect(
     () => () => {
@@ -178,6 +206,16 @@ export function GalleryRegistrationScreen() {
   };
 
   const handleUpdate = async () => {
+    const temporarySortOrderStart = previewPhotos.length + nextSortOrder;
+    for (const [index, photo] of savedPhotos.entries()) {
+      await updateGalleryItemMutation.mutateAsync({
+        featured: photo.featured,
+        galleryItemId: photo.galleryItemId ?? "",
+        sortOrder: temporarySortOrderStart + index,
+        status: photo.status ?? "HIDDEN",
+      });
+    }
+
     for (const photo of pendingPhotos) {
       if (photo.replacingGalleryItemId) {
         await deleteGalleryItemMutation.mutateAsync(
@@ -199,7 +237,17 @@ export function GalleryRegistrationScreen() {
       revokePreviewUrl(photo.localPreviewUrl);
     }
 
+    for (const photo of savedPhotos) {
+      await updateGalleryItemMutation.mutateAsync({
+        featured: photo.featured,
+        galleryItemId: photo.galleryItemId ?? "",
+        sortOrder: photo.sortOrder,
+        status: photo.status ?? "HIDDEN",
+      });
+    }
+
     setUploadedPhotos([]);
+    setSortOrderById({});
     router.push("/seller/store-management");
   };
 
@@ -273,6 +321,7 @@ export function GalleryRegistrationScreen() {
         <div className="grid grid-cols-2 gap-1">
           {previewPhotos.map((photo) => (
             <GalleryPhotoPreview
+              isDragging={activeId === photo.id}
               isProcessing={photo.isProcessing}
               key={photo.assetId}
               onClick={
@@ -284,6 +333,7 @@ export function GalleryRegistrationScreen() {
                   : undefined
               }
               src={photo.previewUrl}
+              sortableItemProps={getSortableItemProps(photo.id)}
             />
           ))}
           <GalleryPhotoUploadField
@@ -318,7 +368,7 @@ export function GalleryRegistrationScreen() {
           className="h-11 flex-1 rounded-seller-md text-[15px] font-semibold"
           disabled={
             isSubmitting ||
-            pendingPhotos.length === 0 ||
+            !hasPendingChanges ||
             hasProcessingPhotos ||
             hasFailedPhoto
           }
