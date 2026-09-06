@@ -7,6 +7,7 @@ import {
   completeCognitoSignIn,
 } from "@/features/auth/model/cognito";
 import { getCurrentOnboarding } from "@/features/onboarding/api/onboarding-api";
+import { getStoreManagementStatus } from "@/features/store/api/store-api";
 import { ApiError } from "@/lib/api/types";
 
 type CallbackState = "loading" | "complete" | "error";
@@ -63,7 +64,16 @@ export function CognitoCallback() {
         }
 
         if (onboarding.status === "APPROVED") {
-          window.location.replace("/seller/store-management");
+          const managementStatus = await getStoreManagementStatus().catch(
+            () => null,
+          );
+          const isStoreSetupComplete =
+            managementStatus !== null &&
+            Object.values(managementStatus.items).every(Boolean);
+
+          window.location.replace(
+            isStoreSetupComplete ? "/seller/home" : "/seller/store-management",
+          );
           return;
         }
 

@@ -3,11 +3,19 @@ import Link from "next/link";
 
 type SettingRowProps = {
   completed: boolean;
+  disabled?: boolean;
   href?: string;
   label: string;
+  onClick?: () => void;
 };
 
-export function SettingRow({ completed, href, label }: SettingRowProps) {
+export function SettingRow({
+  completed,
+  disabled = false,
+  href,
+  label,
+  onClick,
+}: SettingRowProps) {
   const content = (
     <>
       <span className="flex size-6 shrink-0 items-center justify-center overflow-hidden p-[3px]">
@@ -41,7 +49,7 @@ export function SettingRow({ completed, href, label }: SettingRowProps) {
       {content}
     </Link>
   ) : (
-    <button className={className} type="button">
+    <button className={className} disabled={disabled} onClick={onClick} type="button">
       {content}
     </button>
   );

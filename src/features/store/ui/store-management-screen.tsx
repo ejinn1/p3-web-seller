@@ -1,16 +1,25 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+import { useCompleteAccountRegistrationMutation } from "@/features/store/model/store-mutations";
 import { useStoreManagementStatusQuery } from "@/features/store/model/store-queries";
 import { StoreManagementHeader } from "@/features/store/ui/store-management-header";
 import { SettingRow } from "@/components/ui/setting-row/setting-row";
 
 export function StoreManagementScreen() {
+  const router = useRouter();
   const statusQuery = useStoreManagementStatusQuery();
+  const completeAccountRegistrationMutation =
+    useCompleteAccountRegistrationMutation();
   const managementStatus = statusQuery.data;
   const items = managementStatus?.items;
   const settings = [
-    { completed: items?.storeInfo ?? false, label: "스토어 정보" },
+    {
+      completed: items?.storeInfo ?? false,
+      href: "/seller/store-information",
+      label: "스토어 정보",
+    },
     {
       completed: items?.orderForm ?? false,
       href: "/seller/order-form",
@@ -28,7 +37,11 @@ export function StoreManagementScreen() {
     },
     {
       completed: items?.settlementAccount ?? false,
-      label: "정산계좌",
+      disabled:
+        (items?.settlementAccount ?? false) ||
+        completeAccountRegistrationMutation.isPending,
+      label: "계좌등록",
+      onClick: () => void completeAccountRegistrationMutation.mutateAsync(),
     },
   ];
   const completedCount = managementStatus?.completedCount ?? 0;
@@ -54,17 +67,17 @@ export function StoreManagementScreen() {
             <SettingRow key={setting.label} {...setting} />
           ))}
         </div>
+        {completeAccountRegistrationMutation.isError ? (
+          <p aria-live="polite" className="text-sm text-text-error">
+            계좌등록을 완료하지 못했습니다. 잠시 후 다시 시도해 주세요.
+          </p>
+        ) : null}
       </section>
-      <div className="flex gap-2 px-4 pt-4 pb-[34px]">
+      <div className="px-4 pt-4 pb-[34px]">
         <Button
-          className="h-11 flex-1 rounded-seller-md text-[15px] font-semibold"
-          size="md"
-          variant="outline"
-        >
-          미리보기
-        </Button>
-        <Button
-          className="h-11 flex-1 rounded-seller-md text-[15px] font-semibold"
+          className="h-11 rounded-seller-md text-[15px] font-semibold"
+          fullWidth
+          onClick={() => router.push("/seller/home")}
           size="md"
         >
           저장

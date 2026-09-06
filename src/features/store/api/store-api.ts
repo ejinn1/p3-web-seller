@@ -1,8 +1,14 @@
 import { getJson, sendJson } from "@/lib/api/client";
 import type {
   Store,
+  StoreBusinessHours,
+  StoreBusinessHoursInput,
+  StoreDescriptionInput,
   StoreInput,
+  StoreLocationSearchResult,
   StoreManagementStatus,
+  StoreRefundPolicy,
+  StoreRefundPolicyInput,
   StoreSettings,
   StoreSettingsInput,
   StoreShareLink,
@@ -26,3 +32,19 @@ export const updateStoreSettings = (input: StoreSettingsInput) =>
   sendJson<StoreSettings>("/seller/store/settings", "PUT", input);
 export const getStoreShareLink = () =>
   getJson<StoreShareLink>("/seller/store/share-link");
+export const getStoreBusinessHours = () =>
+  getJson<StoreBusinessHours>("/seller/store/business-hours");
+export const updateStoreBusinessHours = (input: StoreBusinessHoursInput) =>
+  sendJson<StoreBusinessHours>("/seller/store/business-hours", "PUT", input);
+export const updateStoreDescription = (input: StoreDescriptionInput) =>
+  sendJson<Store>("/seller/store/description", "PUT", input);
+export const completeAccountRegistration = () =>
+  sendJson<Store>("/seller/store/account-registration/complete", "POST");
+export const getStoreRefundPolicy = () =>
+  getJson<StoreRefundPolicy>("/seller/store/refund-policy");
+export const updateStoreRefundPolicy = (input: StoreRefundPolicyInput) =>
+  sendJson<StoreRefundPolicy>("/seller/store/refund-policy", "PUT", input);
+export const searchStoreLocations = (query: string) =>
+  getJson<StoreLocationSearchResult>(
+    `/seller/store/locations/search?query=${encodeURIComponent(query)}`,
+  );
