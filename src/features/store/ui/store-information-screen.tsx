@@ -10,12 +10,14 @@ import { PickupLocationDetailScreen } from "./pickup-location-detail-screen";
 import { PickupLocationSearchScreen } from "./pickup-location-search-screen";
 import { StoreBusinessHoursScreen } from "./store-business-hours-screen";
 import { StoreInformationForm } from "./store-information-form";
+import { StoreRefundPeriodScreen } from "./store-refund-period-screen";
 
 type StoreInformationView =
   | "information"
   | "pickup-location-detail"
   | "pickup-location-search"
-  | "business-hours";
+  | "business-hours"
+  | "refund-period";
 
 function toStoreInput(store: Store, address: string): StoreInput {
   return {
@@ -37,12 +39,25 @@ export function StoreInformationScreen() {
   const [view, setView] = useState<StoreInformationView>("information");
   const [selectedAddress, setSelectedAddress] = useState("");
   const [pickupAddress, setPickupAddress] = useState<string | null>(null);
+  const [refundPeriod, setRefundPeriod] = useState<string | null>(null);
 
   const address =
     selectedAddress || pickupAddress || storeQuery.data?.address || "";
 
   if (view === "business-hours") {
     return <StoreBusinessHoursScreen onBack={() => setView("information")} />;
+  }
+
+  if (view === "refund-period") {
+    return (
+      <StoreRefundPeriodScreen
+        onBack={() => setView("information")}
+        onConfirm={(summary) => {
+          setRefundPeriod(summary);
+          setView("information");
+        }}
+      />
+    );
   }
 
   if (view === "pickup-location-search") {
@@ -93,10 +108,12 @@ export function StoreInformationScreen() {
   return (
     <StoreInformationForm
       pickupAddress={pickupAddress || storeQuery.data?.address}
+      refundPeriod={refundPeriod}
       store={storeQuery.data}
       storeQueryIsError={storeQuery.isError}
       onBusinessHoursClick={() => setView("business-hours")}
       onPickupLocationClick={() => setView("pickup-location-detail")}
+      onRefundPeriodClick={() => setView("refund-period")}
     />
   );
 }

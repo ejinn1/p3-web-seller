@@ -4,10 +4,12 @@ import type { Store } from "@/features/store/model/store-types";
 
 type StoreInformationFormProps = {
   pickupAddress?: string | null;
+  refundPeriod?: string | null;
   store?: Store;
   storeQueryIsError: boolean;
   onBusinessHoursClick: () => void;
   onPickupLocationClick: () => void;
+  onRefundPeriodClick: () => void;
 };
 
 type StoreInformationFieldProps = {
@@ -73,10 +75,12 @@ function StoreInformationField({
 
 export function StoreInformationForm({
   pickupAddress,
+  refundPeriod,
   store,
   storeQueryIsError,
   onBusinessHoursClick,
   onPickupLocationClick,
+  onRefundPeriodClick,
 }: StoreInformationFormProps) {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-[390px] flex-col bg-surface-default text-text-primary">
@@ -105,6 +109,8 @@ export function StoreInformationForm({
           label="환불기간"
           maxLength={100}
           placeholder="환불기간을 설정해주세요"
+          value={refundPeriod}
+          onClick={onRefundPeriodClick}
         />
         <StoreInformationField
           label="매장 소개"
