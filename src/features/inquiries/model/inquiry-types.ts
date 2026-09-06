@@ -1,14 +1,135 @@
 export type InquiryStatus =
-  | "RECEIVED"
+  | "WAITING"
   | "IN_PROGRESS"
-  | "PAYMENT_REQUESTED"
   | "PAID"
   | "PICKED_UP"
-  | "TRASHED";
+  | "TRASH";
+
+export type InquiryTimelineItemType =
+  | "MESSAGE"
+  | "ORDER_FORM_SUBMISSION"
+  | "ORDER_CONFIRMATION"
+  | "ORDER_CONFIRMATION_REVISION"
+  | "PAYMENT_COMPLETED";
+
+export type InquiryParticipant = {
+  userId: string;
+  name: string;
+  profileImageDeliveryUrl: string | null;
+};
+
+export type InquiryLatestEvent = {
+  eventId: string;
+  referenceId: string | null;
+  type: InquiryTimelineItemType;
+  senderUserId: string | null;
+  content: string | null;
+  createdAt: string;
+};
+
+export type InquiryLatestOrderFormSubmission = {
+  submissionId: string;
+  submittedAt: string;
+};
+
+export type InquiryListApiItem = {
+  inquiryId: string;
+  storeId: string;
+  status: InquiryStatus;
+  storeName: string;
+  storeSlug: string;
+  participant: InquiryParticipant;
+  unreadCount: number;
+  latestEventAt: string | null;
+  latestEvent: InquiryLatestEvent | null;
+  latestOrderFormSubmission: InquiryLatestOrderFormSubmission | null;
+  myLastReadAt: string | null;
+  createdAt: string;
+};
+
+export type InquiryChatDetailResponse = {
+  inquiryId: string;
+  storeId: string;
+  storeName: string;
+  storeSlug: string;
+  participant: InquiryParticipant;
+  startReferenceAsset: {
+    assetId: string;
+    source: string;
+    deliveryUrl: string | null;
+  } | null;
+  myLastReadAt: string | null;
+  participantLastReadAt: string | null;
+  createdAt: string;
+};
+
+export type InquiryTimelineItemResponse = {
+  eventId: string;
+  referenceId?: string | null;
+  type: InquiryTimelineItemType;
+  senderUserId: string | null;
+  createdAt: string;
+  content: string | null;
+  assetIds: string[];
+};
+
+export type InquiryTimelinePageResponse = {
+  items: InquiryTimelineItemResponse[];
+  hasNext: boolean;
+  nextCursorCreatedAt: string | null;
+  nextCursorId: string | null;
+};
+
+export type InquiryOrderOptionRow = {
+  label: string;
+  value: string;
+  amount: number | null;
+};
+
+export type InquiryOrderFormSubmissionResponse = {
+  id: string;
+  inquiryId: string;
+  templateId: string;
+  submittedBy: string;
+  pickupDate: string;
+  pickupTime: string;
+  answers: string;
+  referenceAssets: string;
+  optionRows: InquiryOrderOptionRow[];
+  cancellationRefundAgreed: boolean;
+  submittedAt: string;
+};
+
+export type InquiryOrderConfirmationResponse = {
+  confirmationId: string;
+  inquiryId: string;
+  orderFormSubmissionId: string;
+  confirmationTitle: string;
+  summaryText: string;
+  amount: number;
+  pickupAt: string;
+  storeNameSnapshot: string;
+  orderSummary: string;
+  additionalItems: string;
+  optionRows: InquiryOrderOptionRow[];
+  sellerNote: string | null;
+  status: string;
+  sentAt: string | null;
+  revisionRequestedAt?: string | null;
+  buyerViewedAt?: string | null;
+  replacedByConfirmationId?: string | null;
+  createdAt: string;
+};
+
+export type SellerInquiryListParams = {
+  status?: InquiryStatus;
+  unreadOnly?: boolean;
+};
 
 export type InquiryListItem = {
   id: string;
   buyerName: string;
+  hasOrderFormSubmission: boolean;
   lastMessage: string;
   lastMessageAt: string;
   status: InquiryStatus;
@@ -74,6 +195,8 @@ export type InquiryDetail = {
   id: string;
   buyerName: string;
   chatInfo: string;
+  participantUserId: string | null;
+  profileImageUrl: string | null;
   status: InquiryStatus;
   statusLabel: string;
   messages: InquiryChatMessage[];

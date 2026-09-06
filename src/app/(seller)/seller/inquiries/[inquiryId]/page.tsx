@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { SellerAuthGuard } from "@/features/auth/ui/seller-auth-guard";
 import { InquiryDetailScreen } from "@/features/inquiries/ui/inquiry-detail-screen";
 
 export default async function SellerInquiryDetailPage({
@@ -7,5 +9,11 @@ export default async function SellerInquiryDetailPage({
 }) {
   const { inquiryId } = await params;
 
-  return <InquiryDetailScreen inquiryId={inquiryId} />;
+  return (
+    <SellerAuthGuard>
+      <Suspense fallback={null}>
+        <InquiryDetailScreen inquiryId={inquiryId} />
+      </Suspense>
+    </SellerAuthGuard>
+  );
 }

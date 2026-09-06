@@ -15,14 +15,16 @@ type CalendarMonthParams = {
   year: number;
 };
 
-const hasApiBaseUrl = Boolean(process.env.NEXT_PUBLIC_P3_API_BASE_URL);
+const useFixtures =
+  process.env.NEXT_PUBLIC_P3_USE_MOCKS === "true" ||
+  !process.env.NEXT_PUBLIC_P3_API_BASE_URL;
 
 export async function getSellerOrderCalendarMonth({
   month,
   status,
   year,
 }: CalendarMonthParams) {
-  if (!hasApiBaseUrl) {
+  if (useFixtures) {
     return orderCalendarFixture;
   }
 
@@ -41,7 +43,7 @@ export async function getSellerOrderCalendarMonth({
 }
 
 export async function getSellerOrderDetail(orderId: string | null) {
-  if (!orderId || !hasApiBaseUrl) {
+  if (!orderId || useFixtures) {
     return sellerOrderDetailFixture;
   }
 

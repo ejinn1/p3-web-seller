@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Bell, ChevronLeft, ChevronRight, Menu, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -1074,6 +1075,16 @@ function SellerSidebar({ onClose }: { onClose: () => void }) {
   );
 }
 
+const sidebarRoutes: Record<string, string> = {
+  "계정 설정": "/seller/account-settings",
+  매출분석: "/seller/revenue",
+  "내 상담": "/seller/inquiries",
+  "스토어 관리": "/seller/store-management",
+  "주문 내역": "/seller/orders",
+  "주문 캘린더": "/seller/orders/calendar",
+  홈: "/seller/home",
+};
+
 function SidebarGroup({ items, title }: { items: string[]; title: string }) {
   return (
     <div className="flex w-full flex-col gap-4">
@@ -1082,12 +1093,12 @@ function SidebarGroup({ items, title }: { items: string[]; title: string }) {
       </p>
       {items.map((item, index) => (
         <div key={item}>
-          <button
+          <Link
             className="flex h-6 items-center px-6 text-[18px] leading-6 font-semibold tracking-[-0.54px] text-text-primary"
-            type="button"
+            href={sidebarRoutes[item] ?? "/seller/home"}
           >
             {item}
-          </button>
+          </Link>
           {index < items.length - 1 ? (
             <div className="mx-6 mt-4 h-px bg-surface-subtle opacity-90" />
           ) : null}

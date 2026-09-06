@@ -6,11 +6,12 @@ import {
   getSellerInquiry,
 } from "@/features/inquiries/api/inquiries-api";
 import { inquiryKeys } from "@/features/inquiries/model/inquiry-keys";
+import type { SellerInquiryListParams } from "@/features/inquiries/model/inquiry-types";
 
-export function useSellerInquiriesQuery() {
+export function useSellerInquiriesQuery(params: SellerInquiryListParams = {}) {
   return useQuery({
-    queryFn: getSellerInquiries,
-    queryKey: inquiryKeys.list(),
+    queryFn: () => getSellerInquiries(params),
+    queryKey: inquiryKeys.list(params),
   });
 }
 

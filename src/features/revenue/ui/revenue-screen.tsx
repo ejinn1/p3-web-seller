@@ -1,21 +1,21 @@
 "use client";
 
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight, Menu, SlidersHorizontal, X } from "lucide-react";
 import { SellerScreenShell } from "@/features/seller-shell/ui/seller-screen-shell";
-import {
-  revenueCancelHistory,
-  revenueCancellationLines,
-  revenueDiscountLines,
-  revenuePaymentLines,
-  revenueSummarySections,
-} from "@/features/revenue/model/revenue-fixtures";
+import { revenueCancelHistory } from "@/features/revenue/model/revenue-fixtures";
+import { useSellerOrdersQuery } from "@/features/orders/model/order-queries";
+import type {
+  SellerOrderListItem,
+  SellerOrderStatus,
+} from "@/features/orders/model/order-types";
 import { useSellerRevenueQuery } from "@/features/revenue/model/revenue-queries";
 import type {
   RevenueCancelHistory,
   RevenueOrderLine,
   RevenuePeriod,
+  SellerRevenueResponse,
   RevenueSummaryMetric,
   RevenueSummarySection,
   RevenueView,
@@ -43,8 +43,23 @@ const detailTitles: Record<Exclude<RevenueView, "home">, string> = {
 
 export function RevenueScreen({ initialView }: RevenueScreenProps) {
   const router = useRouter();
-  const { data: revenue } = useSellerRevenueQuery("2026-08-12", "2026-08-12");
+  const searchParams = useSearchParams();
+  const activePeriod = parsePeriod(searchParams.get("period"));
+  const range = rangeForPeriod(activePeriod);
+  const { data: revenue } = useSellerRevenueQuery(range.startDate, range.endDate);
   const view = initialView;
+  const orderStatuses = statusesForView(view);
+  const ordersQuery = useSellerOrdersQuery(
+    {
+      dateBasis: view === "home" ? "PAID_AT" : "CREATED_AT",
+      endDate: range.endDate,
+      startDate: range.startDate,
+      status: orderStatuses,
+    },
+    view !== "discounts",
+  );
+  const orders = ordersQuery.data ?? [];
+  const summarySections = toSummarySections(revenue, orders);
 
   const goToView = (nextView: RevenueView) => {
     router.push(nextView === "home" ? "/seller/revenue" : `/seller/revenue?view=${nextView}`);
@@ -64,7 +79,7 @@ export function RevenueScreen({ initialView }: RevenueScreenProps) {
       <SellerScreenShell data-revenue-frame={view}>
         <RevenueHeader title={detailTitles[view]} onBack={() => goToView("home")} />
         <RevenueDetailView
-          lines={getLinesForView(view)}
+          lines={getLinesForView(view, orders)}
           onClearFilter={() => goToView("home")}
           onSelectLine={() =>
             view === "cancellations" ? goToView("cancel-history") : undefined
@@ -79,20 +94,23 @@ export function RevenueScreen({ initialView }: RevenueScreenProps) {
     <SellerScreenShell data-revenue-frame="home">
       <RevenueHeader showMenu title="매출 분석" />
       <section className="flex flex-col" data-node-id="1290:16176">
-        <PeriodTabs activePeriod="today" />
+        <PeriodTabs
+          activePeriod={activePeriod}
+          onSelect={(period) => router.push(`/seller/revenue?period=${period}`)}
+        />
         <div className="mt-1 flex h-14 items-center px-4" data-node-id="1326:22954">
           <h2
             className="text-[18px] leading-[24px] font-semibold tracking-[-0.54px]"
             data-typography="revenue-month-heading"
           >
-            2026년 8월 12일
+            {formatRangeLabel(range.startDate, range.endDate)}
           </h2>
         </div>
         <div
           className="flex flex-col gap-4 bg-surface-subtle px-4 pt-4 pb-[34px]"
           data-node-id="1326:22953"
         >
-          {revenueSummarySections.map((section) => (
+          {summarySections.map((section) => (
             <SummaryCard
               key={section.id}
               section={section}
@@ -101,9 +119,11 @@ export function RevenueScreen({ initialView }: RevenueScreenProps) {
           ))}
         </div>
       </section>
-      <span className="sr-only">
-        API revenue range: {revenue.startDate} - {revenue.endDate}
-      </span>
+      {revenue ? (
+        <span className="sr-only">
+          API revenue range: {revenue.startDate} - {revenue.endDate}
+        </span>
+      ) : null}
     </SellerScreenShell>
   );
 }
@@ -155,7 +175,13 @@ function RevenueHeader({
   );
 }
 
-function PeriodTabs({ activePeriod }: { activePeriod: RevenuePeriod }) {
+function PeriodTabs({
+  activePeriod,
+  onSelect,
+}: {
+  activePeriod: RevenuePeriod;
+  onSelect: (period: RevenuePeriod) => void;
+}) {
   return (
     <div
       className="flex w-full gap-2 overflow-x-auto px-4 pt-4 pb-2"
@@ -175,6 +201,7 @@ function PeriodTabs({ activePeriod }: { activePeriod: RevenuePeriod }) {
             )}
             data-active={isActive}
             key={period.id}
+            onClick={() => onSelect(period.id)}
             type="button"
           >
             <span data-typography="revenue-period-tab">{period.label}</span>
@@ -297,7 +324,7 @@ function RevenueDetailView({
           onClick={onClearFilter}
           type="button"
         >
-          <span data-typography="revenue-date-chip">2026.08.12</span>
+          <span data-typography="revenue-date-chip">조회기간</span>
           <span className="flex size-12 items-center justify-center" aria-hidden="true">
             <X className="size-4" strokeWidth={2} />
           </span>
@@ -309,7 +336,7 @@ function RevenueDetailView({
             className="text-[15px] leading-[22px] font-semibold tracking-[-0.15px]"
             data-typography="revenue-detail-date"
           >
-            2026년 8월 12일
+            주문 내역
           </h2>
         </div>
         <div className="flex flex-col gap-2">
@@ -468,16 +495,12 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function getLinesForView(view: RevenueView) {
+function getLinesForView(view: RevenueView, orders: SellerOrderListItem[]) {
   if (view === "discounts") {
-    return revenueDiscountLines;
+    return [];
   }
 
-  if (view === "cancellations") {
-    return revenueCancellationLines;
-  }
-
-  return revenuePaymentLines;
+  return orders.map((order) => toRevenueOrderLine(order));
 }
 
 function formatNumber(value: number) {
@@ -486,4 +509,172 @@ function formatNumber(value: number) {
 
 function formatCurrency(value: number) {
   return `${formatNumber(value)}원`;
+}
+
+function statusesForView(view: RevenueView): SellerOrderStatus[] | undefined {
+  if (view === "cancellations" || view === "cancel-history") {
+    return ["CANCEL_REQUESTED", "CANCELED", "REFUND_PROCESSING", "REFUNDED"];
+  }
+
+  if (view === "payments") {
+    return ["PAID", "PICKED_UP"];
+  }
+
+  return undefined;
+}
+
+function toRevenueOrderLine(order: SellerOrderListItem): RevenueOrderLine {
+  return {
+    amount: order.paidAmount,
+    customerName: "고객",
+    id: order.id,
+    imageSrc: "/revenue/cake-box.png",
+    pickupLabel: formatMonthDay(order.pickupAt),
+    timeLabel: formatShortTime(order.pickupAt),
+  };
+}
+
+function toSummarySections(
+  revenue: SellerRevenueResponse | undefined,
+  orders: SellerOrderListItem[],
+): RevenueSummarySection[] {
+  const payments = orders.filter(
+    (order) => order.status === "PAID" || order.status === "PICKED_UP",
+  );
+  const cancellations = orders.filter(
+    (order) =>
+      order.status === "CANCEL_REQUESTED" ||
+      order.status === "CANCELED" ||
+      order.status === "REFUND_PROCESSING" ||
+      order.status === "REFUNDED",
+  );
+  const paymentAmount = revenue?.netSalesAmount ?? sumOrders(payments);
+  const refundAmount =
+    revenue?.completedRefundAmount ?? Math.abs(sumOrders(cancellations));
+
+  return [
+    {
+      id: "sales",
+      primary: { label: "실 매출", value: paymentAmount, unit: "원" },
+      secondary: [
+        {
+          label: "평균 결제 금액",
+          unit: "원",
+          value: payments.length ? Math.round(paymentAmount / payments.length) : 0,
+        },
+        { label: "결제 건수", value: payments.length, unit: "건" },
+      ],
+      view: "payments",
+    },
+    {
+      id: "discounts",
+      primary: { label: "할인 금액", value: 0, unit: "원", tone: "muted" },
+      secondary: [
+        { label: "평균 결제 금액", value: 0, unit: "원", tone: "muted" },
+        { label: "할인 건수", value: 0, unit: "건", tone: "muted" },
+      ],
+      view: "discounts",
+    },
+    {
+      id: "cancellations",
+      primary: {
+        label: "취소 금액",
+        tone: "danger",
+        unit: "원",
+        value: refundAmount,
+      },
+      secondary: [
+        {
+          label: "평균 취소 금액",
+          tone: "danger",
+          unit: "원",
+          value: cancellations.length
+            ? Math.round(refundAmount / cancellations.length)
+            : 0,
+        },
+        {
+          label: "취소 건수",
+          tone: "danger",
+          unit: "건",
+          value: cancellations.length,
+        },
+      ],
+      view: "cancellations",
+    },
+  ];
+}
+
+function sumOrders(orders: SellerOrderListItem[]) {
+  return orders.reduce((sum, order) => sum + order.paidAmount, 0);
+}
+
+function parsePeriod(value: string | null): RevenuePeriod {
+  if (
+    value === "today" ||
+    value === "week" ||
+    value === "month" ||
+    value === "sixMonths" ||
+    value === "custom"
+  ) {
+    return value;
+  }
+
+  return "today";
+}
+
+function rangeForPeriod(period: RevenuePeriod) {
+  const end = new Date();
+  const start = new Date(end);
+
+  if (period === "week") {
+    start.setDate(start.getDate() - 6);
+  } else if (period === "month" || period === "custom") {
+    start.setMonth(start.getMonth() - 1);
+  } else if (period === "sixMonths") {
+    start.setMonth(start.getMonth() - 6);
+  }
+
+  return { endDate: toIsoDate(end), startDate: toIsoDate(start) };
+}
+
+function toIsoDate(value: Date) {
+  const year = value.getFullYear();
+  const month = `${value.getMonth() + 1}`.padStart(2, "0");
+  const day = `${value.getDate()}`.padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function formatRangeLabel(startDate: string, endDate: string) {
+  if (startDate === endDate) {
+    return formatKoreanDate(startDate);
+  }
+
+  return `${formatKoreanDate(startDate)} ~ ${formatKoreanDate(endDate)}`;
+}
+
+function formatKoreanDate(value: string) {
+  return new Intl.DateTimeFormat("ko-KR", {
+    day: "numeric",
+    month: "long",
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+  }).format(new Date(`${value}T00:00:00+09:00`));
+}
+
+function formatMonthDay(value: string) {
+  return new Intl.DateTimeFormat("ko-KR", {
+    day: "numeric",
+    month: "long",
+    timeZone: "Asia/Seoul",
+  }).format(new Date(value));
+}
+
+function formatShortTime(value: string) {
+  return new Intl.DateTimeFormat("ko-KR", {
+    hour: "2-digit",
+    hour12: true,
+    minute: "2-digit",
+    timeZone: "Asia/Seoul",
+  }).format(new Date(value));
 }

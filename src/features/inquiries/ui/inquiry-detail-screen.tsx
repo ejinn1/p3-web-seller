@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight, Menu, Plus, X } from "lucide-react";
 import { SellerScreenShell } from "@/features/seller-shell/ui/seller-screen-shell";
 import { useSellerInquiryQuery } from "@/features/inquiries/model/inquiry-queries";
+import { useSellerInquiryStomp } from "@/features/inquiries/model/inquiry-stomp";
 import type {
   InquiryChatMessage,
   InquiryDetail,
@@ -34,6 +35,7 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
   const sheet = searchParams.get("sheet");
   const modal = searchParams.get("modal");
   const chatScrollRef = useRef<HTMLElement>(null);
+  const stomp = useSellerInquiryStomp(inquiryId, Boolean(inquiry));
 
   const messages = useMemo(
     () => (inquiry ? buildMessages(inquiry, state) : []),
@@ -128,6 +130,7 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
         <div className="flex flex-col gap-8">
           {messages.map((message) => (
             <ChatMessage
+              buyerProfileImageUrl={inquiry.profileImageUrl}
               inquiryId={inquiryId}
               key={message.id}
               message={message}
@@ -136,7 +139,13 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
           ))}
         </div>
       </section>
-      <ChatComposer />
+      <ChatComposer
+        disabled={!stomp.isConnected && Boolean(process.env.NEXT_PUBLIC_P3_API_BASE_URL)}
+        onSend={stomp.sendMessage}
+      />
+      {stomp.error ? (
+        <p className="sr-only">채팅 연결 오류: {stomp.error.message}</p>
+      ) : null}
     </SellerScreenShell>
   );
 }
@@ -195,10 +204,12 @@ function DateArea() {
 }
 
 function ChatMessage({
+  buyerProfileImageUrl,
   inquiryId,
   message,
   state,
 }: {
+  buyerProfileImageUrl: string | null;
   inquiryId: string;
   message: InquiryChatMessage;
   state: InquiryScreenState;
@@ -217,7 +228,11 @@ function ChatMessage({
 
   if (message.kind === "order-request") {
     return (
-      <BubbleRow owner="buyer" sentAt={message.sentAt}>
+      <BubbleRow
+        buyerProfileImageUrl={buyerProfileImageUrl}
+        owner="buyer"
+        sentAt={message.sentAt}
+      >
         <div className="flex w-60 shrink-0 flex-col gap-4 rounded-seller-lg bg-surface-default p-4">
           <div className="relative size-52 overflow-hidden rounded-seller-sm">
             <Image
@@ -271,7 +286,11 @@ function ChatMessage({
 
   if (message.kind === "payment-request") {
     return (
-      <BubbleRow owner="seller" sentAt={message.sentAt}>
+      <BubbleRow
+        buyerProfileImageUrl={buyerProfileImageUrl}
+        owner="seller"
+        sentAt={message.sentAt}
+      >
         <div className="flex w-60 shrink-0 flex-col gap-4 rounded-seller-lg bg-surface-default p-4">
           <div className="space-y-2">
             <p className="text-[13px] leading-4 font-medium tracking-[-0.13px] text-text-secondary">
@@ -303,7 +322,11 @@ function ChatMessage({
 
   if (message.kind === "payment-complete") {
     return (
-      <BubbleRow owner="buyer" sentAt={message.sentAt}>
+      <BubbleRow
+        buyerProfileImageUrl={buyerProfileImageUrl}
+        owner="buyer"
+        sentAt={message.sentAt}
+      >
         <div className="flex w-60 shrink-0 flex-col gap-4 rounded-seller-lg bg-surface-default p-4">
           <div className="space-y-2">
             <p className="text-[13px] leading-4 font-medium tracking-[-0.13px] text-text-secondary">
@@ -332,6 +355,7 @@ function ChatMessage({
 
   return (
     <BubbleRow
+      buyerProfileImageUrl={buyerProfileImageUrl}
       owner={message.owner}
       sentAt={message.sentAt}
       unreadCount={message.unreadCount}
@@ -351,11 +375,13 @@ function ChatMessage({
 }
 
 function BubbleRow({
+  buyerProfileImageUrl,
   children,
   owner,
   sentAt,
   unreadCount,
 }: {
+  buyerProfileImageUrl: string | null;
   children: React.ReactNode;
   owner: "buyer" | "seller";
   sentAt: string;
@@ -373,7 +399,9 @@ function BubbleRow({
       {isSeller ? (
         <BubbleTime sentAt={sentAt} unreadCount={unreadCount} />
       ) : null}
-      {!isSeller ? <ProfileImage imageUrl={null} size={40} /> : null}
+      {!isSeller ? (
+        <ProfileImage imageUrl={buyerProfileImageUrl} size={40} />
+      ) : null}
       {children}
       {!isSeller ? <BubbleTime sentAt={sentAt} /> : null}
     </div>
@@ -395,9 +423,30 @@ function BubbleTime({
   );
 }
 
-function ChatComposer() {
+function ChatComposer({
+  disabled,
+  onSend,
+}: {
+  disabled: boolean;
+  onSend: (content: string) => void;
+}) {
+  const [value, setValue] = useState("");
+
   return (
-    <form className="shrink-0 bg-surface-elevated px-4 pt-4 pb-[calc(34px+env(safe-area-inset-bottom))] shadow-[0_-12px_12px_rgba(0,0,0,0.04)]">
+    <form
+      className="shrink-0 bg-surface-elevated px-4 pt-4 pb-[calc(34px+env(safe-area-inset-bottom))] shadow-[0_-12px_12px_rgba(0,0,0,0.04)]"
+      onSubmit={(event) => {
+        event.preventDefault();
+        const content = value.trim();
+
+        if (!content || disabled) {
+          return;
+        }
+
+        onSend(content);
+        setValue("");
+      }}
+    >
       <label className="sr-only" htmlFor="seller-chat-message">
         메시지 입력
       </label>
@@ -411,9 +460,15 @@ function ChatComposer() {
         </button>
         <input
           className="min-w-0 flex-1 bg-transparent text-[16px] leading-6 font-normal tracking-[-0.32px] text-text-primary outline-none placeholder:text-text-unavailable"
+          disabled={disabled}
           id="seller-chat-message"
+          onChange={(event) => setValue(event.target.value)}
           placeholder="메시지 입력"
+          value={value}
         />
+        <button className="sr-only" disabled={disabled} type="submit">
+          보내기
+        </button>
       </div>
     </form>
   );

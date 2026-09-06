@@ -4,6 +4,49 @@ export type SellerHomeOrderStatus =
   | "PAYMENT_COMPLETE"
   | "REVISION_REQUESTED";
 
+export type SellerDashboardOrderStatus =
+  | "PAID"
+  | "PICKED_UP"
+  | "CANCEL_REQUESTED"
+  | "CANCELED"
+  | "REFUND_PROCESSING"
+  | "REFUNDED";
+
+export type SellerDashboardTodayOrder = {
+  orderId: string;
+  inquiryId: string;
+  buyerUserId: string;
+  orderNumber: string;
+  menuName: string;
+  paidAmount: number;
+  pickupAt: string;
+  pickupDate: string;
+  pickupTime: string;
+  status: SellerDashboardOrderStatus;
+};
+
+export type SellerDashboardResponse = {
+  today: string;
+  weekStartDate: string;
+  weekEndDate: string;
+  currentMonthRevenue: {
+    startDate: string;
+    endDate: string;
+    paymentRevenueAmount: number;
+    completedRefundAmount: number;
+    netSalesAmount: number;
+    settlementFeeRateBasisPoints: number;
+    settlementFeeAmount: number;
+    settlementEstimateAmount: number;
+  };
+  todayOrderCount: number;
+  thisWeekOrderCount: number;
+  paidOrderCount: number;
+  cancelRefundRequestCount: number;
+  unansweredInquiryCount: number;
+  todayOrders: SellerDashboardTodayOrder[];
+};
+
 export type SellerHomePickup = {
   id: string;
   pickupDate: string;

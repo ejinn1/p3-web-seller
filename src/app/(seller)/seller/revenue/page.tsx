@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { SellerAuthGuard } from "@/features/auth/ui/seller-auth-guard";
 import { RevenueScreen } from "@/features/revenue/ui/revenue-screen";
 import type { RevenueView } from "@/features/revenue/model/revenue-types";
 
@@ -21,5 +23,11 @@ export default async function RevenuePage({ searchParams }: RevenuePageProps) {
       ? (rawView as RevenueView)
       : "home";
 
-  return <RevenueScreen initialView={initialView} />;
+  return (
+    <SellerAuthGuard>
+      <Suspense fallback={null}>
+        <RevenueScreen initialView={initialView} />
+      </Suspense>
+    </SellerAuthGuard>
+  );
 }
