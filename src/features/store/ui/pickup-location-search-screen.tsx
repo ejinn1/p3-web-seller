@@ -3,6 +3,8 @@
 import { Search, X } from "lucide-react";
 import { useState } from "react";
 
+import { useStoreLocationSearchQuery } from "@/features/store/model/store-queries";
+
 import { PickupLocationHeader } from "./pickup-location-header";
 
 type PickupLocationSearchScreenProps = {
@@ -12,8 +14,12 @@ type PickupLocationSearchScreenProps = {
 
 export function PickupLocationSearchScreen({
   onBack,
+  onSelect,
 }: PickupLocationSearchScreenProps) {
   const [query, setQuery] = useState("");
+  const normalizedQuery = query.trim();
+  const searchQuery = useStoreLocationSearchQuery(query);
+  const canSearch = normalizedQuery.length >= 2;
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-[390px] flex-col bg-surface-default text-text-primary">
@@ -44,6 +50,55 @@ export function PickupLocationSearchScreen({
             </button>
           ) : null}
         </div>
+        {normalizedQuery.length === 1 ? (
+          <p className="mt-6 text-sm text-text-secondary">
+            검색어를 2자 이상 입력해 주세요.
+          </p>
+        ) : null}
+        {canSearch && searchQuery.isPending ? (
+          <p className="mt-6 text-sm text-text-secondary">
+            주소를 검색하고 있습니다.
+          </p>
+        ) : null}
+        {canSearch && searchQuery.isError ? (
+          <p aria-live="polite" className="mt-6 text-sm text-text-error">
+            주소를 검색하지 못했습니다. 잠시 후 다시 시도해 주세요.
+          </p>
+        ) : null}
+        {canSearch && !searchQuery.isPending && !searchQuery.isError ? (
+          <div className="mt-6">
+            <p className="mb-2 text-sm font-medium text-text-secondary">
+              검색 결과
+            </p>
+            {searchQuery.data?.items.length ? (
+              searchQuery.data.items.map((item) => {
+                const address = item.roadAddress || item.jibunAddress;
+
+                return (
+                  <button
+                    className="flex w-full flex-col gap-1 border-b border-border-subtle py-4 text-left"
+                    key={`${address}-${item.zipCode}`}
+                    onClick={() => onSelect(address)}
+                    type="button"
+                  >
+                    <span className="text-base leading-6 font-medium tracking-[-0.32px]">
+                      {address}
+                    </span>
+                    <span className="text-sm leading-5 text-text-secondary">
+                      {[item.buildingName, item.jibunAddress, item.zipCode]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </span>
+                  </button>
+                );
+              })
+            ) : (
+              <p className="py-4 text-sm text-text-secondary">
+                검색 결과가 없습니다.
+              </p>
+            )}
+          </div>
+        ) : null}
       </section>
     </main>
   );

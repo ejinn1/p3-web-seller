@@ -9,8 +9,10 @@ import { PickupLocationHeader } from "./pickup-location-header";
 type PickupLocationDetailScreenProps = {
   address: string;
   onBack: () => void;
-  onConfirm: (pickupAddress: string) => void;
+  onConfirm: (pickupAddress: string) => Promise<void>;
   onSearch: () => void;
+  saveError?: string;
+  isSaving: boolean;
 };
 
 export function PickupLocationDetailScreen({
@@ -18,6 +20,8 @@ export function PickupLocationDetailScreen({
   onBack,
   onConfirm,
   onSearch,
+  saveError,
+  isSaving,
 }: PickupLocationDetailScreenProps) {
   const [detailAddress, setDetailAddress] = useState("");
   const pickupAddress = `${address} ${detailAddress.trim()}`.trim();
@@ -67,16 +71,21 @@ export function PickupLocationDetailScreen({
             픽업 장소는 255자 이내로 입력해 주세요.
           </p>
         ) : null}
+        {saveError ? (
+          <p aria-live="polite" className="text-sm text-text-error">
+            {saveError}
+          </p>
+        ) : null}
       </section>
       <div className="px-4 pt-4 pb-[34px]">
         <Button
           className="h-[52px] rounded-seller-md text-seller-heading-md font-semibold tracking-[-0.54px]"
-          disabled={!canConfirm}
+          disabled={!canConfirm || isSaving}
           fullWidth
-          onClick={() => onConfirm(pickupAddress)}
+          onClick={() => void onConfirm(pickupAddress)}
           size="lg"
         >
-          확인
+          {isSaving ? "저장 중..." : "확인"}
         </Button>
       </div>
     </main>

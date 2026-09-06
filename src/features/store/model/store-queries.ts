@@ -4,6 +4,7 @@ import {
   getStoreManagementStatus,
   getStoreSettings,
   getStoreShareLink,
+  searchStoreLocations,
 } from "@/features/store/api/store-api";
 import { storeKeys } from "@/features/store/model/store-keys";
 
@@ -32,5 +33,15 @@ export function useStoreShareLinkQuery(enabled = true) {
     queryKey: storeKeys.shareLink(),
     queryFn: getStoreShareLink,
     enabled,
+  });
+}
+
+export function useStoreLocationSearchQuery(query: string) {
+  const normalizedQuery = query.trim();
+
+  return useQuery({
+    queryKey: storeKeys.locationSearch(normalizedQuery),
+    queryFn: () => searchStoreLocations(normalizedQuery),
+    enabled: normalizedQuery.length >= 2,
   });
 }
