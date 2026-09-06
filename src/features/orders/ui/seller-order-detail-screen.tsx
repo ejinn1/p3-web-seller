@@ -10,6 +10,10 @@ import {
   nullStatusSellerOrderFixture,
   sellerOrderViewFixtures,
 } from "@/features/orders/model/order-fixtures";
+import {
+  useCompleteSellerOrderPickupMutation,
+  useRefundSellerOrderMutation,
+} from "@/features/orders/model/order-mutations";
 import { useSellerOrderQuery } from "@/features/orders/model/order-queries";
 import type {
   SellerOrderDetail,
@@ -30,6 +34,8 @@ export function SellerOrderDetailScreen({ orderId }: { orderId: string }) {
   const forcedState = parseForcedState(searchParams.get("state"));
   const isSelectedView = searchParams.get("view") === "selected";
   const query = useSellerOrderQuery(orderId, !forcedState);
+  const pickupMutation = useCompleteSellerOrderPickupMutation(orderId);
+  const refundMutation = useRefundSellerOrderMutation(orderId);
   const view = useMemo(
     () => getDetailForState(orderId, forcedState, query.data),
     [forcedState, orderId, query.data],
@@ -63,6 +69,8 @@ export function SellerOrderDetailScreen({ orderId }: { orderId: string }) {
           <Button
             className="h-11 flex-1 rounded-seller-md border-border-default text-[15px] leading-5 font-semibold tracking-[-0.3px] !text-text-secondary"
             data-qa="orders-refund-button"
+            disabled={refundMutation.isPending}
+            onClick={() => refundMutation.mutate(undefined)}
             variant="outline"
           >
             환불처리
@@ -70,7 +78,12 @@ export function SellerOrderDetailScreen({ orderId }: { orderId: string }) {
           <Button
             className="h-11 flex-1 rounded-seller-md text-[15px] leading-5 font-semibold tracking-[-0.3px]"
             data-qa="orders-pickup-button"
-            onClick={() => router.push(`/seller/orders/${orderId}`)}
+            disabled={pickupMutation.isPending}
+            onClick={() => {
+              pickupMutation.mutate(undefined, {
+                onSuccess: () => router.push(`/seller/orders/${orderId}`),
+              });
+            }}
           >
             픽업 완료
           </Button>
@@ -215,8 +228,20 @@ function getDetailForState(
   const fixture = findSellerOrderFixture(orderId).viewModel;
   const viewModel =
     sellerOrderViewFixtures.find((order) => order.id === detail.order.id) ?? fixture;
+  const detailRows =
+    detail.optionRows.length > 0
+      ? detail.optionRows.map((row) => ({
+          label: row.label,
+          price: row.amount,
+          value: row.value,
+        }))
+      : parseOptionRows(detail.order.optionSummary);
 
-  return { detail, order: detail.order, viewModel };
+  return {
+    detail,
+    order: detail.order,
+    viewModel: { ...viewModel, detailRows },
+  };
 }
 
 function parseForcedState(value: string | null): ForcedState {
@@ -251,4 +276,50 @@ function formatOptionPrice(value: number) {
   }
 
   return `+ ${formatPrice(value)}`;
+}
+
+function parseOptionRows(value: string) {
+  if (!value.trim()) {
+    return [];
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(value);
+
+    if (Array.isArray(parsed)) {
+      return parsed.map((item, index) => {
+        if (typeof item === "object" && item !== null) {
+          const record = item as Record<string, unknown>;
+          return {
+            label: String(record.label ?? record.name ?? `옵션 ${index + 1}`),
+            price:
+              typeof record.amount === "number"
+                ? record.amount
+                : typeof record.price === "number"
+                  ? record.price
+                  : null,
+            value: String(record.value ?? record.answer ?? record.content ?? ""),
+          };
+        }
+
+        return {
+          label: `옵션 ${index + 1}`,
+          price: null,
+          value: String(item ?? ""),
+        };
+      });
+    }
+
+    if (typeof parsed === "object" && parsed !== null) {
+      return Object.entries(parsed).map(([label, optionValue]) => ({
+        label,
+        price: null,
+        value: String(optionValue ?? ""),
+      }));
+    }
+  } catch {
+    return [{ label: "옵션", price: null, value }];
+  }
+
+  return [{ label: "옵션", price: null, value }];
 }

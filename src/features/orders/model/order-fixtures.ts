@@ -213,6 +213,11 @@ export const sellerOrderListFixture: SellerOrderListItem[] =
   viewModels.map(viewToListItem);
 
 export const sellerOrderDetailFixture: SellerOrderDetail = {
+  optionRows: viewModels[0].detailRows.map((row) => ({
+    amount: row.price,
+    label: row.label,
+    value: row.value,
+  })),
   order: {
     ...sellerOrderListFixture[0],
   },
@@ -266,6 +271,11 @@ export function findSellerOrderFixture(orderId: string) {
   return {
     detail: {
       ...sellerOrderDetailFixture,
+      optionRows: viewModel.detailRows.map((row) => ({
+        amount: row.price,
+        label: row.label,
+        value: row.value,
+      })),
       order: viewToOrder(viewModel),
     },
     viewModel,

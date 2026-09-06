@@ -14,6 +14,10 @@ export function setAccessTokenProvider(provider?: AccessTokenProvider) {
   accessTokenProvider = provider;
 }
 
+export async function getAccessToken() {
+  return accessTokenProvider?.() ?? null;
+}
+
 export async function apiRequest<T>(
   path: string,
   { body, headers, requiresAuth = true, ...init }: ApiRequestOptions = {},
@@ -21,7 +25,7 @@ export async function apiRequest<T>(
   const requestHeaders = new Headers(headers);
 
   if (requiresAuth) {
-    const accessToken = await accessTokenProvider?.();
+    const accessToken = await getAccessToken();
 
     if (accessToken) {
       requestHeaders.set("Authorization", `Bearer ${accessToken}`);

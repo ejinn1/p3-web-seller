@@ -2,7 +2,7 @@
 
 import { ChevronLeft } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { SellerScreenShell } from "@/features/seller-shell/ui/seller-screen-shell";
 import { useSellerInquiriesQuery } from "@/features/inquiries/model/inquiry-queries";
 import type {
@@ -13,16 +13,22 @@ import { cn } from "@/lib/utils";
 
 const tabs: Array<{ label: string; status?: InquiryStatus }> = [
   { label: "전체" },
-  { label: "접수됨", status: "RECEIVED" },
+  { label: "접수됨", status: "WAITING" },
   { label: "상담중", status: "IN_PROGRESS" },
   { label: "결제완료", status: "PAID" },
   { label: "픽업완료", status: "PICKED_UP" },
-  { label: "휴지통", status: "TRASHED" },
+  { label: "휴지통", status: "TRASH" },
 ];
 
 export function InquiryListScreen() {
   const router = useRouter();
-  const inquiriesQuery = useSellerInquiriesQuery();
+  const searchParams = useSearchParams();
+  const activeStatus = parseInquiryStatus(searchParams.get("status"));
+  const unreadOnly = searchParams.get("unreadOnly") === "true";
+  const inquiriesQuery = useSellerInquiriesQuery({
+    status: activeStatus,
+    unreadOnly,
+  });
   const inquiries = inquiriesQuery.data ?? [];
 
   return (
@@ -47,11 +53,22 @@ export function InquiryListScreen() {
             <button
               className={cn(
                 "h-11 shrink-0 rounded-seller-sm px-4 text-[15px] leading-5 font-semibold tracking-[-0.3px]",
-                tab.status === "RECEIVED"
+                tab.status === activeStatus || (!tab.status && !activeStatus)
                   ? "bg-surface-inverse text-text-inverse"
                   : "bg-surface-subtle text-text-secondary",
               )}
               key={tab.label}
+              onClick={() => {
+                const nextParams = new URLSearchParams(searchParams);
+
+                if (tab.status) {
+                  nextParams.set("status", tab.status);
+                } else {
+                  nextParams.delete("status");
+                }
+
+                router.push(`/seller/inquiries?${nextParams.toString()}`);
+              }}
               type="button"
             >
               {tab.label}
@@ -108,6 +125,9 @@ function InquiryRow({
             <p className="truncate text-[16px] leading-6 font-normal tracking-[-0.32px] text-text-secondary">
               {inquiry.lastMessage}
             </p>
+            {inquiry.hasOrderFormSubmission ? (
+              <span className="sr-only">주문서 작성됨</span>
+            ) : null}
           </div>
           <time className="w-11 shrink-0 text-right text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-tertiary">
             {inquiry.lastMessageAt}
@@ -135,6 +155,7 @@ export function ProfileImage({
           alt=""
           className="object-cover"
           fill
+          unoptimized
           sizes={`${size}px`}
           src={imageUrl}
         />
@@ -151,4 +172,18 @@ export function ProfileImage({
       )}
     </span>
   );
+}
+
+function parseInquiryStatus(value: string | null): InquiryStatus | undefined {
+  if (
+    value === "WAITING" ||
+    value === "IN_PROGRESS" ||
+    value === "PAID" ||
+    value === "PICKED_UP" ||
+    value === "TRASH"
+  ) {
+    return value;
+  }
+
+  return undefined;
 }

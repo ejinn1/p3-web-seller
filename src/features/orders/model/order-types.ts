@@ -16,6 +16,15 @@ export type PaymentAttemptStatus =
 
 export type RefundStatus = "REQUESTED" | "PROCESSING" | "COMPLETED" | "FAILED";
 
+export type OrderListDateBasis = "PAID_AT" | "PICKUP_AT" | "CREATED_AT";
+
+export type SellerOrderListParams = {
+  dateBasis?: OrderListDateBasis;
+  endDate?: string;
+  startDate?: string;
+  status?: SellerOrderStatus | SellerOrderStatus[];
+};
+
 export type SellerOrderListItem = {
   id: string;
   storeId: string;
@@ -54,15 +63,22 @@ export type Refund = {
   refundId: string;
   orderId: string;
   paymentAttemptId: string;
-  requestedBy: string;
+  requestedBy: string | null;
   amount: number;
-  reason: string;
+  reason: string | null;
   status: RefundStatus;
   createdAt: string;
   completedAt: string | null;
 };
 
+export type OrderOptionRow = {
+  amount: number | null;
+  label: string;
+  value: string;
+};
+
 export type SellerOrderDetail = {
+  optionRows: OrderOptionRow[];
   order: SellerOrder;
   paymentAttempt: PaymentAttempt;
   refunds: Refund[];

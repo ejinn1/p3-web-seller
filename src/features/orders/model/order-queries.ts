@@ -4,12 +4,16 @@ import {
   getSellerOrders,
 } from "@/features/orders/api/orders-api";
 import { orderKeys } from "@/features/orders/model/order-keys";
+import type { SellerOrderListParams } from "@/features/orders/model/order-types";
 
-export function useSellerOrdersQuery(enabled = true) {
+export function useSellerOrdersQuery(
+  params: SellerOrderListParams = {},
+  enabled = true,
+) {
   return useQuery({
     enabled,
-    queryFn: getSellerOrders,
-    queryKey: orderKeys.list(),
+    queryFn: () => getSellerOrders(params),
+    queryKey: orderKeys.list(params),
   });
 }
 

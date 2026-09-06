@@ -42,7 +42,6 @@ const statusLabels: Record<SellerOrderStatus, string> = {
 export function SellerOrdersScreen() {
   const searchParams = useSearchParams();
   const forcedState = parseForcedState(searchParams.get("state"));
-  const query = useSellerOrdersQuery(!forcedState);
   const [filterOpen, setFilterOpen] = useState(false);
   const [customStep, setCustomStep] = useState<CustomDateStep>(null);
   const [customDateSelected, setCustomDateSelected] = useState(false);
@@ -51,6 +50,14 @@ export function SellerOrdersScreen() {
     start: "2026.07.11",
     end: "2026.08.11",
   });
+  const orderListParams = selectedPreset
+    ? {
+        dateBasis: "CREATED_AT" as const,
+        endDate: toIsoDate(selectedRange.end),
+        startDate: toIsoDate(selectedRange.start),
+      }
+    : {};
+  const query = useSellerOrdersQuery(orderListParams, !forcedState);
 
   const orders = useMemo(
     () => getOrdersForState(forcedState, query.data),
@@ -152,6 +159,7 @@ export function SellerOrdersScreen() {
           }}
           onSelect={(preset) => {
             setSelectedPreset(preset);
+            setSelectedRange(rangeForPreset(preset));
           }}
           selectedPreset={selectedPreset}
           selectedRange={selectedRange}
@@ -662,4 +670,34 @@ function formatFullDate(value: string) {
 
 function formatPrice(value: number) {
   return `${new Intl.NumberFormat("ko-KR").format(value)}원`;
+}
+
+function toIsoDate(value: string) {
+  return value.replaceAll(".", "-");
+}
+
+function toDisplayDate(value: Date) {
+  const year = value.getFullYear();
+  const month = `${value.getMonth() + 1}`.padStart(2, "0");
+  const day = `${value.getDate()}`.padStart(2, "0");
+
+  return `${year}.${month}.${day}`;
+}
+
+function rangeForPreset(preset: FilterPreset) {
+  const end = new Date();
+  const start = new Date(end);
+
+  if (preset === "3개월") {
+    start.setMonth(start.getMonth() - 3);
+  } else if (preset === "6개월") {
+    start.setMonth(start.getMonth() - 6);
+  } else {
+    start.setMonth(start.getMonth() - 1);
+  }
+
+  return {
+    end: toDisplayDate(end),
+    start: toDisplayDate(start),
+  };
 }
