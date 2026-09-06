@@ -3,6 +3,7 @@ import {
   getStore,
   getStoreBusinessHours,
   getStoreManagementStatus,
+  getStoreRefundPolicy,
   getStoreSettings,
   getStoreShareLink,
   searchStoreLocations,
@@ -41,6 +42,14 @@ export function useStoreBusinessHoursQuery(enabled = true) {
   return useQuery({
     queryKey: storeKeys.businessHours(),
     queryFn: getStoreBusinessHours,
+    enabled,
+  });
+}
+
+export function useStoreRefundPolicyQuery(enabled = true) {
+  return useQuery({
+    queryKey: storeKeys.refundPolicy(),
+    queryFn: getStoreRefundPolicy,
     enabled,
   });
 }

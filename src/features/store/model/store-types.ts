@@ -86,6 +86,17 @@ export type StoreBusinessHoursInput = {
   breakEndTime: string | null;
 };
 
+export type StoreRefundPolicyRule = {
+  daysBeforePickup: number;
+  refundRate: number;
+};
+
+export type StoreRefundPolicy = {
+  rules: StoreRefundPolicyRule[];
+};
+
+export type StoreRefundPolicyInput = StoreRefundPolicy;
+
 export type StoreManagementStatus = {
   storeName: string;
   completedCount: number;

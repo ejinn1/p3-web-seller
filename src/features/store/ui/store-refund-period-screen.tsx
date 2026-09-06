@@ -4,6 +4,13 @@ import { ChevronDown, Plus } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { useUpdateStoreRefundPolicyMutation } from "@/features/store/model/store-mutations";
+import { useStoreRefundPolicyQuery } from "@/features/store/model/store-queries";
+import type {
+  StoreRefundPolicy,
+  StoreRefundPolicyInput,
+  StoreRefundPolicyRule,
+} from "@/features/store/model/store-types";
 import { cn } from "@/lib/utils";
 
 import { PickupLocationHeader } from "./pickup-location-header";
@@ -11,6 +18,16 @@ import { PickupLocationHeader } from "./pickup-location-header";
 type StoreRefundPeriodScreenProps = {
   onBack: () => void;
   onConfirm: (summary: string) => void;
+};
+
+type StoreRefundPeriodFormProps = {
+  isLoadError: boolean;
+  isSaveError: boolean;
+  isSaving: boolean;
+  onBack: () => void;
+  onConfirm: (summary: string) => void;
+  onSave: (input: StoreRefundPolicyInput) => Promise<StoreRefundPolicy>;
+  refundPolicy?: StoreRefundPolicy;
 };
 
 type RefundRule = {
@@ -21,6 +38,15 @@ type RefundRule = {
 
 const refundPercentages = [100, 80, 70, 50, 30];
 const refundDays = Array.from({ length: 8 }, (_, index) => index);
+
+function formatRefundPolicy(rules: StoreRefundPolicyRule[]) {
+  return rules
+    .map(
+      (rule) =>
+        `픽업일 ${rule.daysBeforePickup === 0 ? "당일" : `${rule.daysBeforePickup}일 전`}까지 ${rule.refundRate}% 환불`,
+    )
+    .join(", ");
+}
 
 function RefundRuleFields({
   index,
@@ -107,13 +133,24 @@ function RefundRuleFields({
   );
 }
 
-export function StoreRefundPeriodScreen({
+function StoreRefundPeriodForm({
+  isLoadError,
+  isSaveError,
+  isSaving,
   onBack,
   onConfirm,
-}: StoreRefundPeriodScreenProps) {
-  const [rules, setRules] = useState<RefundRule[]>([
-    { daysBefore: null, id: 1, percentage: 100 },
-  ]);
+  onSave,
+  refundPolicy,
+}: StoreRefundPeriodFormProps) {
+  const [rules, setRules] = useState<RefundRule[]>(() =>
+    refundPolicy?.rules.length
+      ? refundPolicy.rules.map((rule, index) => ({
+          daysBefore: rule.daysBeforePickup,
+          id: index + 1,
+          percentage: rule.refundRate,
+        }))
+      : [{ daysBefore: null, id: 1, percentage: 100 }],
+  );
 
   const isOrdered = rules.every((rule, index) => {
     if (index === 0) {
@@ -129,7 +166,10 @@ export function StoreRefundPeriodScreen({
       previousRule.daysBefore > rule.daysBefore
     );
   });
-  const canSave = rules.every((rule) => rule.daysBefore !== null) && isOrdered;
+  const canSave =
+    !isLoadError &&
+    rules.every((rule) => rule.daysBefore !== null) &&
+    isOrdered;
   const nextPercentage = refundPercentages.find(
     (percentage) => percentage < rules.at(-1)!.percentage,
   );
@@ -155,19 +195,24 @@ export function StoreRefundPeriodScreen({
     ]);
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!canSave) {
       return;
     }
 
-    onConfirm(
-      rules
-        .map(
-          (rule) =>
-            `픽업일 ${rule.daysBefore === 0 ? "당일" : `${rule.daysBefore}일 전`}까지 ${rule.percentage}% 환불`,
-        )
-        .join(", "),
-    );
+    try {
+      const savedPolicy = await onSave({
+        rules: rules.map((rule) => ({
+          daysBeforePickup: rule.daysBefore!,
+          refundRate: rule.percentage,
+        })),
+      });
+
+      onConfirm(formatRefundPolicy(savedPolicy.rules));
+      onBack();
+    } catch {
+      // The mutation state is rendered on the current screen.
+    }
   };
 
   return (
@@ -196,6 +241,16 @@ export function StoreRefundPeriodScreen({
             환불 비율은 높은 순서로, 기간은 먼 날짜부터 설정해 주세요.
           </p>
         ) : null}
+        {isLoadError ? (
+          <p aria-live="polite" className="text-sm text-text-error">
+            환불정책을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
+          </p>
+        ) : null}
+        {isSaveError ? (
+          <p aria-live="polite" className="text-sm text-text-error">
+            환불정책을 저장하지 못했습니다. 입력값을 확인해 주세요.
+          </p>
+        ) : null}
         <button
           className="flex h-11 w-fit items-center justify-center rounded-seller-md bg-surface-inverse pr-4 text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-inverse disabled:opacity-40"
           disabled={!nextPercentage}
@@ -211,14 +266,52 @@ export function StoreRefundPeriodScreen({
       <div className="px-4 pt-4 pb-[34px]">
         <Button
           className="h-[52px] rounded-seller-md text-seller-heading-md font-semibold tracking-[-0.54px]"
-          disabled={!canSave}
+          disabled={!canSave || isSaving}
           fullWidth
-          onClick={handleConfirm}
+          onClick={() => void handleConfirm()}
           size="lg"
         >
-          다음
+          {isSaving ? "저장 중..." : "다음"}
         </Button>
       </div>
     </main>
+  );
+}
+
+export function StoreRefundPeriodScreen({
+  onBack,
+  onConfirm,
+}: StoreRefundPeriodScreenProps) {
+  const refundPolicyQuery = useStoreRefundPolicyQuery();
+  const updateRefundPolicyMutation = useUpdateStoreRefundPolicyMutation();
+
+  if (refundPolicyQuery.isPending) {
+    return (
+      <main className="mx-auto flex min-h-dvh w-full max-w-[390px] flex-col bg-surface-default text-text-primary">
+        <PickupLocationHeader onBack={onBack} title="환불기간" />
+        <p className="px-4 pt-6 text-sm text-text-secondary">
+          환불정책을 불러오고 있습니다.
+        </p>
+      </main>
+    );
+  }
+
+  const refundPolicyKey = refundPolicyQuery.data
+    ? JSON.stringify(refundPolicyQuery.data)
+    : "new";
+
+  return (
+    <StoreRefundPeriodForm
+      isLoadError={refundPolicyQuery.isError}
+      isSaveError={updateRefundPolicyMutation.isError}
+      isSaving={updateRefundPolicyMutation.isPending}
+      key={refundPolicyKey}
+      onBack={onBack}
+      onConfirm={onConfirm}
+      onSave={async (input) =>
+        updateRefundPolicyMutation.mutateAsync(input)
+      }
+      refundPolicy={refundPolicyQuery.data}
+    />
   );
 }
