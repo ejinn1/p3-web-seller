@@ -1,6 +1,8 @@
 import { getJson, sendJson } from "@/lib/api/client";
 import type {
   Store,
+  StoreBusinessHours,
+  StoreBusinessHoursInput,
   StoreInput,
   StoreLocationSearchResult,
   StoreManagementStatus,
@@ -27,6 +29,10 @@ export const updateStoreSettings = (input: StoreSettingsInput) =>
   sendJson<StoreSettings>("/seller/store/settings", "PUT", input);
 export const getStoreShareLink = () =>
   getJson<StoreShareLink>("/seller/store/share-link");
+export const getStoreBusinessHours = () =>
+  getJson<StoreBusinessHours>("/seller/store/business-hours");
+export const updateStoreBusinessHours = (input: StoreBusinessHoursInput) =>
+  sendJson<StoreBusinessHours>("/seller/store/business-hours", "PUT", input);
 export const searchStoreLocations = (query: string) =>
   getJson<StoreLocationSearchResult>(
     `/seller/store/locations/search?query=${encodeURIComponent(query)}`,

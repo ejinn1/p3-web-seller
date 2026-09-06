@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   getStore,
+  getStoreBusinessHours,
   getStoreManagementStatus,
   getStoreSettings,
   getStoreShareLink,
@@ -32,6 +33,14 @@ export function useStoreShareLinkQuery(enabled = true) {
   return useQuery({
     queryKey: storeKeys.shareLink(),
     queryFn: getStoreShareLink,
+    enabled,
+  });
+}
+
+export function useStoreBusinessHoursQuery(enabled = true) {
+  return useQuery({
+    queryKey: storeKeys.businessHours(),
+    queryFn: getStoreBusinessHours,
     enabled,
   });
 }

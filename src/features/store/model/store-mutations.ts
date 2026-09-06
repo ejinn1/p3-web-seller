@@ -3,6 +3,7 @@ import {
   createStore,
   deleteStore,
   updateStore,
+  updateStoreBusinessHours,
   updateStoreSettings,
   updateStoreStatus,
 } from "@/features/store/api/store-api";
@@ -20,6 +21,14 @@ export function useUpdateStoreMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: updateStore,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: storeKeys.all }),
+  });
+}
+
+export function useUpdateStoreBusinessHoursMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateStoreBusinessHours,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: storeKeys.all }),
   });
 }

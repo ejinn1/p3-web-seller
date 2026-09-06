@@ -61,6 +61,31 @@ export type StoreLocationSearchResult = {
   items: StoreLocationSearchItem[];
 };
 
+export type DayOfWeek =
+  | "MONDAY"
+  | "TUESDAY"
+  | "WEDNESDAY"
+  | "THURSDAY"
+  | "FRIDAY"
+  | "SATURDAY"
+  | "SUNDAY";
+
+export type StoreBusinessHours = {
+  openDays: DayOfWeek[];
+  startTime: string | null;
+  endTime: string | null;
+  breakStartTime: string | null;
+  breakEndTime: string | null;
+};
+
+export type StoreBusinessHoursInput = {
+  openDays: DayOfWeek[];
+  startTime: string;
+  endTime: string;
+  breakStartTime: string | null;
+  breakEndTime: string | null;
+};
+
 export type StoreManagementStatus = {
   storeName: string;
   completedCount: number;
