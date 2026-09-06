@@ -1,4 +1,4 @@
-import type { AssetDeliveryVariant } from "@/features/assets/model/asset-types";
+import type { AssetVariant } from "@/features/assets/model/asset-types";
 
 export type RepresentativeImageStatus = "ACTIVE" | "HIDDEN";
 
@@ -11,7 +11,7 @@ export type RepresentativeImage = {
   status: RepresentativeImageStatus;
   createdAt: string;
   updatedAt: string;
-  variants: AssetDeliveryVariant[];
+  variants: AssetVariant[];
 };
 
 export type CreateRepresentativeImageInput = Pick<

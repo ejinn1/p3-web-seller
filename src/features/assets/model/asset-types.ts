@@ -3,9 +3,9 @@ export type AssetStatus =
 
 export type AssetVariantType = "THUMBNAIL" | "MEDIUM" | "LARGE";
 
-export type AssetDeliveryVariant = {
+export type AssetVariant = {
   type: AssetVariantType;
-  deliveryUrl: string | null;
+  deliveryUrl: string;
   width: number;
   height: number;
 };

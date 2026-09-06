@@ -62,9 +62,9 @@ export function OrderFormConfiguredOptionCard({
         </>
       ) : type === "IMAGE" ? (
         <>
-          <div className="flex items-center gap-0 text-seller-heading-md font-semibold tracking-[-0.54px]">
+          <div className="flex items-start justify-between gap-4 text-seller-heading-md font-semibold tracking-[-0.54px]">
             <p>{label || "사진첨부"}</p>
-            <p className="ml-1 text-[15px] leading-5 font-medium tracking-[-0.3px] text-text-tertiary">
+            <p className="shrink-0 text-[15px] leading-5 font-medium tracking-[-0.3px] text-text-tertiary">
               {price || "문의필요"}
             </p>
           </div>

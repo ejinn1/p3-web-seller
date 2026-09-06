@@ -1,16 +1,18 @@
 import type {
-  AssetDeliveryVariant,
+  AssetVariant,
   AssetVariantType,
 } from "@/features/assets/model/asset-types";
 
 export function getAssetDeliveryUrl(
-  variants: AssetDeliveryVariant[],
-  fallbackUrl: string | null,
-  preferredType: AssetVariantType = "MEDIUM",
-) {
+  deliveryUrl: string | null,
+  variants: AssetVariant[] | null | undefined,
+  preferredTypes: AssetVariantType[],
+): string | undefined {
   return (
-    variants.find((variant) => variant.type === preferredType)?.deliveryUrl ??
-    variants.find((variant) => variant.deliveryUrl)?.deliveryUrl ??
-    fallbackUrl
+    preferredTypes
+      .map((type) => (variants ?? []).find((variant) => variant.type === type))
+      .find((variant) => Boolean(variant?.deliveryUrl))?.deliveryUrl ??
+    deliveryUrl ??
+    undefined
   );
 }

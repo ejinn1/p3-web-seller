@@ -1,4 +1,4 @@
-import type { AssetDeliveryVariant } from "@/features/assets/model/asset-types";
+import type { AssetVariant } from "@/features/assets/model/asset-types";
 
 export type GalleryItemStatus = "VISIBLE" | "HIDDEN";
 
@@ -12,10 +12,15 @@ export type GalleryItem = {
   status: GalleryItemStatus;
   createdAt: string;
   updatedAt: string;
-  variants: AssetDeliveryVariant[];
+  variants: AssetVariant[];
 };
 
 export type CreateGalleryItemInput = Pick<
   GalleryItem,
   "assetId" | "sortOrder" | "featured"
+>;
+
+export type UpdateGalleryItemInput = Pick<
+  GalleryItem,
+  "featured" | "sortOrder" | "status"
 >;
