@@ -6,6 +6,7 @@ type StoreInformationFormProps = {
   pickupAddress?: string | null;
   store?: Store;
   storeQueryIsError: boolean;
+  onBusinessHoursClick: () => void;
   onPickupLocationClick: () => void;
 };
 
@@ -74,6 +75,7 @@ export function StoreInformationForm({
   pickupAddress,
   store,
   storeQueryIsError,
+  onBusinessHoursClick,
   onPickupLocationClick,
 }: StoreInformationFormProps) {
   return (
@@ -97,6 +99,7 @@ export function StoreInformationForm({
           maxLength={100}
           placeholder="ex: 월~일 오후 12:00~17:00"
           value={store?.businessHours}
+          onClick={onBusinessHoursClick}
         />
         <StoreInformationField
           label="환불기간"

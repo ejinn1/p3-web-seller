@@ -8,10 +8,14 @@ import type { Store, StoreInput } from "@/features/store/model/store-types";
 
 import { PickupLocationDetailScreen } from "./pickup-location-detail-screen";
 import { PickupLocationSearchScreen } from "./pickup-location-search-screen";
+import { StoreBusinessHoursScreen } from "./store-business-hours-screen";
 import { StoreInformationForm } from "./store-information-form";
 
 type StoreInformationView =
-  "information" | "pickup-location-detail" | "pickup-location-search";
+  | "information"
+  | "pickup-location-detail"
+  | "pickup-location-search"
+  | "business-hours";
 
 function toStoreInput(store: Store, address: string): StoreInput {
   return {
@@ -36,6 +40,10 @@ export function StoreInformationScreen() {
 
   const address =
     selectedAddress || pickupAddress || storeQuery.data?.address || "";
+
+  if (view === "business-hours") {
+    return <StoreBusinessHoursScreen onBack={() => setView("information")} />;
+  }
 
   if (view === "pickup-location-search") {
     return (
@@ -87,6 +95,7 @@ export function StoreInformationScreen() {
       pickupAddress={pickupAddress || storeQuery.data?.address}
       store={storeQuery.data}
       storeQueryIsError={storeQuery.isError}
+      onBusinessHoursClick={() => setView("business-hours")}
       onPickupLocationClick={() => setView("pickup-location-detail")}
     />
   );
