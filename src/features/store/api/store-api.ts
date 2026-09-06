@@ -38,6 +38,8 @@ export const updateStoreBusinessHours = (input: StoreBusinessHoursInput) =>
   sendJson<StoreBusinessHours>("/seller/store/business-hours", "PUT", input);
 export const updateStoreDescription = (input: StoreDescriptionInput) =>
   sendJson<Store>("/seller/store/description", "PUT", input);
+export const completeAccountRegistration = () =>
+  sendJson<Store>("/seller/store/account-registration/complete", "POST");
 export const getStoreRefundPolicy = () =>
   getJson<StoreRefundPolicy>("/seller/store/refund-policy");
 export const updateStoreRefundPolicy = (input: StoreRefundPolicyInput) =>
