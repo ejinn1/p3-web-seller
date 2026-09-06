@@ -1,4 +1,9 @@
+"use client";
+
+import { useState } from "react";
+
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { OrderFormHeader } from "@/features/order-form/ui/order-form-header";
 import type { Store } from "@/features/store/model/store-types";
 
@@ -15,6 +20,7 @@ type StoreInformationFormProps = {
 type StoreInformationFieldProps = {
   label: string;
   maxLength: number;
+  multiline?: boolean;
   placeholder: string;
   value?: string | null;
   onClick?: () => void;
@@ -23,26 +29,63 @@ type StoreInformationFieldProps = {
 function StoreInformationField({
   label,
   maxLength,
+  multiline = false,
   placeholder,
   value,
   onClick,
 }: StoreInformationFieldProps) {
   const displayValue = value ?? "";
-  const content = (
-    <>
+  const inputContent = (
+    <span
+      className={
+        displayValue
+          ? "text-text-primary"
+          : "text-text-unavailable"
+      }
+    >
+      {displayValue || placeholder}
+    </span>
+  );
+  const counter = (
+    <span className="text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-unavailable">
+      {displayValue.length}/{maxLength}
+    </span>
+  );
+
+  const field = onClick ? (
+    <button
+      className="flex w-full flex-col items-end gap-1 text-left"
+      onClick={onClick}
+      type="button"
+    >
       <span
-        className={
-          displayValue
-            ? "truncate text-text-primary"
-            : "truncate text-text-unavailable"
-        }
+        className={`flex w-full rounded-seller-sm bg-surface-subtle px-4 text-base leading-6 tracking-[-0.32px] ${
+          multiline
+            ? "h-[88px] items-start py-2"
+            : "h-11 items-center truncate"
+        }`}
       >
-        {displayValue || placeholder}
+        <span className={multiline ? "line-clamp-3" : "truncate"}>
+          {inputContent}
+        </span>
       </span>
-      <span className="shrink-0 text-text-unavailable">
-        {displayValue.length}/{maxLength}
+      {counter}
+    </button>
+  ) : (
+    <div className="flex w-full flex-col items-end gap-1">
+      <span
+        className={`flex w-full rounded-seller-sm bg-surface-subtle px-4 text-base leading-6 tracking-[-0.32px] ${
+          multiline
+            ? "h-[88px] items-start py-2"
+            : "h-11 items-center truncate"
+        }`}
+      >
+        <span className={multiline ? "line-clamp-3" : "truncate"}>
+          {inputContent}
+        </span>
       </span>
-    </>
+      {counter}
+    </div>
   );
 
   return (
@@ -56,20 +99,45 @@ function StoreInformationField({
         </span>
         {label}
       </p>
-      {onClick ? (
-        <button
-          className="flex h-11 w-full items-center justify-between gap-3 rounded-seller-sm bg-surface-subtle px-4 text-left text-base leading-6 tracking-[-0.32px]"
-          onClick={onClick}
-          type="button"
-        >
-          {content}
-        </button>
-      ) : (
-        <div className="flex h-11 w-full items-center justify-between gap-3 rounded-seller-sm bg-surface-subtle px-4 text-base leading-6 tracking-[-0.32px]">
-          {content}
-        </div>
-      )}
+      {field}
     </div>
+  );
+}
+
+function StoreDescriptionField({ initialValue }: { initialValue?: string | null }) {
+  const [value, setValue] = useState(initialValue ?? "");
+  const [isFocused, setIsFocused] = useState(false);
+
+  return (
+    <label className="flex flex-col gap-2">
+      <p className="flex items-center text-seller-heading-md font-semibold tracking-[-0.54px]">
+        <span
+          aria-hidden="true"
+          className="w-[9px] pb-1 text-[15px] leading-5 text-text-error"
+        >
+          *
+        </span>
+        매장 소개
+      </p>
+      <span className="flex flex-col items-end gap-1">
+        <Textarea
+          className="h-[88px]"
+          maxLength={500}
+          onBlur={() => setIsFocused(false)}
+          onChange={(event) => setValue(event.target.value)}
+          onFocus={() => setIsFocused(true)}
+          placeholder="매장 소개를 입력해주세요"
+          value={value}
+        />
+        <span
+          className={`text-[11px] leading-4 font-medium tracking-[-0.11px] ${
+            isFocused ? "text-text-secondary" : "text-text-unavailable"
+          }`}
+        >
+          {value.length}/500
+        </span>
+      </span>
+    </label>
   );
 }
 
@@ -108,15 +176,14 @@ export function StoreInformationForm({
         <StoreInformationField
           label="환불기간"
           maxLength={100}
+          multiline
           placeholder="환불기간을 설정해주세요"
           value={refundPeriod}
           onClick={onRefundPeriodClick}
         />
-        <StoreInformationField
-          label="매장 소개"
-          maxLength={500}
-          placeholder="매장 소개를 입력해주세요"
-          value={store?.description}
+        <StoreDescriptionField
+          initialValue={store?.description}
+          key={store?.id ?? "new"}
         />
         {storeQueryIsError ? (
           <p aria-live="polite" className="text-sm text-text-error">
