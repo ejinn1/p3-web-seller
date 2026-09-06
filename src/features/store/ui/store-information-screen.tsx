@@ -108,7 +108,7 @@ export function StoreInformationScreen() {
   return (
     <StoreInformationForm
       pickupAddress={pickupAddress || storeQuery.data?.address}
-      refundPeriod={refundPeriod}
+      refundPeriod={refundPeriod ?? storeQuery.data?.cancellationRefundPolicy}
       store={storeQuery.data}
       storeQueryIsError={storeQuery.isError}
       onBusinessHoursClick={() => setView("business-hours")}

@@ -16,6 +16,7 @@ export type Store = StoreInput & {
   id: string;
   ownerUserId: string;
   slug: string;
+  cancellationRefundPolicy: string | null;
   settlementAccountStatus: string | null;
   settlementAccountRegisteredAt: string | null;
   status: StoreStatus;
