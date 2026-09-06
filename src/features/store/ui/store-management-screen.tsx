@@ -10,7 +10,11 @@ export function StoreManagementScreen() {
   const managementStatus = statusQuery.data;
   const items = managementStatus?.items;
   const settings = [
-    { completed: items?.storeInfo ?? false, label: "스토어 정보" },
+    {
+      completed: items?.storeInfo ?? false,
+      href: "/seller/store-information",
+      label: "스토어 정보",
+    },
     {
       completed: items?.orderForm ?? false,
       href: "/seller/order-form",
