@@ -37,8 +37,8 @@ export function SellerOrderDetailScreen({ orderId }: { orderId: string }) {
   const pickupMutation = useCompleteSellerOrderPickupMutation(orderId);
   const refundMutation = useRefundSellerOrderMutation(orderId);
   const view = useMemo(
-    () => getDetailForState(orderId, forcedState, query.data),
-    [forcedState, orderId, query.data],
+    () => getDetailForState(forcedState, query.data),
+    [forcedState, query.data],
   );
   const isLoading = forcedState === "loading" || query.isLoading;
   const isError = forcedState === "error" || query.isError;
@@ -195,7 +195,6 @@ type DetailView = {
 };
 
 function getDetailForState(
-  orderId: string,
   state: ForcedState,
   detail: SellerOrderDetail | undefined,
 ): DetailView | null {
@@ -225,9 +224,9 @@ function getDetailForState(
     return null;
   }
 
-  const fixture = findSellerOrderFixture(orderId).viewModel;
-  const viewModel =
-    sellerOrderViewFixtures.find((order) => order.id === detail.order.id) ?? fixture;
+  const fixture = sellerOrderViewFixtures.find(
+    (order) => order.id === detail.order.id,
+  );
   const detailRows =
     detail.optionRows.length > 0
       ? detail.optionRows.map((row) => ({
@@ -240,7 +239,18 @@ function getDetailForState(
   return {
     detail,
     order: detail.order,
-    viewModel: { ...viewModel, detailRows },
+    viewModel: {
+      ...detail.order,
+      startReferenceAssets: [],
+      buyerName: fixture?.buyerName ?? "고객",
+      detailBuyerName: fixture?.detailBuyerName,
+      detailPaymentText: fixture?.detailPaymentText,
+      detailPickupText: fixture?.detailPickupText,
+      detailRows,
+      selectedRows: fixture?.selectedRows,
+      storeName: fixture?.storeName ?? "스토어",
+      thumbnailUrl: fixture?.thumbnailUrl ?? null,
+    },
   };
 }
 

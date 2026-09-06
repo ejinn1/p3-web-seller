@@ -183,4 +183,5 @@ export const sellerOrderDetailFixture: SellerOrderDetailResponse = {
   },
   paymentAttempt: null,
   refunds: [],
+  optionRows: [],
 };

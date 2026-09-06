@@ -3,8 +3,8 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { getAssetDeliveryUrl } from "@/features/assets/model/asset-delivery";
 import { useUploadAssetMutation } from "@/features/assets/model/asset-mutations";
-import { useAssetsQuery } from "@/features/assets/model/asset-queries";
 import type { UploadedAsset } from "@/features/assets/model/asset-types";
 import { OrderFormHeader } from "@/features/order-form/ui/order-form-header";
 import {
@@ -31,7 +31,6 @@ type PendingPreviewPhoto = PreviewPhoto & { galleryItemId: undefined };
 export function GalleryRegistrationScreen() {
   const router = useRouter();
   const statusQuery = useStoreManagementStatusQuery();
-  const assetsQuery = useAssetsQuery();
   const galleryItemsQuery = useGalleryItemsQuery();
   const uploadAssetMutation = useUploadAssetMutation();
   const createGalleryItemMutation = useCreateGalleryItemMutation();
@@ -41,19 +40,18 @@ export function GalleryRegistrationScreen() {
   const [isPhotoDetailSheetOpen, setIsPhotoDetailSheetOpen] = useState(false);
   const storeName = statusQuery.data?.storeName ?? "스토어";
   const savedPhotos = useMemo(() => {
-    const assetsById = new Map(
-      (assetsQuery.data ?? []).map((asset) => [asset.id, asset]),
-    );
-
     return [...(galleryItemsQuery.data ?? [])]
       .sort((first, second) => first.sortOrder - second.sortOrder)
       .map((galleryItem) => {
-        const asset = assetsById.get(galleryItem.assetId);
+        const deliveryUrl = getAssetDeliveryUrl(
+          galleryItem.variants,
+          galleryItem.deliveryUrl,
+        );
 
-        return asset?.deliveryUrl
+        return deliveryUrl
           ? {
               assetId: galleryItem.assetId,
-              deliveryUrl: asset.deliveryUrl,
+              deliveryUrl,
               featured: galleryItem.featured,
               galleryItemId: galleryItem.id,
               sortOrder: galleryItem.sortOrder,
@@ -61,7 +59,7 @@ export function GalleryRegistrationScreen() {
           : null;
       })
       .filter((photo): photo is SavedPreviewPhoto => photo !== null);
-  }, [assetsQuery.data, galleryItemsQuery.data]);
+  }, [galleryItemsQuery.data]);
   const savedAssetIds = new Set(
     (galleryItemsQuery.data ?? []).map((galleryItem) => galleryItem.assetId),
   );
@@ -105,7 +103,7 @@ export function GalleryRegistrationScreen() {
     setUploadedPhotos([]);
     router.push("/seller/store-management");
   };
-  const isLoading = assetsQuery.isLoading || galleryItemsQuery.isLoading;
+  const isLoading = galleryItemsQuery.isLoading;
   const isSubmitting =
     uploadAssetMutation.isPending ||
     createGalleryItemMutation.isPending ||

@@ -1,3 +1,9 @@
+import type {
+  OrderOptionRow,
+  PaymentAttempt,
+  Refund,
+} from "@/features/orders/model/order-types";
+
 export type OrderStatus =
   | "PAID"
   | "PICKED_UP"
@@ -53,8 +59,9 @@ export type OrderResponse = {
 
 export type SellerOrderDetailResponse = {
   order: OrderResponse;
-  paymentAttempt: unknown;
-  refunds: unknown[];
+  paymentAttempt: PaymentAttempt | null;
+  refunds: Refund[];
+  optionRows: OrderOptionRow[];
 };
 
 export type OrderCalendarDisplayMeta = {

@@ -1,6 +1,15 @@
 export type AssetStatus =
   "UPLOADED" | "PROCESSING" | "READY" | "FAILED" | "DELETED";
 
+export type AssetVariantType = "THUMBNAIL" | "MEDIUM" | "LARGE";
+
+export type AssetDeliveryVariant = {
+  type: AssetVariantType;
+  deliveryUrl: string | null;
+  width: number;
+  height: number;
+};
+
 export type Asset = {
   id: string;
   uploadedBy: string;

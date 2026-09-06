@@ -1,8 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { getAssetDeliveryUrl } from "@/features/assets/model/asset-delivery";
 import { useUploadAssetMutation } from "@/features/assets/model/asset-mutations";
-import { useAssetsQuery } from "@/features/assets/model/asset-queries";
 import type { UploadedAsset } from "@/features/assets/model/asset-types";
 import { OrderFormHeader } from "@/features/order-form/ui/order-form-header";
 import { useCreateRepresentativeImageMutation } from "@/features/photo-registration/representative/model/representative-image-mutations";
@@ -21,7 +21,6 @@ type PreviewPhoto = { assetId: string; deliveryUrl: string };
 export function RepresentativePhotoHomeScreen() {
   const router = useRouter();
   const statusQuery = useStoreManagementStatusQuery();
-  const assetsQuery = useAssetsQuery();
   const representativeImagesQuery = useRepresentativeImagesQuery();
   const uploadAssetMutation = useUploadAssetMutation();
   const createRepresentativeImageMutation =
@@ -29,24 +28,23 @@ export function RepresentativePhotoHomeScreen() {
   const [uploadedPhotos, setUploadedPhotos] = useState<UploadedAsset[]>([]);
   const storeName = statusQuery.data?.storeName ?? "스토어";
   const savedPhotos = useMemo(() => {
-    const assetsById = new Map(
-      (assetsQuery.data ?? []).map((asset) => [asset.id, asset]),
-    );
-
     return [...(representativeImagesQuery.data ?? [])]
       .sort((first, second) => first.sortOrder - second.sortOrder)
       .map((representativeImage) => {
-        const asset = assetsById.get(representativeImage.assetId);
+        const deliveryUrl = getAssetDeliveryUrl(
+          representativeImage.variants,
+          representativeImage.deliveryUrl,
+        );
 
-        return asset?.deliveryUrl
+        return deliveryUrl
           ? {
               assetId: representativeImage.assetId,
-              deliveryUrl: asset.deliveryUrl,
+              deliveryUrl,
             }
           : null;
       })
       .filter((photo): photo is PreviewPhoto => photo !== null);
-  }, [assetsQuery.data, representativeImagesQuery.data]);
+  }, [representativeImagesQuery.data]);
   const savedAssetIds = new Set(
     (representativeImagesQuery.data ?? []).map((image) => image.assetId),
   );
@@ -80,8 +78,7 @@ export function RepresentativePhotoHomeScreen() {
     setUploadedPhotos([]);
     router.push("/seller/photo-registration/gallery");
   };
-  const isLoading =
-    assetsQuery.isLoading || representativeImagesQuery.isLoading;
+  const isLoading = representativeImagesQuery.isLoading;
   const isSubmitting =
     uploadAssetMutation.isPending ||
     createRepresentativeImageMutation.isPending;

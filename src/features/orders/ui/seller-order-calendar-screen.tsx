@@ -18,6 +18,7 @@ import {
 import type {
   OrderCalendarDay,
   OrderCalendarItem,
+  SellerOrderDetailResponse,
 } from "@/features/orders/model/order-calendar-types";
 import { cn } from "@/lib/utils";
 
@@ -84,6 +85,7 @@ export function SellerOrderCalendarScreen() {
   if (view === "detail") {
     return (
       <SellerOrderDetailView
+        detail={detailQuery.data}
         isLoading={detailQuery.isLoading}
         onBack={() =>
           updateParams({
@@ -92,7 +94,6 @@ export function SellerOrderCalendarScreen() {
             date: activeDate,
           })
         }
-        order={detailQuery.data?.order}
       />
     );
   }
@@ -529,19 +530,24 @@ function OrderListItem({
 }
 
 function SellerOrderDetailView({
+  detail,
   isLoading,
   onBack,
-  order,
 }: {
+  detail?: SellerOrderDetailResponse;
   isLoading: boolean;
   onBack: () => void;
-  order?: {
-    createdAt: string;
-    paidAmount: number;
-    pickupAt: string;
-    status: string;
-  };
 }) {
+  const order = detail?.order;
+  const optionLines =
+    detail && detail.optionRows.length > 0
+      ? detail.optionRows.map((row) => ({
+          label: row.label,
+          price: row.amount === null ? "" : formatOptionPrice(row.amount),
+          value: row.value,
+        }))
+      : orderCalendarOptionLines;
+
   return (
     <SellerScreenShell className="bg-surface-subtle">
       <CalendarHeader
@@ -603,7 +609,7 @@ function SellerOrderDetailView({
                 data-testid="calendar-detail-divider"
               />
               <div className="flex flex-col gap-6 whitespace-nowrap">
-                {orderCalendarOptionLines.map((line) => (
+                {optionLines.map((line) => (
                   <div
                     className="flex flex-col gap-2"
                     data-testid="calendar-option-line"
@@ -616,9 +622,11 @@ function SellerOrderDetailView({
                       <p className="text-[18px] leading-6 font-semibold tracking-[-0.54px]">
                         {line.value}
                       </p>
-                      <p className="text-[15px] leading-[22px] font-semibold tracking-[-0.15px]">
-                        {line.price}
-                      </p>
+                      {line.price ? (
+                        <p className="text-[15px] leading-[22px] font-semibold tracking-[-0.15px]">
+                          {line.price}
+                        </p>
+                      ) : null}
                     </div>
                   </div>
                 ))}
@@ -825,6 +833,10 @@ function buildCalendarGrid(year: number, month: number): CalendarGridDate[] {
 
 function formatWon(amount: number) {
   return `${amount.toLocaleString("ko-KR")}원`;
+}
+
+function formatOptionPrice(amount: number) {
+  return `+ ${amount.toLocaleString("ko-KR")}원`;
 }
 
 function formatDotDate(date: string) {
