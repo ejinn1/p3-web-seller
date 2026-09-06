@@ -67,7 +67,8 @@ export function InquiryListScreen() {
                   nextParams.delete("status");
                 }
 
-                router.push(`/seller/inquiries?${nextParams.toString()}`);
+                const query = nextParams.toString();
+                router.push(query ? `/seller/inquiries?${query}` : "/seller/inquiries");
               }}
               type="button"
             >
@@ -121,13 +122,15 @@ function InquiryRow({
                   {inquiry.unreadCount}
                 </span>
               ) : null}
+              {inquiry.hasOrderFormSubmission ? (
+                <span className="rounded-seller-sm bg-brand-subtle px-1.5 py-0.5 text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-secondary">
+                  주문서
+                </span>
+              ) : null}
             </div>
             <p className="truncate text-[16px] leading-6 font-normal tracking-[-0.32px] text-text-secondary">
               {inquiry.lastMessage}
             </p>
-            {inquiry.hasOrderFormSubmission ? (
-              <span className="sr-only">주문서 작성됨</span>
-            ) : null}
           </div>
           <time className="w-11 shrink-0 text-right text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-tertiary">
             {inquiry.lastMessageAt}
