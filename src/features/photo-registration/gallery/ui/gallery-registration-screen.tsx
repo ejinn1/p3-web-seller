@@ -1,119 +1,255 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { getAssetDeliveryUrl } from "@/features/assets/model/asset-delivery";
+import { useAssetQueries } from "@/features/assets/model/asset-queries";
 import { useUploadAssetMutation } from "@/features/assets/model/asset-mutations";
-import { useAssetsQuery } from "@/features/assets/model/asset-queries";
-import type { UploadedAsset } from "@/features/assets/model/asset-types";
 import { OrderFormHeader } from "@/features/order-form/ui/order-form-header";
 import {
   useCreateGalleryItemMutation,
   useDeleteGalleryItemMutation,
+  useUpdateGalleryItemMutation,
 } from "@/features/photo-registration/gallery/model/gallery-item-mutations";
 import { useGalleryItemsQuery } from "@/features/photo-registration/gallery/model/gallery-item-queries";
 import { GalleryPhotoDetailSheet } from "@/features/photo-registration/gallery/ui/gallery-photo-detail-sheet";
 import { GalleryPhotoPreview } from "@/features/photo-registration/gallery/ui/gallery-photo-preview";
 import { GalleryPhotoUploadField } from "@/features/photo-registration/gallery/ui/gallery-photo-upload-field";
 import { useStoreManagementStatusQuery } from "@/features/store/model/store-queries";
+import { useSortableList } from "@/hooks/use-sortable-list";
 
-type PreviewPhoto = {
+type PendingPhoto = {
   assetId: string;
-  deliveryUrl: string;
   featured: boolean;
-  galleryItemId: string | undefined;
+  localPreviewUrl: string;
+  replacingGalleryItemId?: string;
   sortOrder: number;
 };
 
-type SavedPreviewPhoto = PreviewPhoto & { galleryItemId: string };
-type PendingPreviewPhoto = PreviewPhoto & { galleryItemId: undefined };
+type PreviewPhoto = {
+  assetId: string;
+  detailUrl?: string;
+  featured: boolean;
+  galleryItemId?: string;
+  id: string;
+  isProcessing: boolean;
+  previewUrl?: string;
+  status?: "VISIBLE" | "HIDDEN";
+  storedSortOrder?: number;
+  sortOrder: number;
+};
 
 export function GalleryRegistrationScreen() {
   const router = useRouter();
   const statusQuery = useStoreManagementStatusQuery();
-  const assetsQuery = useAssetsQuery();
   const galleryItemsQuery = useGalleryItemsQuery();
   const uploadAssetMutation = useUploadAssetMutation();
   const createGalleryItemMutation = useCreateGalleryItemMutation();
   const deleteGalleryItemMutation = useDeleteGalleryItemMutation();
-  const [uploadedPhotos, setUploadedPhotos] = useState<UploadedAsset[]>([]);
+  const updateGalleryItemMutation = useUpdateGalleryItemMutation();
+  const [uploadedPhotos, setUploadedPhotos] = useState<PendingPhoto[]>([]);
   const [selectedPhoto, setSelectedPhoto] = useState<PreviewPhoto | null>(null);
   const [isPhotoDetailSheetOpen, setIsPhotoDetailSheetOpen] = useState(false);
-  const storeName = statusQuery.data?.storeName ?? "스토어";
-  const savedPhotos = useMemo(() => {
-    const assetsById = new Map(
-      (assetsQuery.data ?? []).map((asset) => [asset.id, asset]),
-    );
-
-    return [...(galleryItemsQuery.data ?? [])]
-      .sort((first, second) => first.sortOrder - second.sortOrder)
-      .map((galleryItem) => {
-        const asset = assetsById.get(galleryItem.assetId);
-
-        return asset?.deliveryUrl
-          ? {
-              assetId: galleryItem.assetId,
-              deliveryUrl: asset.deliveryUrl,
-              featured: galleryItem.featured,
-              galleryItemId: galleryItem.id,
-              sortOrder: galleryItem.sortOrder,
-            }
-          : null;
-      })
-      .filter((photo): photo is SavedPreviewPhoto => photo !== null);
-  }, [assetsQuery.data, galleryItemsQuery.data]);
-  const savedAssetIds = new Set(
-    (galleryItemsQuery.data ?? []).map((galleryItem) => galleryItem.assetId),
+  const [sortOrderById, setSortOrderById] = useState<Record<string, number>>(
+    {},
   );
+  const localPreviewUrls = useRef(new Set<string>());
+  const uploadedAssetQueries = useAssetQueries(
+    uploadedPhotos.map((photo) => photo.assetId),
+  );
+  const storeName = statusQuery.data?.storeName ?? "스토어";
+  const assetById = new Map(
+    uploadedAssetQueries.flatMap((query) =>
+      query.data ? [[query.data.id, query.data] as const] : [],
+    ),
+  );
+  const replacedGalleryItemIds = useMemo(
+    () =>
+      new Set(
+        uploadedPhotos.flatMap((photo) =>
+          photo.replacingGalleryItemId ? [photo.replacingGalleryItemId] : [],
+        ),
+      ),
+    [uploadedPhotos],
+  );
+  const savedPhotos = useMemo(
+    () =>
+      (galleryItemsQuery.data ?? [])
+        .filter((item) => !replacedGalleryItemIds.has(item.id))
+        .map((item) => ({
+          assetId: item.assetId,
+          detailUrl: getAssetDeliveryUrl(item.deliveryUrl, item.variants, [
+            "MEDIUM",
+            "LARGE",
+            "THUMBNAIL",
+          ]),
+          featured: item.featured,
+          galleryItemId: item.id,
+          id: item.id,
+          isProcessing: !item.deliveryUrl,
+          previewUrl: getAssetDeliveryUrl(item.deliveryUrl, item.variants, [
+            "THUMBNAIL",
+            "MEDIUM",
+            "LARGE",
+          ]),
+          sortOrder: sortOrderById[item.id] ?? item.sortOrder,
+          status: item.status,
+          storedSortOrder: item.sortOrder,
+        })),
+    [galleryItemsQuery.data, replacedGalleryItemIds, sortOrderById],
+  );
+  const nextSortOrder =
+    Math.max(
+      -1,
+      ...(galleryItemsQuery.data ?? []).map((item) => item.sortOrder),
+    ) + 1;
   const pendingPhotos = uploadedPhotos.filter(
-    (photo) => !savedAssetIds.has(photo.assetId),
+    (photo) =>
+      !(galleryItemsQuery.data ?? []).some(
+        (item) => item.assetId === photo.assetId,
+      ),
   );
   const previewPhotos = [
     ...savedPhotos,
-    ...pendingPhotos
-      .map((photo, index) =>
-        photo.deliveryUrl
-          ? {
-              assetId: photo.assetId,
-              deliveryUrl: photo.deliveryUrl,
-              featured: false,
-              galleryItemId: undefined,
-              sortOrder: (galleryItemsQuery.data?.length ?? 0) + index,
-            }
-          : null,
-      )
-      .filter((photo): photo is PendingPreviewPhoto => photo !== null),
-  ];
+    ...pendingPhotos.map((photo) => ({
+      assetId: photo.assetId,
+      detailUrl: photo.localPreviewUrl,
+      featured: photo.featured,
+      id: photo.assetId,
+      isProcessing: assetById.get(photo.assetId)?.status !== "READY",
+      previewUrl: photo.localPreviewUrl,
+      sortOrder: sortOrderById[photo.assetId] ?? photo.sortOrder,
+    })),
+  ].sort((first, second) => first.sortOrder - second.sortOrder);
+  const hasProcessingPhotos = pendingPhotos.some(
+    (photo) => assetById.get(photo.assetId)?.status !== "READY",
+  );
+  const hasFailedPhoto = pendingPhotos.some(
+    (photo) => assetById.get(photo.assetId)?.status === "FAILED",
+  );
+  const hasSortChanges = savedPhotos.some(
+    (photo) => photo.sortOrder !== photo.storedSortOrder,
+  );
+  const hasPendingChanges = pendingPhotos.length > 0 || hasSortChanges;
+  const isLoading = galleryItemsQuery.isLoading;
+  const isSubmitting =
+    uploadAssetMutation.isPending ||
+    createGalleryItemMutation.isPending ||
+    deleteGalleryItemMutation.isPending ||
+    updateGalleryItemMutation.isPending;
+  const error =
+    uploadAssetMutation.error ??
+    createGalleryItemMutation.error ??
+    deleteGalleryItemMutation.error ??
+    updateGalleryItemMutation.error;
 
-  const handleFileSelect = (file: File) => {
+  const handleReorder = (reorderedPhotos: PreviewPhoto[]) => {
+    setSortOrderById(
+      Object.fromEntries(
+        reorderedPhotos.map((photo, index) => [photo.id, index]),
+      ),
+    );
+  };
+  const { activeId, getSortableItemProps } = useSortableList({
+    getId: (photo: PreviewPhoto) => photo.id,
+    items: previewPhotos,
+    onReorder: handleReorder,
+  });
+
+  useEffect(
+    () => () => {
+      localPreviewUrls.current.forEach((url) => URL.revokeObjectURL(url));
+    },
+    [],
+  );
+
+  const revokePreviewUrl = (url: string) => {
+    URL.revokeObjectURL(url);
+    localPreviewUrls.current.delete(url);
+  };
+
+  const uploadPhoto = (file: File, replacement?: PendingPhoto) => {
+    const localPreviewUrl = URL.createObjectURL(file);
+    localPreviewUrls.current.add(localPreviewUrl);
+
     uploadAssetMutation.mutate(file, {
-      onSuccess: (uploadedAsset) =>
-        setUploadedPhotos((currentPhotos) => [...currentPhotos, uploadedAsset]),
+      onError: () => revokePreviewUrl(localPreviewUrl),
+      onSuccess: (uploadedAsset) => {
+        if (replacement) {
+          revokePreviewUrl(replacement.localPreviewUrl);
+          setUploadedPhotos((currentPhotos) =>
+            currentPhotos.map((photo) =>
+              photo.assetId === replacement.assetId
+                ? {
+                    ...photo,
+                    assetId: uploadedAsset.assetId,
+                    localPreviewUrl,
+                  }
+                : photo,
+            ),
+          );
+          return;
+        }
+
+        setUploadedPhotos((currentPhotos) => [
+          ...currentPhotos,
+          {
+            assetId: uploadedAsset.assetId,
+            featured: false,
+            localPreviewUrl,
+            sortOrder: nextSortOrder + currentPhotos.length,
+          },
+        ]);
+      },
     });
   };
 
   const handleUpdate = async () => {
-    await Promise.all(
-      pendingPhotos.map((photo, index) =>
-        createGalleryItemMutation.mutateAsync({
-          assetId: photo.assetId,
-          featured: false,
-          sortOrder: (galleryItemsQuery.data?.length ?? 0) + index,
-        }),
-      ),
-    );
+    const temporarySortOrderStart = previewPhotos.length + nextSortOrder;
+    for (const [index, photo] of savedPhotos.entries()) {
+      await updateGalleryItemMutation.mutateAsync({
+        featured: photo.featured,
+        galleryItemId: photo.galleryItemId ?? "",
+        sortOrder: temporarySortOrderStart + index,
+        status: photo.status ?? "HIDDEN",
+      });
+    }
+
+    for (const photo of pendingPhotos) {
+      if (photo.replacingGalleryItemId) {
+        await deleteGalleryItemMutation.mutateAsync(
+          photo.replacingGalleryItemId,
+        );
+      }
+
+      const galleryItem = await createGalleryItemMutation.mutateAsync({
+        assetId: photo.assetId,
+        featured: photo.featured,
+        sortOrder: photo.sortOrder,
+      });
+      await updateGalleryItemMutation.mutateAsync({
+        featured: photo.featured,
+        galleryItemId: galleryItem.id,
+        sortOrder: photo.sortOrder,
+        status: "VISIBLE",
+      });
+      revokePreviewUrl(photo.localPreviewUrl);
+    }
+
+    for (const photo of savedPhotos) {
+      await updateGalleryItemMutation.mutateAsync({
+        featured: photo.featured,
+        galleryItemId: photo.galleryItemId ?? "",
+        sortOrder: photo.sortOrder,
+        status: photo.status ?? "HIDDEN",
+      });
+    }
+
     setUploadedPhotos([]);
+    setSortOrderById({});
     router.push("/seller/store-management");
   };
-  const isLoading = assetsQuery.isLoading || galleryItemsQuery.isLoading;
-  const isSubmitting =
-    uploadAssetMutation.isPending ||
-    createGalleryItemMutation.isPending ||
-    deleteGalleryItemMutation.isPending;
-  const error =
-    uploadAssetMutation.error ??
-    createGalleryItemMutation.error ??
-    deleteGalleryItemMutation.error;
 
   const handleDelete = async () => {
     if (!selectedPhoto) return;
@@ -121,6 +257,10 @@ export function GalleryRegistrationScreen() {
     if (selectedPhoto.galleryItemId) {
       await deleteGalleryItemMutation.mutateAsync(selectedPhoto.galleryItemId);
     } else {
+      const pendingPhoto = uploadedPhotos.find(
+        (photo) => photo.assetId === selectedPhoto.assetId,
+      );
+      if (pendingPhoto) revokePreviewUrl(pendingPhoto.localPreviewUrl);
       setUploadedPhotos((currentPhotos) =>
         currentPhotos.filter(
           (photo) => photo.assetId !== selectedPhoto.assetId,
@@ -132,31 +272,33 @@ export function GalleryRegistrationScreen() {
   };
 
   const handleReplace = (file: File) => {
-    const photoToReplace = selectedPhoto;
-    if (!photoToReplace) return;
+    if (!selectedPhoto) return;
 
-    uploadAssetMutation.mutate(file, {
-      onSuccess: async (uploadedAsset) => {
-        if (photoToReplace.galleryItemId) {
-          await deleteGalleryItemMutation.mutateAsync(
-            photoToReplace.galleryItemId,
-          );
-          await createGalleryItemMutation.mutateAsync({
-            assetId: uploadedAsset.assetId,
-            featured: photoToReplace.featured,
-            sortOrder: photoToReplace.sortOrder,
-          });
-        } else {
-          setUploadedPhotos((currentPhotos) =>
-            currentPhotos.map((photo) =>
-              photo.assetId === photoToReplace.assetId ? uploadedAsset : photo,
-            ),
-          );
-        }
+    const pendingPhoto = uploadedPhotos.find(
+      (photo) => photo.assetId === selectedPhoto.assetId,
+    );
+    if (pendingPhoto) {
+      uploadPhoto(file, pendingPhoto);
+    } else if (selectedPhoto.galleryItemId) {
+      const localPreviewUrl = URL.createObjectURL(file);
+      localPreviewUrls.current.add(localPreviewUrl);
+      uploadAssetMutation.mutate(file, {
+        onError: () => revokePreviewUrl(localPreviewUrl),
+        onSuccess: (uploadedAsset) =>
+          setUploadedPhotos((currentPhotos) => [
+            ...currentPhotos,
+            {
+              assetId: uploadedAsset.assetId,
+              featured: selectedPhoto.featured,
+              localPreviewUrl,
+              replacingGalleryItemId: selectedPhoto.galleryItemId,
+              sortOrder: selectedPhoto.sortOrder,
+            },
+          ]),
+      });
+    }
 
-        setIsPhotoDetailSheetOpen(false);
-      },
-    });
+    setIsPhotoDetailSheetOpen(false);
   };
 
   return (
@@ -179,22 +321,39 @@ export function GalleryRegistrationScreen() {
         <div className="grid grid-cols-2 gap-1">
           {previewPhotos.map((photo) => (
             <GalleryPhotoPreview
+              isDragging={activeId === photo.id}
+              isProcessing={photo.isProcessing}
               key={photo.assetId}
-              onClick={() => {
-                setSelectedPhoto(photo);
-                setIsPhotoDetailSheetOpen(true);
-              }}
-              src={photo.deliveryUrl}
+              onClick={
+                photo.detailUrl
+                  ? () => {
+                      setSelectedPhoto(photo);
+                      setIsPhotoDetailSheetOpen(true);
+                    }
+                  : undefined
+              }
+              src={photo.previewUrl}
+              sortableItemProps={getSortableItemProps(photo.id)}
             />
           ))}
           <GalleryPhotoUploadField
             disabled={isLoading || isSubmitting}
-            onFileSelect={handleFileSelect}
+            onFileSelect={uploadPhoto}
           />
         </div>
         <p className="text-[13px] leading-[18px] tracking-[-0.13px] text-text-secondary">
           * 사진을 길게 눌러 순서를 바꿀 수 있어요.
         </p>
+        {hasProcessingPhotos ? (
+          <p className="text-sm text-text-secondary">
+            이미지를 처리 중입니다. 처리 완료 후 갤러리를 업데이트할 수 있어요.
+          </p>
+        ) : null}
+        {hasFailedPhoto ? (
+          <p className="text-sm text-text-error">
+            이미지 처리를 완료하지 못했습니다. 사진을 다시 올려주세요.
+          </p>
+        ) : null}
       </section>
       <div className="flex gap-2 px-4 pt-4 pb-[34px]">
         <Button
@@ -207,7 +366,12 @@ export function GalleryRegistrationScreen() {
         </Button>
         <Button
           className="h-11 flex-1 rounded-seller-md text-[15px] font-semibold"
-          disabled={isSubmitting || pendingPhotos.length === 0}
+          disabled={
+            isSubmitting ||
+            !hasPendingChanges ||
+            hasProcessingPhotos ||
+            hasFailedPhoto
+          }
           onClick={handleUpdate}
           size="md"
         >
@@ -221,14 +385,14 @@ export function GalleryRegistrationScreen() {
             : "갤러리 사진을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요."}
         </p>
       ) : null}
-      {selectedPhoto ? (
+      {selectedPhoto?.detailUrl ? (
         <GalleryPhotoDetailSheet
           isSubmitting={isSubmitting}
           onClose={() => setIsPhotoDetailSheetOpen(false)}
           onDelete={handleDelete}
           onReplace={handleReplace}
           open={isPhotoDetailSheetOpen}
-          src={selectedPhoto.deliveryUrl}
+          src={selectedPhoto.detailUrl}
         />
       ) : null}
     </main>
