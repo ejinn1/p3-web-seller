@@ -98,6 +98,10 @@ export type StoreRefundPolicy = {
 
 export type StoreRefundPolicyInput = StoreRefundPolicy;
 
+export type StoreDescriptionInput = {
+  description: string;
+};
+
 export type StoreManagementStatus = {
   storeName: string;
   completedCount: number;

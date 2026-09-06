@@ -1,8 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
-import { useUpdateStoreMutation } from "@/features/store/model/store-mutations";
+import {
+  useUpdateStoreDescriptionMutation,
+  useUpdateStoreMutation,
+} from "@/features/store/model/store-mutations";
 import { useStoreQuery } from "@/features/store/model/store-queries";
 import type { Store, StoreInput } from "@/features/store/model/store-types";
 
@@ -34,8 +38,10 @@ function toStoreInput(store: Store, address: string): StoreInput {
 }
 
 export function StoreInformationScreen() {
+  const router = useRouter();
   const storeQuery = useStoreQuery();
   const updateStoreMutation = useUpdateStoreMutation();
+  const updateStoreDescriptionMutation = useUpdateStoreDescriptionMutation();
   const [view, setView] = useState<StoreInformationView>("information");
   const [selectedAddress, setSelectedAddress] = useState("");
   const [pickupAddress, setPickupAddress] = useState<string | null>(null);
@@ -107,6 +113,17 @@ export function StoreInformationScreen() {
 
   return (
     <StoreInformationForm
+      descriptionSaveError={
+        updateStoreDescriptionMutation.isError
+          ? "매장 소개를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요."
+          : undefined
+      }
+      isDescriptionSaving={updateStoreDescriptionMutation.isPending}
+      key={storeQuery.data?.id ?? "new"}
+      onDescriptionSaved={() => router.push("/seller/store-management")}
+      onDescriptionSave={async (description) => {
+        await updateStoreDescriptionMutation.mutateAsync({ description });
+      }}
       pickupAddress={pickupAddress || storeQuery.data?.address}
       refundPeriod={refundPeriod ?? storeQuery.data?.cancellationRefundPolicy}
       store={storeQuery.data}

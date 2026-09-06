@@ -3,6 +3,7 @@ import type {
   Store,
   StoreBusinessHours,
   StoreBusinessHoursInput,
+  StoreDescriptionInput,
   StoreInput,
   StoreLocationSearchResult,
   StoreManagementStatus,
@@ -35,6 +36,8 @@ export const getStoreBusinessHours = () =>
   getJson<StoreBusinessHours>("/seller/store/business-hours");
 export const updateStoreBusinessHours = (input: StoreBusinessHoursInput) =>
   sendJson<StoreBusinessHours>("/seller/store/business-hours", "PUT", input);
+export const updateStoreDescription = (input: StoreDescriptionInput) =>
+  sendJson<Store>("/seller/store/description", "PUT", input);
 export const getStoreRefundPolicy = () =>
   getJson<StoreRefundPolicy>("/seller/store/refund-policy");
 export const updateStoreRefundPolicy = (input: StoreRefundPolicyInput) =>

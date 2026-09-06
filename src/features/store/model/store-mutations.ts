@@ -4,6 +4,7 @@ import {
   deleteStore,
   updateStore,
   updateStoreBusinessHours,
+  updateStoreDescription,
   updateStoreRefundPolicy,
   updateStoreSettings,
   updateStoreStatus,
@@ -30,6 +31,14 @@ export function useUpdateStoreBusinessHoursMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: updateStoreBusinessHours,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: storeKeys.all }),
+  });
+}
+
+export function useUpdateStoreDescriptionMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateStoreDescription,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: storeKeys.all }),
   });
 }

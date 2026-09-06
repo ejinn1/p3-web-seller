@@ -8,6 +8,10 @@ import { OrderFormHeader } from "@/features/order-form/ui/order-form-header";
 import type { Store } from "@/features/store/model/store-types";
 
 type StoreInformationFormProps = {
+  descriptionSaveError?: string;
+  isDescriptionSaving: boolean;
+  onDescriptionSave: (description: string) => Promise<void>;
+  onDescriptionSaved: () => void;
   pickupAddress?: string | null;
   refundPeriod?: string | null;
   store?: Store;
@@ -104,8 +108,13 @@ function StoreInformationField({
   );
 }
 
-function StoreDescriptionField({ initialValue }: { initialValue?: string | null }) {
-  const [value, setValue] = useState(initialValue ?? "");
+function StoreDescriptionField({
+  onChange,
+  value,
+}: {
+  onChange: (value: string) => void;
+  value: string;
+}) {
   const [isFocused, setIsFocused] = useState(false);
 
   return (
@@ -124,7 +133,7 @@ function StoreDescriptionField({ initialValue }: { initialValue?: string | null 
           className="h-[88px]"
           maxLength={500}
           onBlur={() => setIsFocused(false)}
-          onChange={(event) => setValue(event.target.value)}
+          onChange={(event) => onChange(event.target.value)}
           onFocus={() => setIsFocused(true)}
           placeholder="매장 소개를 입력해주세요"
           value={value}
@@ -142,6 +151,10 @@ function StoreDescriptionField({ initialValue }: { initialValue?: string | null 
 }
 
 export function StoreInformationForm({
+  descriptionSaveError,
+  isDescriptionSaving,
+  onDescriptionSave,
+  onDescriptionSaved,
   pickupAddress,
   refundPeriod,
   store,
@@ -150,6 +163,29 @@ export function StoreInformationForm({
   onPickupLocationClick,
   onRefundPeriodClick,
 }: StoreInformationFormProps) {
+  const [description, setDescription] = useState(store?.description ?? "");
+  const [savedDescription, setSavedDescription] = useState(
+    store?.description ?? "",
+  );
+  const normalizedDescription = description.trim();
+  const canSaveDescription =
+    normalizedDescription.length > 0 && normalizedDescription !== savedDescription;
+
+  const saveDescription = async () => {
+    if (!canSaveDescription) {
+      return;
+    }
+
+    try {
+      await onDescriptionSave(normalizedDescription);
+      setDescription(normalizedDescription);
+      setSavedDescription(normalizedDescription);
+      onDescriptionSaved();
+    } catch {
+      // The mutation state is rendered on the current screen.
+    }
+  };
+
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-[390px] flex-col bg-surface-default text-text-primary">
       <OrderFormHeader
@@ -182,9 +218,14 @@ export function StoreInformationForm({
           onClick={onRefundPeriodClick}
         />
         <StoreDescriptionField
-          initialValue={store?.description}
-          key={store?.id ?? "new"}
+          onChange={setDescription}
+          value={description}
         />
+        {descriptionSaveError ? (
+          <p aria-live="polite" className="text-sm text-text-error">
+            {descriptionSaveError}
+          </p>
+        ) : null}
         {storeQueryIsError ? (
           <p aria-live="polite" className="text-sm text-text-error">
             스토어 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
@@ -194,11 +235,12 @@ export function StoreInformationForm({
       <div className="px-4 pt-4 pb-[34px]">
         <Button
           className="h-[52px] rounded-seller-md text-seller-heading-md font-semibold tracking-[-0.54px]"
-          disabled
+          disabled={!canSaveDescription || isDescriptionSaving}
           fullWidth
+          onClick={() => void saveDescription()}
           size="lg"
         >
-          다음
+          {isDescriptionSaving ? "저장 중..." : "저장"}
         </Button>
       </div>
     </main>
