@@ -1,0 +1,87 @@
+export type SellerOrderStatus =
+  | "PAID"
+  | "PICKED_UP"
+  | "CANCEL_REQUESTED"
+  | "CANCELED"
+  | "REFUND_PROCESSING"
+  | "REFUNDED";
+
+export type PaymentAttemptStatus =
+  | "READY"
+  | "IN_PROGRESS"
+  | "SUCCEEDED"
+  | "FAILED"
+  | "NEEDS_CONFIRMATION"
+  | "CANCELED";
+
+export type RefundStatus = "REQUESTED" | "PROCESSING" | "COMPLETED" | "FAILED";
+
+export type SellerOrderListItem = {
+  id: string;
+  storeId: string;
+  buyerUserId: string;
+  inquiryId: string;
+  confirmationId: string;
+  orderNumber: string;
+  menuName: string;
+  optionSummary: string;
+  startReferenceAssets: string[];
+  paidAmount: number;
+  pickupAt: string;
+  status: SellerOrderStatus | null;
+  cancelRequestedAt: string | null;
+  cancelReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SellerOrder = Omit<SellerOrderListItem, "startReferenceAssets">;
+
+export type PaymentAttempt = {
+  paymentAttemptId: string;
+  confirmationId: string;
+  sessionId: string;
+  amount: number;
+  status: PaymentAttemptStatus;
+  failureCode: string | null;
+  createdAt: string;
+  completedAt: string | null;
+  expiresAt: string;
+  expired: boolean;
+};
+
+export type Refund = {
+  refundId: string;
+  orderId: string;
+  paymentAttemptId: string;
+  requestedBy: string;
+  amount: number;
+  reason: string;
+  status: RefundStatus;
+  createdAt: string;
+  completedAt: string | null;
+};
+
+export type SellerOrderDetail = {
+  order: SellerOrder;
+  paymentAttempt: PaymentAttempt;
+  refunds: Refund[];
+};
+
+export type SellerOrderOption = {
+  label: string;
+  price: number | null;
+  priceText?: string;
+  value: string;
+};
+
+export type SellerOrderViewModel = SellerOrderListItem & {
+  buyerName: string;
+  detailBuyerName?: string;
+  detailPaymentText?: string;
+  detailPickupText?: string;
+  detailRows: SellerOrderOption[];
+  selectedRows?: SellerOrderOption[];
+  storeName: string;
+  thumbnailUrl: string | null;
+};
