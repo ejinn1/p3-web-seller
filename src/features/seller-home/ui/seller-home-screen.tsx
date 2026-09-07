@@ -48,6 +48,23 @@ export function SellerHomeScreen() {
     router.push(query ? `/seller/home?${query}` : "/seller/home");
   };
 
+  if (dashboardQuery.isError) {
+    return (
+      <SellerScreenShell>
+        <div className="flex h-dvh flex-col items-center justify-center gap-4 px-4 text-center">
+          <p className="text-seller-body-md text-text-secondary">
+            {dashboardQuery.error instanceof Error
+              ? dashboardQuery.error.message
+              : "판매자 홈을 불러오지 못했습니다."}
+          </p>
+          <Button onClick={() => void dashboardQuery.refetch()} size="md">
+            다시 시도
+          </Button>
+        </div>
+      </SellerScreenShell>
+    );
+  }
+
   if (dashboardQuery.isLoading || !dashboard) {
     return (
       <SellerScreenShell>
