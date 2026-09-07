@@ -1,7 +1,7 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { SettingRow } from "@/components/ui/setting-row/setting-row";
+import { Button } from "@/components/common/button";
+import { SettingRow } from "@/components/widgets/setting-row";
 import { useRouter } from "next/navigation";
 import { orderFormCategories } from "@/features/order-form/model/order-form-categories";
 import { useOrderFormDraftStore } from "@/features/order-form/model/order-form-draft";

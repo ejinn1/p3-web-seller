@@ -1,7 +1,7 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Field } from "@/components/ui/field";
+import { Button } from "@/components/common/button";
+import { Field } from "@/components/common/field";
 import { useCreateOnboardingMutation } from "@/features/onboarding/model/onboarding-mutations";
 import type { SellerOnboardingInput } from "@/features/onboarding/model/types";
 import { OnboardingTextField } from "@/features/onboarding/ui/onboarding-text-field";

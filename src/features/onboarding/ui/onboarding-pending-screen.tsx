@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/common/button";
 import { OnboardingHeader } from "@/features/onboarding/ui/onboarding-header";
 
 export function OnboardingPendingScreen() {

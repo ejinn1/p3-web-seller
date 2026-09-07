@@ -3,7 +3,7 @@
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/common/button";
 import { useUpdateStoreBusinessHoursMutation } from "@/features/store/model/store-mutations";
 import { useStoreBusinessHoursQuery } from "@/features/store/model/store-queries";
 import type {

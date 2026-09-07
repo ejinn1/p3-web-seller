@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/common/button";
 import { useOrderFormDraftStore } from "@/features/order-form/model/order-form-draft";
 import { useActiveOrderFormQuery } from "@/features/order-form/model/order-form-queries";
 

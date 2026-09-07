@@ -1,5 +1,5 @@
 import { type InputHTMLAttributes, forwardRef } from "react";
-import { Input } from "@/components/ui/input";
+import { Input } from "@/components/common/input";
 
 type OnboardingTextFieldProps = Omit<
   InputHTMLAttributes<HTMLInputElement>,

@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { Radio } from "@/components/ui/radio";
+import { Radio } from "@/components/common/radio";
 
 type OptionListProps = {
   className?: string;
