@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/common/button";
 import { SellerScreenShell } from "@/features/seller-shell/ui/seller-screen-shell";
 import {
   findSellerOrderFixture,

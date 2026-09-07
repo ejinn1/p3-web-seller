@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/common/button";
+import { Textarea } from "@/components/common/textarea";
 import { OrderFormHeader } from "@/features/order-form/ui/order-form-header";
 import type { Store } from "@/features/store/model/store-types";
 

@@ -1,6 +1,6 @@
 import { Send } from "lucide-react";
 import { type FormEventHandler } from "react";
-import { IconButton } from "@/components/ui/icon-button";
+import { IconButton } from "@/components/common/icon-button";
 import { cn } from "@/lib/utils";
 
 type ChatInputProps = {

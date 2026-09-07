@@ -1,11 +1,11 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/common/button";
 import { useRouter } from "next/navigation";
 import { useCompleteAccountRegistrationMutation } from "@/features/store/model/store-mutations";
 import { useStoreManagementStatusQuery } from "@/features/store/model/store-queries";
 import { StoreManagementHeader } from "@/features/store/ui/store-management-header";
-import { SettingRow } from "@/components/ui/setting-row/setting-row";
+import { SettingRow } from "@/components/widgets/setting-row";
 
 export function StoreManagementScreen() {
   const router = useRouter();

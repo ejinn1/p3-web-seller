@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/common/button";
 import { getAssetDeliveryUrl } from "@/features/assets/model/asset-delivery";
 import { useAssetQueries } from "@/features/assets/model/asset-queries";
 import { useUploadAssetMutation } from "@/features/assets/model/asset-mutations";

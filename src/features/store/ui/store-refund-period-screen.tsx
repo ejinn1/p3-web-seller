@@ -3,7 +3,7 @@
 import { ChevronDown, Plus } from "lucide-react";
 import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/common/button";
 import { useUpdateStoreRefundPolicyMutation } from "@/features/store/model/store-mutations";
 import { useStoreRefundPolicyQuery } from "@/features/store/model/store-queries";
 import type {

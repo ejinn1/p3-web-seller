@@ -1,11 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Bell, ChevronLeft, ChevronRight, Menu, Plus, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { IconButton } from "@/components/ui/icon-button";
+import { Bell, ChevronLeft, ChevronRight, Menu, Plus } from "lucide-react";
+import { Button } from "@/components/common/button";
+import { IconButton } from "@/components/common/icon-button";
+import { SellerSidebar } from "@/components/widgets/seller-sidebar";
 import { SellerScreenShell } from "@/features/seller-shell/ui/seller-screen-shell";
 import { useSellerHomeDashboardQuery } from "@/features/seller-home/model/seller-home-queries";
 import type {
@@ -93,9 +93,10 @@ export function SellerHomeScreen() {
           onBack={() => setState({ view: null })}
           onMenu={() => setState({ sidebar: "open" })}
         />
-        {showSidebar ? (
-          <SellerSidebar onClose={() => setState({ sidebar: null })} />
-        ) : null}
+        <SellerSidebar
+          onOpenChange={(open) => setState({ sidebar: open ? "open" : null })}
+          open={showSidebar}
+        />
       </>
     );
   }
@@ -175,9 +176,10 @@ export function SellerHomeScreen() {
           onContinue={() => setState({ modal: null, view: "revision-chat" })}
         />
       ) : null}
-      {showSidebar ? (
-        <SellerSidebar onClose={() => setState({ sidebar: null })} />
-      ) : null}
+      <SellerSidebar
+        onOpenChange={(open) => setState({ sidebar: open ? "open" : null })}
+        open={showSidebar}
+      />
     </SellerScreenShell>
   );
 }
@@ -1053,74 +1055,6 @@ function RevisionModal({
           </Button>
         </div>
       </div>
-    </div>
-  );
-}
-
-function SellerSidebar({ onClose }: { onClose: () => void }) {
-  return (
-    <div className="fixed inset-0 z-20 flex items-center justify-end bg-surface-scrim">
-      <aside className="flex h-dvh w-[300px] flex-col gap-6 overflow-hidden bg-surface-elevated py-[41px]">
-        <div className="flex w-full items-center justify-between px-6">
-          <Image
-            alt="wihada"
-            height={20}
-            src="/brand/wihada-logo.svg"
-            width={87}
-          />
-          <IconButton className="size-10" label="닫기" onClick={onClose}>
-            <X aria-hidden="true" className="size-5" />
-          </IconButton>
-        </div>
-        <div className="h-px w-full bg-brand-subtle" />
-        <nav className="flex min-h-0 flex-1 flex-col gap-8 py-6">
-          <SidebarGroup items={["홈", "스토어 관리"]} title="스토어" />
-          <SidebarGroup
-            items={["내 상담", "주문 내역", "주문 캘린더"]}
-            title="주문"
-          />
-          <SidebarGroup items={["매출분석"]} title="정산" />
-          <SidebarGroup items={["계정 설정"]} title="계정" />
-        </nav>
-        <div className="px-6">
-          <Button className="h-[52px] w-full rounded-seller-md text-[18px] leading-6 font-semibold tracking-[-0.54px]">
-            내 스토어 보기
-          </Button>
-        </div>
-      </aside>
-    </div>
-  );
-}
-
-const sidebarRoutes: Record<string, string> = {
-  "계정 설정": "/seller/account-settings",
-  매출분석: "/seller/revenue",
-  "내 상담": "/seller/inquiries",
-  "스토어 관리": "/seller/store-management",
-  "주문 내역": "/seller/orders",
-  "주문 캘린더": "/seller/orders/calendar",
-  홈: "/seller/home",
-};
-
-function SidebarGroup({ items, title }: { items: string[]; title: string }) {
-  return (
-    <div className="flex w-full flex-col gap-4">
-      <p className="px-6 text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-secondary">
-        {title}
-      </p>
-      {items.map((item, index) => (
-        <div key={item}>
-          <Link
-            className="flex h-6 items-center px-6 text-[18px] leading-6 font-semibold tracking-[-0.54px] text-text-primary"
-            href={sidebarRoutes[item] ?? "/seller/home"}
-          >
-            {item}
-          </Link>
-          {index < items.length - 1 ? (
-            <div className="mx-6 mt-4 h-px bg-surface-subtle opacity-90" />
-          ) : null}
-        </div>
-      ))}
     </div>
   );
 }

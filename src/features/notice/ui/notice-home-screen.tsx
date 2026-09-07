@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { SettingRow } from "@/components/ui/setting-row/setting-row";
+import { Button } from "@/components/common/button";
+import { SettingRow } from "@/components/widgets/setting-row";
 import { noticeCategories } from "@/features/notice/model/notice-categories";
 import { useNoticeDraftStore } from "@/features/notice/model/notice-draft";
 import { useUpdateNoticesMutation } from "@/features/notice/model/notice-mutations";
