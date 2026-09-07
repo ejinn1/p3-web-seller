@@ -8,6 +8,7 @@ permissions: {}
 
 jobs:
   notify-fork:
+    if: github.repository == 'violetpay-social-seller/p3-web-seller'
     runs-on: ubuntu-latest
     steps:
       - name: Request fork synchronization
