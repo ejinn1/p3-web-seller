@@ -1,8 +1,8 @@
 name: Sync upstream main
 
 on:
-  schedule:
-    - cron: "*/30 * * * *"
+  repository_dispatch:
+    types: [sync-upstream-main]
   workflow_dispatch:
 
 permissions:
