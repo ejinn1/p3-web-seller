@@ -1,0 +1,20 @@
+name: Notify fork to sync main
+
+on:
+  push:
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  notify-fork:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Request fork synchronization
+        env:
+          GH_TOKEN: ${{ secrets.FORK_SYNC_DISPATCH_TOKEN }}
+        run: |
+          gh api \
+            --method POST \
+            /repos/ejinn1/p3-web-seller/dispatches \
+            -f event_type=sync-upstream-main
