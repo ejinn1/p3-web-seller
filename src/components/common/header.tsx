@@ -1,5 +1,5 @@
 import { Bell, ChevronLeft, Menu } from "lucide-react";
-import { IconButton } from "@/components/ui/icon-button";
+import { IconButton } from "@/components/common/icon-button";
 import { cn } from "@/lib/utils";
 
 type HeaderProps = {

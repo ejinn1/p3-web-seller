@@ -1,6 +1,6 @@
 import { X } from "lucide-react";
-import { BottomSheet } from "@/components/ui/bottom-sheet";
-import { Button } from "@/components/ui/button";
+import { BottomSheet } from "@/components/common/bottom-sheet";
+import { Button } from "@/components/common/button";
 
 type GalleryPhotoDetailSheetProps = {
   isSubmitting: boolean;

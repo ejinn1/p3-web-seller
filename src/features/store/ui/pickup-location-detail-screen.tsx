@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/common/button";
 
 import { PickupLocationHeader } from "./pickup-location-header";
 

@@ -1,5 +1,5 @@
 import { type ReactNode } from "react";
-import { Card } from "@/components/ui/card";
+import { Card } from "@/components/common/card";
 import { cn } from "@/lib/utils";
 
 type NoticeCardProps = {

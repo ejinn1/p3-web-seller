@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/common/button";
 import { useNoticeDraftStore } from "@/features/notice/model/notice-draft";
 import { useNoticesQuery } from "@/features/notice/model/notice-queries";
 

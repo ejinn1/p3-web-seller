@@ -1,6 +1,6 @@
 import { Check } from "lucide-react";
 import { type InputHTMLAttributes, type ReactNode } from "react";
-import { Card } from "@/components/ui/card";
+import { Card } from "@/components/common/card";
 import { cn } from "@/lib/utils";
 
 type AgreementItemProps = Omit<

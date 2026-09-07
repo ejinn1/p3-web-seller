@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { Radio } from "@/components/ui/radio";
+import { Radio } from "@/components/common/radio";
 import type { OrderFormDraftOption } from "@/features/order-form/model/order-form-draft";
 
 type OrderFormPreviewOptionProps = {
