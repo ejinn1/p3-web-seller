@@ -47,6 +47,13 @@ export function StoreManagementScreen() {
   const completedCount = managementStatus?.completedCount ?? 0;
   const totalCount = managementStatus?.totalCount ?? settings.length;
   const storeName = managementStatus?.storeName ?? "스토어";
+  const canEnterSellerHome = Boolean(
+    items?.storeInfo &&
+    items.orderForm &&
+    items.notice &&
+    items.photoRegistration &&
+    items.settlementAccount,
+  );
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-[390px] flex-col bg-surface-default text-text-primary">
@@ -76,6 +83,7 @@ export function StoreManagementScreen() {
       <div className="px-4 pt-4 pb-[34px]">
         <Button
           className="h-11 rounded-seller-md text-[15px] font-semibold"
+          disabled={!canEnterSellerHome}
           fullWidth
           onClick={() => router.push("/seller/home")}
           size="md"
