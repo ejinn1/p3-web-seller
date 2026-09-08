@@ -161,7 +161,7 @@ export function SellerHomeScreen() {
                 })
               }
             >
-              상담 대기
+              문의대기
             </TabButton>
           </div>
           {tab === "pickup" ? (
@@ -288,7 +288,7 @@ function DashboardOverview({ dashboard }: { dashboard: SellerHomeDashboard }) {
       <div className="flex h-[86px] w-[calc(100%-32px)] items-center justify-center rounded-seller-sm bg-surface-subtle p-4 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
         <SummaryCount label="오늘 픽업" value={dashboard.todayPickupCount} />
         <div className="mx-1 h-[54px] w-px bg-surface-default opacity-90" />
-        <SummaryCount label="상담 대기" value={dashboard.waitingInquiryCount} />
+        <SummaryCount label="문의대기" value={dashboard.waitingInquiryCount} />
       </div>
     </div>
   );
