@@ -25,7 +25,7 @@ export const sellerSidebarNavigation: SellerSidebarNavigationGroup[] = [
     title: "주문",
   },
   {
-    items: [{ href: "/seller/revenue", label: "매출분석", requiresStoreSetupComplete: true }],
+    items: [{ href: "/seller/revenue", label: "매출 분석", requiresStoreSetupComplete: true }],
     title: "정산",
   },
   {

@@ -39,6 +39,7 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
   const state = (searchParams.get("state") ?? "chat") as InquiryScreenState;
   const sheet = searchParams.get("sheet");
   const modal = searchParams.get("modal");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const chatScrollRef = useRef<HTMLElement>(null);
   const stomp = useSellerInquiryStomp(inquiryId, Boolean(inquiry));
   const sendConfirmationMutation =
@@ -204,6 +205,7 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
             : displayInquiry.buyerName
         }
         onBack={() => router.push("/seller/inquiries")}
+        onMenu={() => setSidebarOpen(true)}
       />
       <section
         className="min-h-0 flex-1 overflow-y-auto bg-surface-subtle pb-6"
@@ -232,6 +234,7 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
       {stomp.error ? (
         <p className="sr-only">채팅 연결 오류: {stomp.error.message}</p>
       ) : null}
+      <SellerSidebar onOpenChange={setSidebarOpen} open={sidebarOpen} />
     </SellerResponsiveFrame>
   );
 }
@@ -240,10 +243,12 @@ function ChatHeader({
   inquiry,
   title,
   onBack,
+  onMenu,
 }: {
   inquiry: InquiryDetail;
   title: string;
   onBack: () => void;
+  onMenu: () => void;
 }) {
   return (
     <header className="shrink-0 bg-surface-default">
@@ -262,6 +267,7 @@ function ChatHeader({
         <button
           aria-label="메뉴"
           className="flex size-11 items-center justify-center text-text-secondary"
+          onClick={onMenu}
           type="button"
         >
           <Menu aria-hidden="true" className="size-5" />
@@ -596,7 +602,7 @@ function OrderDocumentScreen({
       <DocumentHeader
         onBack={onBack}
         onMenu={() => setSidebarOpen(true)}
-        showMenu={!isOrderForm}
+        showMenu
         title={
           isOrderForm
             ? "주문서"

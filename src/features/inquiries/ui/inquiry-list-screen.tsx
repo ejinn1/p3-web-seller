@@ -1,8 +1,10 @@
 "use client";
 
-import { ChevronLeft } from "lucide-react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { Header } from "@/components/common/header";
+import { SellerSidebar } from "@/components/widgets/seller-sidebar";
 import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
 import { useSellerInquiriesQuery } from "@/features/inquiries/model/inquiry-queries";
 import type {
@@ -23,6 +25,7 @@ const tabs: Array<{ label: string; status?: InquiryStatus }> = [
 export function InquiryListScreen() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const activeStatus = parseInquiryStatus(searchParams.get("status"));
   const unreadOnly = searchParams.get("unreadOnly") === "true";
   const inquiriesQuery = useSellerInquiriesQuery({
@@ -33,20 +36,14 @@ export function InquiryListScreen() {
 
   return (
     <SellerResponsiveFrame className="bg-surface-default">
-      <header className="flex h-14 shrink-0 items-center justify-between bg-surface-default">
-        <button
-          aria-label="뒤로 가기"
-          className="flex size-11 items-center justify-center text-text-secondary"
-          type="button"
-        >
-          <ChevronLeft aria-hidden="true" className="size-5" />
-        </button>
-        <h1 className="text-[22px] leading-[30px] font-bold tracking-[-0.66px] text-text-primary">
-          문의 목록
-        </h1>
-        <div className="size-11" />
-      </header>
-      <div className="h-px shrink-0 bg-surface-subtle opacity-90" />
+      <Header
+        backHref="/seller/home"
+        backLabel="판매자 홈으로 돌아가기"
+        className="border-none"
+        onMenu={() => setSidebarOpen(true)}
+        showMenu
+        title="문의 목록"
+      />
       <section className="min-h-0 flex-1 overflow-y-auto bg-surface-default py-2">
         <div className="flex h-[68px] gap-2 overflow-x-auto px-4 pt-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {tabs.map((tab) => (
@@ -87,6 +84,7 @@ export function InquiryListScreen() {
           ))}
         </div>
       </section>
+      <SellerSidebar onOpenChange={setSidebarOpen} open={sidebarOpen} />
     </SellerResponsiveFrame>
   );
 }
