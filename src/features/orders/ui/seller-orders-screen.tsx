@@ -13,6 +13,7 @@ import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { BottomSheet } from "@/components/common/bottom-sheet";
 import { Header } from "@/components/common/header";
+import { SellerSidebar } from "@/components/widgets/seller-sidebar";
 import { SellerScreenShell } from "@/features/seller-shell/ui/seller-screen-shell";
 import {
   longTextSellerOrderFixture,
@@ -45,6 +46,7 @@ export function SellerOrdersScreen() {
   const searchParams = useSearchParams();
   const forcedState = parseForcedState(searchParams.get("state"));
   const [filterOpen, setFilterOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [customStep, setCustomStep] = useState<CustomDateStep>(null);
   const [customDateSelected, setCustomDateSelected] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState<FilterPreset | null>(
@@ -80,7 +82,11 @@ export function SellerOrdersScreen() {
 
   return (
     <SellerScreenShell className="bg-surface-default">
-      <OrdersHeader showMenu title="주문 내역" />
+      <OrdersHeader
+        onMenu={() => setSidebarOpen(true)}
+        showMenu
+        title="주문 내역"
+      />
       <section className="flex flex-1 flex-col gap-1 overflow-y-auto">
         <div className="flex h-[60px] items-center gap-2 px-4 pt-4 pb-2">
           <button
@@ -211,14 +217,17 @@ export function SellerOrdersScreen() {
         selected={customDateSelected}
         step={customStep ?? "start"}
       />
+      <SellerSidebar onOpenChange={setSidebarOpen} open={sidebarOpen} />
     </SellerScreenShell>
   );
 }
 
 function OrdersHeader({
+  onMenu,
   showMenu = false,
   title,
 }: {
+  onMenu?: () => void;
   showMenu?: boolean;
   title: string;
 }) {
@@ -227,6 +236,7 @@ function OrdersHeader({
       backHref="/seller/store-management"
       backLabel="이전 화면으로 돌아가기"
       className="border-none"
+      onMenu={onMenu}
       showMenu={showMenu}
       title={<span data-qa="orders-title">{title}</span>}
     />

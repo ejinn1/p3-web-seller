@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight, Menu, Plus, X } from "lucide-react";
+import { SellerSidebar } from "@/components/widgets/seller-sidebar";
 import { SellerScreenShell } from "@/features/seller-shell/ui/seller-screen-shell";
 import { useSellerInquiryQuery } from "@/features/inquiries/model/inquiry-queries";
 import { useSellerInquiryStomp } from "@/features/inquiries/model/inquiry-stomp";
@@ -495,6 +496,7 @@ function OrderDocumentScreen({
   onPrimary?: () => void;
 }) {
   const isOrderForm = mode === "order-form";
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const isDraft = mode === "confirmation-draft";
   const isPriced =
     mode === "confirmation-priced" ||
@@ -505,6 +507,7 @@ function OrderDocumentScreen({
     <SellerScreenShell className="h-dvh bg-surface-subtle">
       <DocumentHeader
         onBack={onBack}
+        onMenu={() => setSidebarOpen(true)}
         showMenu={!isOrderForm}
         title={
           isOrderForm
@@ -564,16 +567,19 @@ function OrderDocumentScreen({
           </button>
         </div>
       )}
+      <SellerSidebar onOpenChange={setSidebarOpen} open={sidebarOpen} />
     </SellerScreenShell>
   );
 }
 
 function DocumentHeader({
   onBack,
+  onMenu,
   showMenu,
   title,
 }: {
   onBack: () => void;
+  onMenu: () => void;
   showMenu: boolean;
   title: string;
 }) {
@@ -594,6 +600,7 @@ function DocumentHeader({
         <button
           aria-label="메뉴"
           className="flex size-11 items-center justify-center text-text-secondary"
+          onClick={onMenu}
           type="button"
         >
           <Menu aria-hidden="true" className="size-5" />
