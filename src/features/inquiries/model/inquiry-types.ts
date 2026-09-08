@@ -201,6 +201,7 @@ export type InquiryListItem = {
   lastMessageAt: string;
   lastMessageTimeLabel: string;
   status: InquiryStatus;
+  statusLabel: string;
   unreadCount: number;
   profileImageUrl: string | null;
 };

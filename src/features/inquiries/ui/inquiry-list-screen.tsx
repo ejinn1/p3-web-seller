@@ -7,6 +7,7 @@ import { Header } from "@/components/common/header";
 import { SellerSidebar } from "@/components/widgets/seller-sidebar";
 import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
 import { useCurrentUserQuery } from "@/features/auth/model/auth-queries";
+import { toInquiryStatusLabel } from "@/features/inquiries/model/inquiry-adapters";
 import { useSellerInquiryListStomp } from "@/features/inquiries/model/inquiry-list-stomp";
 import { useSellerInquiriesQuery } from "@/features/inquiries/model/inquiry-queries";
 import type {
@@ -18,11 +19,11 @@ import { cn } from "@/lib/utils";
 
 const tabs: Array<{ label: string; status?: InquiryStatus }> = [
   { label: "전체" },
-  { label: "접수대기", status: "WAITING" },
-  { label: "상담중", status: "IN_PROGRESS" },
-  { label: "결제완료", status: "PAID" },
-  { label: "픽업완료", status: "PICKED_UP" },
-  { label: "휴지통", status: "TRASH" },
+  { label: toInquiryStatusLabel("WAITING"), status: "WAITING" },
+  { label: toInquiryStatusLabel("IN_PROGRESS"), status: "IN_PROGRESS" },
+  { label: toInquiryStatusLabel("PAID"), status: "PAID" },
+  { label: toInquiryStatusLabel("PICKED_UP"), status: "PICKED_UP" },
+  { label: toInquiryStatusLabel("TRASH"), status: "TRASH" },
 ];
 
 export function InquiryListScreen() {
@@ -82,6 +83,13 @@ export function InquiryListScreen() {
             </button>
           ))}
         </div>
+        {inquiriesQuery.isLoading ? (
+          <InquiryListState message="문의 목록을 불러오는 중입니다." />
+        ) : inquiriesQuery.isError ? (
+          <InquiryListState message="문의 목록을 불러오지 못했습니다." />
+        ) : inquiries.length === 0 ? (
+          <InquiryListState message="아직 표시할 문의가 없습니다." />
+        ) : null}
         <div>
           {inquiries.map((inquiry, index) => (
             <InquiryRow
@@ -134,6 +142,9 @@ function InquiryRow({
                   주문서
                 </span>
               ) : null}
+              <span className="shrink-0 rounded-seller-sm bg-surface-subtle px-1.5 py-0.5 text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-secondary">
+                {inquiry.statusLabel}
+              </span>
             </div>
             <p className="truncate text-[16px] leading-6 font-normal tracking-[-0.32px] text-text-secondary">
               {inquiry.lastMessage}
@@ -145,6 +156,14 @@ function InquiryRow({
         </div>
       </div>
     </button>
+  );
+}
+
+function InquiryListState({ message }: { message: string }) {
+  return (
+    <div className="flex min-h-[360px] items-center justify-center px-4 text-center text-[16px] leading-6 font-normal tracking-[-0.32px] text-text-secondary">
+      {message}
+    </div>
   );
 }
 
