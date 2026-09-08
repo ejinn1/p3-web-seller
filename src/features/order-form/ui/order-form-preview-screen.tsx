@@ -19,7 +19,7 @@ export function OrderFormPreviewScreen() {
         <OrderFormHeader
           backHref="/seller/order-form"
           backLabel="주문서 양식으로 돌아가기"
-          showMenu={false}
+
           title="미리보기"
         />
       </div>

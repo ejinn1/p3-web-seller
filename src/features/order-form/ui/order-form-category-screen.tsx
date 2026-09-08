@@ -81,7 +81,7 @@ export function OrderFormCategoryScreen({
       <div className="bg-surface-default">
         <OrderFormHeader
           backHref="/seller/order-form"
-          showMenu={false}
+
           title={title}
         />
       </div>

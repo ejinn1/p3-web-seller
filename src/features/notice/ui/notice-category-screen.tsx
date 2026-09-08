@@ -51,7 +51,7 @@ export function NoticeCategoryScreen({ category }: NoticeCategoryScreenProps) {
       <div className="bg-surface-default">
         <OrderFormHeader
           backHref="/seller/notice"
-          showMenu={false}
+
           title={category.label}
         />
       </div>

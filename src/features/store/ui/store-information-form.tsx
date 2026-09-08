@@ -184,7 +184,7 @@ export function StoreInformationForm({
       <OrderFormHeader
         backHref="/seller/store-management"
         backLabel="스토어 관리로 돌아가기"
-        showMenu={false}
+
         title="스토어 정보"
       />
       <section className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pt-6 pb-4">

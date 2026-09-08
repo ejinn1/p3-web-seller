@@ -4,7 +4,7 @@ import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/common/button";
-import { Header } from "@/components/common/header";
+import { SellerMenuHeader } from "@/components/widgets/seller-menu-header";
 import { useUpdateStoreBusinessHoursMutation } from "@/features/store/model/store-mutations";
 import { useStoreBusinessHoursQuery } from "@/features/store/model/store-queries";
 import type {
@@ -210,7 +210,7 @@ function StoreBusinessHoursForm({
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-[768px] flex-col bg-surface-default text-text-primary">
-      <Header
+      <SellerMenuHeader
         backLabel="이전 화면으로 돌아가기"
         className="border-none"
         onBack={onBack}
@@ -349,7 +349,7 @@ export function StoreBusinessHoursScreen({
   if (businessHoursQuery.isPending) {
     return (
       <main className="mx-auto flex min-h-dvh w-full max-w-[768px] flex-col bg-surface-default text-text-primary">
-        <Header
+        <SellerMenuHeader
           backLabel="이전 화면으로 돌아가기"
           className="border-none"
           onBack={onBack}

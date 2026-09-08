@@ -4,7 +4,7 @@ import { type ReactNode } from "react";
 import { IconButton } from "@/components/common/icon-button";
 import { cn } from "@/lib/utils";
 
-type HeaderProps = {
+export type HeaderProps = {
   backHref?: string;
   backLabel?: string;
   className?: string;

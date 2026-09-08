@@ -18,7 +18,7 @@ export function NoticePreviewScreen() {
         <OrderFormHeader
           backHref="/seller/notice"
           backLabel="공지사항으로 돌아가기"
-          showMenu={false}
+
           title="미리보기"
         />
       </div>
