@@ -179,6 +179,7 @@ export type InquiryChatMessage =
       id: string;
       kind: "order-request";
       owner: "buyer";
+      receivedNoticeText: string;
       sentAt: string;
     }
   | {
