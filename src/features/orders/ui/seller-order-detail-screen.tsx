@@ -1,16 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/common/button";
 import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
 import { SellerSidebar } from "@/components/widgets/seller-sidebar";
-import {
-  findSellerOrderFixture,
-  longTextSellerOrderFixture,
-  nullStatusSellerOrderFixture,
-  sellerOrderViewFixtures,
-} from "@/features/orders/model/order-fixtures";
 import {
   useCompleteSellerOrderPickupMutation,
   useRefundSellerOrderMutation,
@@ -27,23 +21,17 @@ import {
   OrdersHeader,
 } from "@/features/orders/ui/seller-orders-screen";
 
-type ForcedState = "loading" | "empty" | "error" | "long" | "null-status" | null;
-
 export function SellerOrderDetailScreen({ orderId }: { orderId: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const forcedState = parseForcedState(searchParams.get("state"));
   const isSelectedView = searchParams.get("view") === "selected";
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const query = useSellerOrderQuery(orderId, !forcedState);
+  const query = useSellerOrderQuery(orderId);
   const pickupMutation = useCompleteSellerOrderPickupMutation(orderId);
   const refundMutation = useRefundSellerOrderMutation(orderId);
-  const view = useMemo(
-    () => getDetailForState(forcedState, query.data),
-    [forcedState, query.data],
-  );
-  const isLoading = forcedState === "loading" || query.isLoading;
-  const isError = forcedState === "error" || query.isError;
+  const view = query.data ? toDetailView(query.data) : null;
+  const isLoading = query.isLoading;
+  const isError = query.isError;
 
   return (
     <SellerResponsiveFrame className="bg-surface-subtle">
@@ -54,7 +42,9 @@ export function SellerOrderDetailScreen({ orderId }: { orderId: string }) {
         title="주문 내역"
       />
       <section className="flex flex-1 flex-col gap-8 overflow-y-auto px-4 pt-4 pb-[34px]">
-        {isLoading ? <DetailState message="주문 상세를 불러오고 있어요." /> : null}
+        {isLoading ? (
+          <DetailState message="주문 상세를 불러오고 있어요." />
+        ) : null}
         {isError ? (
           <DetailState
             message={
@@ -71,7 +61,10 @@ export function SellerOrderDetailScreen({ orderId }: { orderId: string }) {
           <OrderDetailCard selected={isSelectedView} view={view} />
         ) : null}
       </section>
-      {isSelectedView && !isLoading && !isError && view?.order.status === "PAID" ? (
+      {isSelectedView &&
+      !isLoading &&
+      !isError &&
+      view?.order.status === "PAID" ? (
         <div className="flex gap-2 bg-surface-subtle px-4 pt-4 pb-[34px]">
           <Button
             className="h-11 flex-1 rounded-seller-md border-border-default text-[15px] leading-5 font-semibold tracking-[-0.3px] !text-text-secondary"
@@ -108,7 +101,8 @@ function OrderDetailCard({
   selected: boolean;
   view: DetailView;
 }) {
-  const paymentDate = view.detail.paymentAttempt.completedAt ?? view.order.createdAt;
+  const paymentDate =
+    view.detail.paymentAttempt?.completedAt ?? view.order.createdAt;
   const rows =
     selected && view.viewModel.selectedRows
       ? view.viewModel.selectedRows
@@ -123,11 +117,16 @@ function OrderDetailCard({
         <div className="flex flex-col gap-1 whitespace-nowrap">
           <InfoRow
             label="결제일시"
-            value={view.viewModel.detailPaymentText ?? formatDateTime(paymentDate)}
+            value={
+              view.viewModel.detailPaymentText ?? formatDateTime(paymentDate)
+            }
           />
           <InfoRow
             label="픽업일시"
-            value={view.viewModel.detailPickupText ?? formatDateTime(view.order.pickupAt)}
+            value={
+              view.viewModel.detailPickupText ??
+              formatDateTime(view.order.pickupAt)
+            }
           />
           <InfoRow
             label="주문자"
@@ -148,7 +147,11 @@ function OrderDetailCard({
       <div className="h-px w-full bg-surface-subtle opacity-90" />
       <div className="flex flex-col gap-6">
         {rows.map((row) => (
-          <div className="flex flex-col gap-2" data-qa="orders-detail-row" key={row.label}>
+          <div
+            className="flex flex-col gap-2"
+            data-qa="orders-detail-row"
+            key={row.label}
+          >
             <p className="text-[13px] leading-4 font-medium tracking-[-0.13px] text-text-tertiary">
               {row.label}
             </p>
@@ -202,39 +205,7 @@ type DetailView = {
   viewModel: SellerOrderViewModel;
 };
 
-function getDetailForState(
-  state: ForcedState,
-  detail: SellerOrderDetail | undefined,
-): DetailView | null {
-  if (state === "empty" || state === "loading" || state === "error") {
-    return null;
-  }
-
-  if (state === "long") {
-    const fixture = findSellerOrderFixture(longTextSellerOrderFixture.id);
-    return {
-      detail: fixture.detail,
-      order: { ...fixture.detail.order, ...longTextSellerOrderFixture },
-      viewModel: longTextSellerOrderFixture,
-    };
-  }
-
-  if (state === "null-status") {
-    const fixture = findSellerOrderFixture(nullStatusSellerOrderFixture.id);
-    return {
-      detail: fixture.detail,
-      order: { ...fixture.detail.order, ...nullStatusSellerOrderFixture },
-      viewModel: nullStatusSellerOrderFixture,
-    };
-  }
-
-  if (!detail) {
-    return null;
-  }
-
-  const fixture = sellerOrderViewFixtures.find(
-    (order) => order.id === detail.order.id,
-  );
+function toDetailView(detail: SellerOrderDetail): DetailView {
   const detailRows =
     detail.optionRows.length > 0
       ? detail.optionRows.map((row) => ({
@@ -250,30 +221,12 @@ function getDetailForState(
     viewModel: {
       ...detail.order,
       startReferenceAssets: [],
-      buyerName: fixture?.buyerName ?? "고객",
-      detailBuyerName: fixture?.detailBuyerName,
-      detailPaymentText: fixture?.detailPaymentText,
-      detailPickupText: fixture?.detailPickupText,
+      buyerName: "고객",
       detailRows,
-      selectedRows: fixture?.selectedRows,
-      storeName: fixture?.storeName ?? "스토어",
-      thumbnailUrl: fixture?.thumbnailUrl ?? null,
+      storeName: "스토어",
+      thumbnailUrl: null,
     },
   };
-}
-
-function parseForcedState(value: string | null): ForcedState {
-  if (
-    value === "loading" ||
-    value === "empty" ||
-    value === "error" ||
-    value === "long" ||
-    value === "null-status"
-  ) {
-    return value;
-  }
-
-  return null;
 }
 
 function formatDateTime(value: string) {
@@ -316,7 +269,9 @@ function parseOptionRows(value: string) {
                 : typeof record.price === "number"
                   ? record.price
                   : null,
-            value: String(record.value ?? record.answer ?? record.content ?? ""),
+            value: String(
+              record.value ?? record.answer ?? record.content ?? "",
+            ),
           };
         }
 

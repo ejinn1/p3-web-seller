@@ -7,18 +7,11 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
-import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { BottomSheet } from "@/components/common/bottom-sheet";
 import { SellerSidebar } from "@/components/widgets/seller-sidebar";
 import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
-import {
-  orderCalendarDayRevenue,
-  orderCalendarDisplayMeta,
-  orderCalendarMonthlyMetrics,
-  orderCalendarOptionLines,
-} from "@/features/orders/model/order-calendar-fixtures";
 import {
   useSellerOrderCalendarMonthQuery,
   useSellerOrderDetailQuery,
@@ -156,7 +149,7 @@ export function SellerOrderCalendarScreen() {
               }
               year={year}
             />
-            <MonthlySummary />
+            <MonthlySummary days={calendar.days} />
           </div>
         </section>
         <OrderCalendarGrid
@@ -287,19 +280,29 @@ function MonthPickerButton({
   );
 }
 
-function MonthlySummary() {
+function MonthlySummary({ days }: { days: OrderCalendarDay[] }) {
+  const orders = days.flatMap((day) => day.orders);
+  const revenueAmount = orders
+    .filter((order) => order.status === "PAID" || order.status === "PICKED_UP")
+    .reduce((sum, order) => sum + order.paidAmount, 0);
+  const canceledAmount = orders
+    .filter(
+      (order) =>
+        order.status === "CANCELED" ||
+        order.status === "REFUNDED" ||
+        order.status === "REFUND_PROCESSING",
+    )
+    .reduce((sum, order) => sum + order.paidAmount, 0);
+
   return (
     <div
       className="-mx-px flex w-[calc(100%+2px)] items-start gap-1 text-center"
       data-testid="calendar-metrics-row"
     >
-      <SummaryMetric
-        amount={orderCalendarMonthlyMetrics.revenueAmount}
-        label="이번 달 매출"
-      />
+      <SummaryMetric amount={revenueAmount} label="이번 달 매출" />
       <div className="h-[54px] w-px shrink-0 bg-surface-subtle opacity-90" />
       <SummaryMetric
-        amount={orderCalendarMonthlyMetrics.canceledAmount}
+        amount={canceledAmount}
         label="이번 달 취소"
         tone="error"
       />
@@ -393,7 +396,10 @@ function OrderCalendarGrid({
             const isSelected =
               !gridDate.isOutsideMonth && selectedDate === gridDate.date;
             const hasOrders = Boolean(day?.orders.length);
-            const revenue = orderCalendarDayRevenue[gridDate.date];
+            const revenue = day?.orders.reduce(
+              (sum, order) => sum + order.paidAmount,
+              0,
+            );
 
             return (
               <div
@@ -433,7 +439,7 @@ function OrderCalendarGrid({
                       : "text-text-secondary",
                   )}
                 >
-                  {revenue === 0 ? "0" : "000,000"}
+                  {revenue === undefined ? "" : formatCompactAmount(revenue)}
                 </span>
               </div>
             );
@@ -532,8 +538,6 @@ function OrderListItem({
   onClick: () => void;
   order: OrderCalendarItem;
 }) {
-  const meta = orderCalendarDisplayMeta[order.orderId];
-
   return (
     <button
       className={cn(
@@ -544,19 +548,13 @@ function OrderListItem({
       onClick={onClick}
       type="button"
     >
-      <Image
-        alt=""
-        className="size-[70px] shrink-0 rounded-seller-sm object-cover"
-        height={70}
-        src={meta?.thumbnailUrl ?? "/revenue/cake-plain.png"}
-        width={70}
-      />
+      <div className="size-[70px] shrink-0 rounded-seller-sm bg-surface-subtle" />
       <div className="flex h-[70px] min-w-0 flex-1 flex-col items-start justify-between whitespace-nowrap">
         <p className="text-[18px] leading-6 font-semibold tracking-[-0.54px] text-text-primary">
           {formatPickupTime(order.pickupTime)}
         </p>
         <p className="min-w-full overflow-hidden text-[13px] leading-[18px] font-normal tracking-[-0.13px] text-ellipsis text-text-tertiary">
-          8월 19일 · {meta?.buyerName ?? "고객"} 님
+          {formatKoreanDate(order.pickupDate)} · 고객 님
         </p>
         <p className="text-[15px] leading-[22px] font-semibold tracking-[-0.15px] text-text-secondary">
           {formatWon(order.paidAmount)}
@@ -585,7 +583,7 @@ function SellerOrderDetailView({
           price: row.amount === null ? "" : formatOptionPrice(row.amount),
           value: row.value,
         }))
-      : orderCalendarOptionLines;
+      : parseOptionRows(order?.optionSummary ?? "");
 
   return (
     <SellerResponsiveFrame className="bg-surface-subtle">
@@ -621,21 +619,16 @@ function SellerOrderDetailView({
                   <DetailInfoRow
                     label="주문자"
                     testId="calendar-detail-row-buyer"
-                    value="이동후"
+                    value="정보 없음"
                   />
                   <DetailInfoRow
                     label="스토어명"
                     testId="calendar-detail-row-store"
-                    value="위하다"
+                    value="정보 없음"
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <span
-                    className="inline-flex h-6 w-[62px] items-center justify-center rounded-seller-sm bg-status-success-bg px-2 py-1 text-[13px] leading-4 font-medium tracking-[-0.13px] text-status-success"
-                    data-testid="calendar-paid-badge"
-                  >
-                    결제완료
-                  </span>
+                  <CalendarOrderStatusBadge status={order.status} />
                   <p
                     className="text-[22px] leading-[30px] font-bold tracking-[-0.66px] text-text-primary"
                     data-testid="calendar-detail-total"
@@ -677,6 +670,68 @@ function SellerOrderDetailView({
       </section>
     </SellerResponsiveFrame>
   );
+}
+
+function CalendarOrderStatusBadge({
+  status,
+}: {
+  status: OrderCalendarItem["status"];
+}) {
+  const labels: Record<OrderCalendarItem["status"], string> = {
+    PAID: "결제완료",
+    PICKED_UP: "픽업완료",
+    CANCEL_REQUESTED: "취소요청",
+    CANCELED: "취소완료",
+    REFUND_PROCESSING: "환불처리중",
+    REFUNDED: "환불완료",
+  };
+
+  return (
+    <span
+      className="inline-flex h-6 items-center justify-center rounded-seller-sm bg-status-success-bg px-2 py-1 text-[13px] leading-4 font-medium tracking-[-0.13px] text-status-success"
+      data-testid="calendar-paid-badge"
+    >
+      {labels[status]}
+    </span>
+  );
+}
+
+function parseOptionRows(value: string) {
+  if (!value.trim()) {
+    return [];
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(value);
+    const items = Array.isArray(parsed)
+      ? parsed
+      : typeof parsed === "object" && parsed !== null
+        ? Object.entries(parsed).map(([label, itemValue]) => ({
+            label,
+            value: itemValue,
+          }))
+        : [];
+
+    return items.map((item, index) => {
+      const row =
+        typeof item === "object" && item !== null
+          ? (item as Record<string, unknown>)
+          : {};
+      const amount = typeof row.amount === "number" ? row.amount : null;
+
+      return {
+        label: String(row.label ?? `옵션 ${index + 1}`),
+        price: amount === null ? "" : formatOptionPrice(amount),
+        value: String(row.value ?? row.answer ?? row.content ?? ""),
+      };
+    });
+  } catch {
+    return [{ label: "옵션", price: "", value }];
+  }
+}
+
+function formatCompactAmount(amount: number) {
+  return amount.toLocaleString("ko-KR");
 }
 
 function DetailInfoRow({
@@ -722,7 +777,10 @@ function MonthSelectSheet({
   );
 
   return (
-    <BottomSheet onOpenChange={(nextOpen) => !nextOpen && onClose()} open={open}>
+    <BottomSheet
+      onOpenChange={(nextOpen) => !nextOpen && onClose()}
+      open={open}
+    >
       <div
         className="flex w-full flex-col items-center gap-8"
         data-testid="calendar-month-sheet"
