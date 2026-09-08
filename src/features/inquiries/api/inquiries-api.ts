@@ -9,6 +9,7 @@ import type {
   InquiryListApiItem,
   InquiryListItem,
   InquiryOrderConfirmationResponse,
+  InquiryOrderConfirmationPreviewResponse,
   InquiryOrderFormSubmissionResponse,
   InquiryTimelinePageResponse,
   SellerInquiryListParams,
@@ -62,15 +63,25 @@ export async function getSellerInquiry(
   const status = [...listItems, ...trashItems].find(
     (item) => item.inquiryId === inquiryId,
   )?.status;
+  const preview =
+    submissions.length && confirmations.length === 0
+      ? await getSellerOrderConfirmationPreview(inquiryId)
+      : null;
 
   return toInquiryDetail({
     confirmations,
     detail,
+    preview,
     submissions,
     status,
     timeline: timeline.items,
   });
 }
+
+export const getSellerOrderConfirmationPreview = (inquiryId: string) =>
+  getJson<InquiryOrderConfirmationPreviewResponse>(
+    `/seller/inquiries/${inquiryId}/confirmations/preview`,
+  );
 
 export const markSellerInquiryRead = (inquiryId: string) =>
   sendJson<void>(`/seller/inquiries/${inquiryId}/read`, "PATCH");

@@ -1,13 +1,15 @@
 import type {
   InquiryOrderConfirmation,
-  InquiryOrderOption,
   SendSellerOrderConfirmationAdditionalItem,
+  SendSellerOrderConfirmationConfirmedOptionPrice,
   SendSellerOrderConfirmationRequest,
 } from "@/features/inquiries/model/inquiry-types";
 
 export type InquiryOrderPriceCalculation = {
   additionalAmount: number;
   additionalItems: SendSellerOrderConfirmationAdditionalItem[];
+  confirmedAmount: number;
+  confirmedOptionPrices: SendSellerOrderConfirmationConfirmedOptionPrice[];
   baseAmount: number;
   missingOptionIds: string[];
   totalAmount: number;
@@ -19,7 +21,7 @@ export function calculateInquiryOrderPrice(
 ): InquiryOrderPriceCalculation {
   const baseAmount = toValidAmount(order.basePrice) ?? 0;
   const missingOptionIds: string[] = [];
-  const additionalItems = order.options.flatMap((option) => {
+  const confirmedOptionPrices = order.options.flatMap((option) => {
     if (!option.needsPrice) {
       return [];
     }
@@ -31,19 +33,34 @@ export function calculateInquiryOrderPrice(
       return [];
     }
 
-    return [toAdditionalItem(option, amount)];
+    if (!option.optionGroupId || !option.optionValue) {
+      missingOptionIds.push(option.id);
+      return [];
+    }
+
+    return [
+      {
+        amount,
+        optionGroupId: option.optionGroupId,
+        optionValue: option.optionValue,
+      },
+    ];
   });
-  const additionalAmount = additionalItems.reduce(
+  const confirmedAmount = confirmedOptionPrices.reduce(
     (sum, item) => sum + item.amount,
     0,
   );
+  const additionalItems: SendSellerOrderConfirmationAdditionalItem[] = [];
+  const additionalAmount = 0;
 
   return {
     additionalAmount,
     additionalItems,
     baseAmount,
+    confirmedAmount,
+    confirmedOptionPrices,
     missingOptionIds,
-    totalAmount: baseAmount + additionalAmount,
+    totalAmount: baseAmount + confirmedAmount + additionalAmount,
   };
 }
 
@@ -81,7 +98,7 @@ export function buildSendOrderConfirmationRequest(
   const calculation = calculateInquiryOrderPrice(order, priceDrafts);
 
   if (calculation.missingOptionIds.length > 0) {
-    throw new Error("추가 옵션 금액을 모두 입력해주세요.");
+    throw new Error("가격이 필요한 옵션의 금액을 모두 입력해주세요.");
   }
 
   if (calculation.totalAmount <= 0) {
@@ -97,6 +114,7 @@ export function buildSendOrderConfirmationRequest(
   return {
     additionalItems: calculation.additionalItems,
     amount: calculation.totalAmount,
+    confirmedOptionPrices: calculation.confirmedOptionPrices,
     confirmationTitle: order.confirmationTitle || "주문확인서",
     orderFormSubmissionId: order.orderFormSubmissionId,
     pickupAt: order.pickupAt,
@@ -117,13 +135,6 @@ export function parsePriceInput(value: string | undefined) {
 
 export function formatInquiryPrice(price: number) {
   return `${price.toLocaleString("ko-KR")}원`;
-}
-
-function toAdditionalItem(
-  option: InquiryOrderOption,
-  amount: number,
-): SendSellerOrderConfirmationAdditionalItem {
-  return { amount, label: option.label, value: option.value };
 }
 
 function toValidAmount(value: number | undefined) {

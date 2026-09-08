@@ -24,10 +24,19 @@ export function InquiryOrderCard({
     mode === "confirmation-priced" ||
     mode === "confirmation-view" ||
     mode === "order-history";
+  const isConfirmationEditor =
+    mode === "confirmation-draft" || mode === "confirmation-priced";
 
   return (
     <article className="w-full rounded-seller-sm bg-surface-default px-4 py-8 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
-      <div className="flex justify-between text-[22px] leading-[30px] font-bold tracking-[-0.66px] text-text-primary">
+      <div
+        className={cn(
+          "flex justify-between font-bold text-text-primary",
+          isConfirmationEditor
+            ? "text-[16px] leading-6 tracking-[-0.32px]"
+            : "text-[22px] leading-[30px] tracking-[-0.66px]",
+        )}
+      >
         <p>{order.pickupDate}</p>
         <p>{order.pickupTime}</p>
       </div>
@@ -48,8 +57,18 @@ export function InquiryOrderCard({
       </div>
       {showFinalTotal ? (
         <>
-          <div className="h-px bg-surface-subtle opacity-90" />
-          <div className="flex items-center justify-between text-[22px] leading-[30px] font-bold tracking-[-0.66px] text-text-primary">
+          <div
+            className={cn(
+              "h-px bg-surface-subtle opacity-90",
+              isConfirmationEditor && "mt-8",
+            )}
+          />
+          <div
+            className={cn(
+              "flex items-center justify-between text-[22px] leading-[30px] font-bold tracking-[-0.66px] text-text-primary",
+              isConfirmationEditor && "pt-8",
+            )}
+          >
             <p>최종 가격</p>
             <p>{formatInquiryPrice(order.totalPrice)}</p>
           </div>
@@ -177,7 +196,14 @@ function ConfirmationOptionRow({
         onClick={onOpenPrice}
         type="button"
       >
-        <span className="text-[18px] leading-6 font-semibold tracking-[-0.54px] text-text-primary">
+        <span
+          className={cn(
+            "font-semibold text-text-primary",
+            mode === "confirmation-draft" || mode === "confirmation-priced"
+              ? "text-[15px] leading-5 tracking-[-0.3px]"
+              : "text-[18px] leading-6 tracking-[-0.54px]",
+          )}
+        >
           {option.value}
         </span>
         {showPrice ? (
