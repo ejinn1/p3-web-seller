@@ -13,6 +13,7 @@ import { OrderFormHeader } from "@/features/order-form/ui/order-form-header";
 import { OrderFormConfiguredOptionCard } from "@/features/order-form/ui/order-form-configured-option-card";
 import { OrderFormOptionCard } from "@/features/order-form/ui/order-form-option-card";
 import { OrderFormOptionSheet } from "@/features/order-form/ui/order-form-option-sheet";
+import { getSellerBackHref } from "@/lib/navigation/seller-back-routes";
 
 type OrderFormCategoryScreenProps = {
   category: OrderFormCategorySlug;
@@ -80,7 +81,7 @@ export function OrderFormCategoryScreen({
     <main className="mx-auto flex min-h-dvh w-full max-w-[768px] flex-col bg-surface-subtle text-text-primary">
       <div className="bg-surface-default">
         <OrderFormHeader
-          backHref="/seller/order-form"
+          backHref={getSellerBackHref("orderFormCategory")}
 
           title={title}
         />

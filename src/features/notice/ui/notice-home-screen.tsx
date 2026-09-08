@@ -9,6 +9,7 @@ import { useUpdateNoticesMutation } from "@/features/notice/model/notice-mutatio
 import { toUpdateNoticesInput } from "@/features/notice/model/notice-response";
 import { useStoreManagementStatusQuery } from "@/features/store/model/store-queries";
 import { OrderFormHeader } from "@/features/order-form/ui/order-form-header";
+import { getSellerBackHref } from "@/lib/navigation/seller-back-routes";
 
 export function NoticeHomeScreen() {
   const router = useRouter();
@@ -19,7 +20,7 @@ export function NoticeHomeScreen() {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-[768px] flex-col bg-surface-default text-text-primary">
-      <OrderFormHeader backHref="/seller/store-management" />
+      <OrderFormHeader backHref={getSellerBackHref("notice")} />
       <section className="flex flex-1 flex-col gap-8 overflow-y-auto px-4 pt-6 pb-4">
         <div className="space-y-2">
           <h1 className="text-seller-display-lg font-bold tracking-[-0.84px] whitespace-pre-line">
@@ -64,7 +65,7 @@ export function NoticeHomeScreen() {
             disabled={updateNoticesMutation.isPending}
             onClick={() =>
               updateNoticesMutation.mutate(toUpdateNoticesInput(itemsByType), {
-                onSuccess: () => router.push("/seller/store-management"),
+                onSuccess: () => router.push(getSellerBackHref("notice")),
               })
             }
             size="md"

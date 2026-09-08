@@ -22,6 +22,7 @@ import type {
   RevenueSummarySection,
   RevenueView,
 } from "@/features/revenue/model/revenue-types";
+import { getSellerBackHref } from "@/lib/navigation/seller-back-routes";
 import { cn } from "@/lib/utils";
 
 type RevenueScreenProps = {
@@ -93,7 +94,7 @@ export function RevenueScreen({ initialView }: RevenueScreenProps) {
       <>
         <SellerResponsiveFrame data-revenue-frame={view}>
           <RevenueHeader
-            onBack={() => goToView("home")}
+            onBack={() => router.push(getSellerBackHref("revenueDetail"))}
             onMenu={() => setSidebarOpen(true)}
             showMenu
             title={detailTitles[view]}
@@ -115,7 +116,7 @@ export function RevenueScreen({ initialView }: RevenueScreenProps) {
   return (
     <SellerResponsiveFrame data-revenue-frame="home">
       <RevenueHeader
-        onBack={() => router.push("/seller/home")}
+        onBack={() => router.push(getSellerBackHref("revenue"))}
         onMenu={() => setSidebarOpen(true)}
         showMenu
         title="매출 분석"

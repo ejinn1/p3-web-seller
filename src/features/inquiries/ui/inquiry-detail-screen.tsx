@@ -23,6 +23,7 @@ import { InquiryChatScreen } from "@/features/inquiries/ui/inquiry-chat-screen";
 import { InquiryOrderDocumentScreen } from "@/features/inquiries/ui/inquiry-order-document-screen";
 import { InquiryPaymentRequestModal } from "@/features/inquiries/ui/inquiry-payment-request-modal";
 import { InquiryPriceSheet } from "@/features/inquiries/ui/inquiry-price-sheet";
+import { getSellerBackHref } from "@/lib/navigation/seller-back-routes";
 
 const EMPTY_PRICE_DRAFTS: Record<string, number> = {};
 
@@ -197,7 +198,7 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
       isConnected={
         stomp.isConnected || !process.env.NEXT_PUBLIC_P3_API_BASE_URL
       }
-      onBack={() => router.push("/seller/inquiries")}
+      onBack={() => router.push(getSellerBackHref("inquiryDetail"))}
       onOpenOrderConfirmation={() => navigate("confirmation-view")}
       onOpenOrderForm={() => navigate("order-form")}
       onOpenOrderHistory={() => navigate("order-history")}

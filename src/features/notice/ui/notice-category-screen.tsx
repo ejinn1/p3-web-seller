@@ -11,6 +11,7 @@ import {
 import { useNoticeDraftStore } from "@/features/notice/model/notice-draft";
 import { NoticeItemInput } from "@/features/notice/ui/notice-item-input";
 import { OrderFormHeader } from "@/features/order-form/ui/order-form-header";
+import { getSellerBackHref } from "@/lib/navigation/seller-back-routes";
 
 type NoticeCategoryScreenProps = {
   category: NoticeCategory;
@@ -50,7 +51,7 @@ export function NoticeCategoryScreen({ category }: NoticeCategoryScreenProps) {
     <main className="mx-auto flex min-h-dvh w-full max-w-[768px] flex-col bg-surface-subtle text-text-primary">
       <div className="bg-surface-default">
         <OrderFormHeader
-          backHref="/seller/notice"
+          backHref={getSellerBackHref("noticeCategory")}
 
           title={category.label}
         />
