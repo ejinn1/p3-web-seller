@@ -10,16 +10,10 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { BottomSheet } from "@/components/common/bottom-sheet";
 import { Header } from "@/components/common/header";
 import { SellerSidebar } from "@/components/widgets/seller-sidebar";
 import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
-import {
-  longTextSellerOrderFixture,
-  nullStatusSellerOrderFixture,
-  sellerOrderViewFixtures,
-} from "@/features/orders/model/order-fixtures";
 import { useSellerOrdersQuery } from "@/features/orders/model/order-queries";
 import type {
   SellerOrderListItem,
@@ -28,8 +22,6 @@ import type {
 } from "@/features/orders/model/order-types";
 import { cn } from "@/lib/utils";
 
-type ForcedState =
-  "loading" | "empty" | "error" | "long" | "null-status" | null;
 type FilterPreset = "1개월" | "3개월" | "6개월" | "직접선택";
 type CustomDateStep = "start" | "end" | "done" | null;
 
@@ -43,8 +35,6 @@ const statusLabels: Record<SellerOrderStatus, string> = {
 };
 
 export function SellerOrdersScreen() {
-  const searchParams = useSearchParams();
-  const forcedState = parseForcedState(searchParams.get("state"));
   const [filterOpen, setFilterOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [customStep, setCustomStep] = useState<CustomDateStep>(null);
@@ -63,18 +53,18 @@ export function SellerOrdersScreen() {
         startDate: toIsoDate(selectedRange.start),
       }
     : {};
-  const query = useSellerOrdersQuery(orderListParams, !forcedState);
+  const query = useSellerOrdersQuery(orderListParams);
 
   const orders = useMemo(
-    () => getOrdersForState(forcedState, query.data),
-    [forcedState, query.data],
+    () => (query.data ?? []).map(toOrderViewModel),
+    [query.data],
   );
   const groupedOrders = useMemo(
     () => groupOrdersByPaymentDate(orders),
     [orders],
   );
-  const isLoading = forcedState === "loading" || query.isLoading;
-  const isError = forcedState === "error" || query.isError;
+  const isLoading = query.isLoading;
+  const isError = query.isError;
 
   const activeFilterLabel = selectedPreset
     ? `${selectedRange.start} ~ ${selectedRange.end}`
@@ -316,7 +306,10 @@ function DateFilterSheet({
   const disabled = !selectedPreset;
 
   return (
-    <BottomSheet onOpenChange={(nextOpen) => !nextOpen && onClose()} open={open}>
+    <BottomSheet
+      onOpenChange={(nextOpen) => !nextOpen && onClose()}
+      open={open}
+    >
       <div
         className="flex w-full flex-col items-center gap-8"
         data-qa="orders-filter-sheet"
@@ -607,40 +600,16 @@ function OrdersState({ message }: { message: string }) {
   );
 }
 
-function getOrdersForState(
-  state: ForcedState,
-  apiOrders: SellerOrderListItem[] | undefined,
-) {
-  if (state === "empty" || state === "loading" || state === "error") {
-    return [];
-  }
-
-  if (state === "long") {
-    return [longTextSellerOrderFixture, ...sellerOrderViewFixtures.slice(1, 3)];
-  }
-
-  if (state === "null-status") {
-    return [
-      nullStatusSellerOrderFixture,
-      ...sellerOrderViewFixtures.slice(1, 3),
-    ];
-  }
-
-  return (apiOrders ?? []).map(toOrderViewModel);
-}
-
 function toOrderViewModel(order: SellerOrderListItem): SellerOrderViewModel {
-  const fixture = sellerOrderViewFixtures.find((item) => item.id === order.id);
-
   return {
     ...order,
-    buyerName: fixture?.buyerName ?? "고객",
-    detailRows: fixture?.detailRows ?? [
+    buyerName: "고객",
+    detailRows: [
       { label: "디자인", value: order.menuName, price: null },
       { label: "옵션", value: order.optionSummary, price: null },
     ],
-    storeName: fixture?.storeName ?? "스토어",
-    thumbnailUrl: fixture?.thumbnailUrl ?? null,
+    storeName: "스토어",
+    thumbnailUrl: null,
   };
 }
 
@@ -656,20 +625,6 @@ function groupOrdersByPaymentDate(orders: SellerOrderViewModel[]) {
     label,
     orders: groupOrders,
   }));
-}
-
-function parseForcedState(value: string | null): ForcedState {
-  if (
-    value === "loading" ||
-    value === "empty" ||
-    value === "error" ||
-    value === "long" ||
-    value === "null-status"
-  ) {
-    return value;
-  }
-
-  return null;
 }
 
 export {

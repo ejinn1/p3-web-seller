@@ -26,7 +26,7 @@ export function useSellerOrderCalendarMonthQuery({
 export function useSellerOrderDetailQuery(orderId: string | null) {
   return useQuery({
     enabled: Boolean(orderId),
-    queryFn: () => getSellerOrderDetail(orderId),
+    queryFn: () => getSellerOrderDetail(orderId as string),
     queryKey: orderCalendarKeys.detail(orderId),
   });
 }

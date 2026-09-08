@@ -34,7 +34,9 @@ export function InquiryListScreen() {
     status: activeStatus,
     unreadOnly,
   });
-  const currentUserQuery = useCurrentUserQuery(Boolean(process.env.NEXT_PUBLIC_P3_API_BASE_URL));
+  const currentUserQuery = useCurrentUserQuery(
+    Boolean(process.env.NEXT_PUBLIC_P3_API_BASE_URL),
+  );
   useSellerInquiryListStomp(currentUserQuery.data?.userId);
   const inquiries = inquiriesQuery.data ?? [];
 
@@ -49,7 +51,7 @@ export function InquiryListScreen() {
         title="문의 목록"
       />
       <section className="min-h-0 flex-1 overflow-y-auto bg-surface-default py-2">
-        <div className="flex h-[68px] gap-2 overflow-x-auto px-4 pt-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex h-[68px] [scrollbar-width:none] gap-2 overflow-x-auto px-4 pt-4 pb-2 [&::-webkit-scrollbar]:hidden">
           {tabs.map((tab) => (
             <button
               className={cn(
@@ -69,7 +71,9 @@ export function InquiryListScreen() {
                 }
 
                 const query = nextParams.toString();
-                router.push(query ? `/seller/inquiries?${query}` : "/seller/inquiries");
+                router.push(
+                  query ? `/seller/inquiries?${query}` : "/seller/inquiries",
+                );
               }}
               type="button"
             >

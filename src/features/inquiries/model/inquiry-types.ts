@@ -1,9 +1,5 @@
 export type InquiryStatus =
-  | "WAITING"
-  | "IN_PROGRESS"
-  | "PAID"
-  | "PICKED_UP"
-  | "TRASH";
+  "WAITING" | "IN_PROGRESS" | "PAID" | "PICKED_UP" | "TRASH";
 
 export type InquiryTimelineItemType =
   | "MESSAGE"
@@ -214,6 +210,7 @@ export type InquiryChatMessage =
     };
 
 export type InquiryOrderOption = {
+  amount: number | null;
   id: string;
   label: string;
   value: string;
@@ -223,6 +220,7 @@ export type InquiryOrderOption = {
 };
 
 export type InquiryOrderConfirmation = {
+  basePrice: number;
   buyerName: string;
   buyerPhone: string;
   confirmationTitle: string;
@@ -237,6 +235,7 @@ export type InquiryOrderConfirmation = {
 };
 
 export type InquiryDetail = {
+  createdAt: string;
   id: string;
   buyerName: string;
   chatInfo: string;
