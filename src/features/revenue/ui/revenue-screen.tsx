@@ -29,6 +29,11 @@ type RevenueScreenProps = {
   initialView: RevenueView;
 };
 
+type RevenueRange = {
+  startDate: string;
+  endDate: string;
+};
+
 const periods: { id: RevenuePeriod; label: string }[] = [
   { id: "today", label: "오늘" },
   { id: "week", label: "1주" },
@@ -49,13 +54,17 @@ export function RevenueScreen({ initialView }: RevenueScreenProps) {
   const searchParams = useSearchParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const activePeriod = parsePeriod(searchParams.get("period"));
-  const range = rangeForPeriod(activePeriod);
-  const { data: revenue } = useSellerRevenueQuery(range.startDate, range.endDate);
+  const customRange = parseCustomRange(searchParams);
+  const range = rangeForPeriod(activePeriod, customRange);
+  const { data: revenue } = useSellerRevenueQuery(
+    range.startDate,
+    range.endDate,
+  );
   const view = initialView;
   const orderStatuses = statusesForView(view);
   const ordersQuery = useSellerOrdersQuery(
     {
-      dateBasis: view === "home" ? "PAID_AT" : "CREATED_AT",
+      dateBasis: "PAID_AT",
       endDate: range.endDate,
       startDate: range.startDate,
       status: orderStatuses,
@@ -65,8 +74,28 @@ export function RevenueScreen({ initialView }: RevenueScreenProps) {
   const orders = ordersQuery.data ?? [];
   const summarySections = toSummarySections(revenue, orders);
 
-  const goToView = (nextView: RevenueView) => {
-    router.push(nextView === "home" ? "/seller/revenue" : `/seller/revenue?view=${nextView}`);
+  const goToView = (
+    nextView: RevenueView,
+    options: { preservePeriod?: boolean } = {},
+  ) => {
+    router.push(
+      buildRevenueHref({
+        customRange,
+        period: activePeriod,
+        preservePeriod: options.preservePeriod ?? true,
+        view: nextView,
+      }),
+    );
+  };
+
+  const selectPeriod = (period: RevenuePeriod) => {
+    router.push(
+      buildRevenueHref({
+        customRange: period === "custom" ? range : undefined,
+        period,
+        view,
+      }),
+    );
   };
 
   if (view === "cancel-history") {
@@ -94,17 +123,18 @@ export function RevenueScreen({ initialView }: RevenueScreenProps) {
       <>
         <SellerResponsiveFrame data-revenue-frame={view}>
           <RevenueHeader
-            onBack={() => router.push(getSellerBackHref("revenueDetail"))}
+            onBack={() => goToView("home")}
             onMenu={() => setSidebarOpen(true)}
             showMenu
             title={detailTitles[view]}
           />
           <RevenueDetailView
             lines={getLinesForView(view, orders)}
-            onClearFilter={() => goToView("home")}
+            onClearFilter={() => goToView("home", { preservePeriod: false })}
             onSelectLine={() =>
               view === "cancellations" ? goToView("cancel-history") : undefined
             }
+            range={range}
             tone={view === "cancellations" ? "danger" : "default"}
           />
         </SellerResponsiveFrame>
@@ -122,10 +152,7 @@ export function RevenueScreen({ initialView }: RevenueScreenProps) {
         title="매출 분석"
       />
       <section className="flex flex-col" data-node-id="1290:16176">
-        <PeriodTabs
-          activePeriod={activePeriod}
-          onSelect={(period) => router.push(`/seller/revenue?period=${period}`)}
-        />
+        <PeriodTabs activePeriod={activePeriod} onSelect={selectPeriod} />
         <div className="mt-1 flex h-14 items-center px-4" data-node-id="1326:22954">
           <h2
             className="text-[18px] leading-[24px] font-semibold tracking-[-0.54px]"
@@ -331,11 +358,13 @@ function RevenueDetailView({
   lines,
   onClearFilter,
   onSelectLine,
+  range,
   tone,
 }: {
   lines: RevenueOrderLine[];
   onClearFilter: () => void;
   onSelectLine?: () => void;
+  range: RevenueRange;
   tone: "default" | "danger";
 }) {
   return (
@@ -356,7 +385,9 @@ function RevenueDetailView({
           onClick={onClearFilter}
           type="button"
         >
-          <span data-typography="revenue-date-chip">조회기간</span>
+          <span data-typography="revenue-date-chip">
+            {formatCompactRangeLabel(range.startDate, range.endDate)}
+          </span>
           <span className="flex size-12 items-center justify-center" aria-hidden="true">
             <X className="size-4" strokeWidth={2} />
           </span>
@@ -368,7 +399,7 @@ function RevenueDetailView({
             className="text-[15px] leading-[22px] font-semibold tracking-[-0.15px]"
             data-typography="revenue-detail-date"
           >
-            주문 내역
+            {formatRangeLabel(range.startDate, range.endDate)}
           </h2>
         </div>
         <div className="flex flex-col gap-2">
@@ -654,13 +685,83 @@ function parsePeriod(value: string | null): RevenuePeriod {
   return "today";
 }
 
-function rangeForPeriod(period: RevenuePeriod) {
+function parseCustomRange(
+  searchParams: URLSearchParams,
+): RevenueRange | undefined {
+  const startDate = parseIsoDateParam(searchParams.get("startDate"));
+  const endDate = parseIsoDateParam(searchParams.get("endDate"));
+
+  if (!startDate || !endDate || startDate > endDate) {
+    return undefined;
+  }
+
+  return { endDate, startDate };
+}
+
+function parseIsoDateParam(value: string | null) {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return null;
+  }
+
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+
+  if (
+    Number.isNaN(date.getTime()) ||
+    date.getFullYear() !== year ||
+    date.getMonth() + 1 !== month ||
+    date.getDate() !== day
+  ) {
+    return null;
+  }
+
+  return value;
+}
+
+function buildRevenueHref({
+  customRange,
+  period,
+  preservePeriod = true,
+  view,
+}: {
+  customRange?: RevenueRange;
+  period: RevenuePeriod;
+  preservePeriod?: boolean;
+  view: RevenueView;
+}) {
+  const searchParams = new URLSearchParams();
+
+  if (view !== "home") {
+    searchParams.set("view", view);
+  }
+
+  if (preservePeriod) {
+    searchParams.set("period", period);
+
+    if (period === "custom" && customRange) {
+      searchParams.set("startDate", customRange.startDate);
+      searchParams.set("endDate", customRange.endDate);
+    }
+  }
+
+  const query = searchParams.toString();
+  return query ? `/seller/revenue?${query}` : "/seller/revenue";
+}
+
+function rangeForPeriod(
+  period: RevenuePeriod,
+  customRange?: RevenueRange,
+): RevenueRange {
+  if (period === "custom" && customRange) {
+    return customRange;
+  }
+
   const end = new Date();
   const start = new Date(end);
 
   if (period === "week") {
     start.setDate(start.getDate() - 6);
-  } else if (period === "month" || period === "custom") {
+  } else if (period === "month") {
     start.setMonth(start.getMonth() - 1);
   } else if (period === "sixMonths") {
     start.setMonth(start.getMonth() - 6);
@@ -683,6 +784,14 @@ function formatRangeLabel(startDate: string, endDate: string) {
   }
 
   return `${formatKoreanDate(startDate)} ~ ${formatKoreanDate(endDate)}`;
+}
+
+function formatCompactRangeLabel(startDate: string, endDate: string) {
+  if (startDate === endDate) {
+    return startDate.replaceAll("-", ".");
+  }
+
+  return `${startDate.replaceAll("-", ".")} ~ ${endDate.replaceAll("-", ".")}`;
 }
 
 function formatKoreanDate(value: string) {
