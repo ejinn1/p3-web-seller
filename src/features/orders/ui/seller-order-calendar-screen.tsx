@@ -8,7 +8,7 @@ import {
   X,
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BottomSheet } from "@/components/common/bottom-sheet";
 import { SellerSidebar } from "@/components/widgets/seller-sidebar";
 import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
@@ -50,11 +50,19 @@ export function SellerOrderCalendarScreen() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const view = (searchParams.get("view") as CalendarView | null) ?? "calendar";
-  const year = Number(searchParams.get("year") ?? defaultYear);
-  const month = Number(searchParams.get("month") ?? defaultMonth);
-  const selectedDate = searchParams.get("date");
+  const selectedDateParts = parseCalendarDate(searchParams.get("date"));
+  const selectedDate = selectedDateParts?.date ?? null;
+  const year =
+    parseCalendarYear(searchParams.get("year")) ??
+    selectedDateParts?.year ??
+    defaultYear;
+  const month =
+    parseCalendarMonth(searchParams.get("month")) ??
+    selectedDateParts?.month ??
+    defaultMonth;
   const activeDate = selectedDate ?? defaultListDate;
   const isMonthPickerOpen = searchParams.get("monthPicker") === "1";
+  const suppressListRedirectForDateRef = useRef<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const calendarQuery = useSellerOrderCalendarMonthQuery({ month, year });
@@ -80,6 +88,25 @@ export function SellerOrderCalendarScreen() {
     const next = params.toString();
     router.push(next ? `${pathname}?${next}` : pathname);
   };
+
+  useEffect(() => {
+    const hasSelectedDateOrders = Boolean(selectedDay?.orders.length);
+
+    if (view !== "calendar" || !selectedDate || !hasSelectedDateOrders) {
+      return;
+    }
+
+    if (suppressListRedirectForDateRef.current === selectedDate) {
+      suppressListRedirectForDateRef.current = null;
+      return;
+    }
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("date", selectedDate);
+    params.set("view", "list");
+    params.delete("orderId");
+    router.replace(`${pathname}?${params.toString()}`);
+  }, [pathname, router, searchParams, selectedDate, selectedDay, view]);
 
   if (calendarQuery.isLoading || !calendar) {
     return (
@@ -117,7 +144,10 @@ export function SellerOrderCalendarScreen() {
         <SellerOrderListView
           date={activeDate}
           day={selectedDay}
-          onBack={() => updateParams({ orderId: null, view: null })}
+          onBack={() => {
+            suppressListRedirectForDateRef.current = activeDate;
+            updateParams({ orderId: null, view: null });
+          }}
           onClearDate={() => updateParams({ date: null, view: null })}
           onMenu={() => setSidebarOpen(true)}
           onOpenDetail={(orderId) =>
@@ -168,6 +198,7 @@ export function SellerOrderCalendarScreen() {
               return;
             }
 
+            suppressListRedirectForDateRef.current = date;
             updateParams({ date, view: null, orderId: null });
           }}
           selectedDate={selectedDate}
@@ -981,6 +1012,50 @@ function buildCalendarGrid(year: number, month: number): CalendarGridDate[] {
   }
 
   return cells;
+}
+
+function parseCalendarDate(value: string | null) {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return null;
+  }
+
+  const [year, month, day] = value.split("-").map(Number);
+
+  if (
+    !Number.isInteger(year) ||
+    !Number.isInteger(month) ||
+    !Number.isInteger(day) ||
+    month < 1 ||
+    month > 12
+  ) {
+    return null;
+  }
+
+  const daysInMonth = new Date(year, month, 0).getDate();
+
+  if (day < 1 || day > daysInMonth) {
+    return null;
+  }
+
+  return { date: value, day, month, year };
+}
+
+function parseCalendarYear(value: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  const year = Number(value);
+  return Number.isInteger(year) ? year : null;
+}
+
+function parseCalendarMonth(value: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  const month = Number(value);
+  return Number.isInteger(month) && month >= 1 && month <= 12 ? month : null;
 }
 
 function formatWon(amount: number) {
