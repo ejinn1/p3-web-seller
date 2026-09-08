@@ -20,41 +20,38 @@ export function InquiryChatMessage({
   onWriteOrderConfirmation: () => void;
 }) {
   if (message.kind === "notice") {
-    return (
-      <div className="flex justify-center px-2">
-        <p className="rounded-seller-lg bg-surface-default px-4 py-2 text-[13px] leading-[18px] font-normal tracking-[-0.13px] text-text-secondary">
-          {message.text}
-        </p>
-      </div>
-    );
+    return <NoticeBubble>{message.text}</NoticeBubble>;
   }
 
   if (message.kind === "order-request") {
     return (
-      <BubbleRow
-        buyerProfileImageUrl={buyerProfileImageUrl}
-        owner="buyer"
-        sentAt={message.sentAt}
-      >
-        <div className="flex w-60 shrink-0 flex-col gap-4 rounded-seller-lg bg-surface-default p-4">
-          <div className="space-y-1">
-            <p className="text-[18px] leading-6 font-semibold tracking-[-0.54px] text-text-primary">
-              주문서가 도착했어요
-            </p>
-            <p className="text-[13px] leading-4 font-medium tracking-[-0.13px] text-[#8a8b8d]">
-              주문서를 확인하고 주문확인서를 작성해주세요.
-            </p>
+      <div className="flex flex-col gap-2 overflow-hidden">
+        <BubbleRow
+          buyerProfileImageUrl={buyerProfileImageUrl}
+          owner="buyer"
+          sentAt={message.sentAt}
+        >
+          <div className="flex w-60 shrink-0 flex-col gap-4 rounded-seller-lg bg-surface-default p-4">
+            <div className="space-y-1">
+              <p className="text-[18px] leading-6 font-semibold tracking-[-0.54px] text-text-primary">
+                주문서가 도착했어요
+              </p>
+              <p className="text-[13px] leading-4 font-medium tracking-[-0.13px] text-[#8a8b8d]">
+                주문서를 확인하고 주문확인서를 작성해주세요.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <ActionButton onClick={onOpenOrderForm} variant="outline">
+                주문서 보기
+              </ActionButton>
+              <ActionButton onClick={onWriteOrderConfirmation}>
+                주문확인서 작성
+              </ActionButton>
+            </div>
           </div>
-          <div className="space-y-2">
-            <ActionButton onClick={onOpenOrderForm} variant="outline">
-              주문서 보기
-            </ActionButton>
-            <ActionButton onClick={onWriteOrderConfirmation}>
-              주문확인서 작성
-            </ActionButton>
-          </div>
-        </div>
-      </BubbleRow>
+        </BubbleRow>
+        <NoticeBubble>{message.receivedNoticeText}</NoticeBubble>
+      </div>
     );
   }
 
@@ -131,6 +128,19 @@ export function InquiryChatMessage({
         {message.text}
       </p>
     </BubbleRow>
+  );
+}
+
+function NoticeBubble({ children }: { children: ReactNode }) {
+  return (
+    <div
+      className="flex h-[34px] w-full items-center justify-center overflow-hidden px-2"
+      data-ui="order-received-notice"
+    >
+      <p className="rounded-seller-lg bg-surface-default px-4 py-2 text-[13px] leading-[18px] font-normal tracking-[-0.13px] whitespace-nowrap text-text-secondary">
+        {children}
+      </p>
+    </div>
   );
 }
 
