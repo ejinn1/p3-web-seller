@@ -53,14 +53,15 @@ export function SellerOrderCalendarScreen() {
   const view = (searchParams.get("view") as CalendarView | null) ?? "calendar";
   const selectedDateParts = parseCalendarDate(searchParams.get("date"));
   const selectedDate = selectedDateParts?.date ?? null;
-  const year =
+  const parsedYear =
     parseCalendarYear(searchParams.get("year")) ??
     selectedDateParts?.year ??
     defaultYear;
-  const month =
+  const parsedMonth =
     parseCalendarMonth(searchParams.get("month")) ??
     selectedDateParts?.month ??
     defaultMonth;
+  const { month, year } = normalizeCalendarMonth(parsedYear, parsedMonth);
   const activeDate = selectedDate ?? defaultListDate;
   const isMonthPickerOpen = searchParams.get("monthPicker") === "1";
   const suppressListRedirectForDateRef = useRef<string | null>(null);
@@ -70,8 +71,7 @@ export function SellerOrderCalendarScreen() {
   const storeQuery = useStoreQuery();
   const calendar = calendarQuery.data;
   const storeOpenedDate = getStoreOpenedDate(storeQuery.data?.createdAt);
-  const previousCalendarMonth = getRelativeMonth(year, month, -1);
-  const nextCalendarMonth = getRelativeMonth(year, month, 1);
+  const previousCalendarMonth = shiftCalendarMonth(year, month, -1);
   const selectedDay = calendar?.days.find((day) => day.date === activeDate);
   const selectedOrderId =
     searchParams.get("orderId") ?? selectedDay?.orders[0]?.orderId ?? null;
@@ -112,6 +112,19 @@ export function SellerOrderCalendarScreen() {
     params.delete("orderId");
     router.replace(`${pathname}?${params.toString()}`);
   }, [pathname, router, searchParams, selectedDate, selectedDay, view]);
+
+  const moveMonth = (offset: number) => {
+    const next = shiftCalendarMonth(year, month, offset);
+
+    updateParams({
+      date: null,
+      month: String(next.month),
+      monthPicker: null,
+      orderId: null,
+      view: null,
+      year: String(next.year),
+    });
+  };
 
   if (calendarQuery.isLoading || !calendar) {
     return (
@@ -187,19 +200,15 @@ export function SellerOrderCalendarScreen() {
                 storeOpenedDate,
               )}
               month={month}
-              onNext={() =>
+              onNext={() => moveMonth(1)}
+              onOpen={() =>
                 updateParams({
-                  month: String(nextCalendarMonth.month),
-                  year: String(nextCalendarMonth.year),
+                  month: String(month),
+                  monthPicker: "1",
+                  year: String(year),
                 })
               }
-              onOpen={() => updateParams({ monthPicker: "1" })}
-              onPrevious={() =>
-                updateParams({
-                  month: String(previousCalendarMonth.month),
-                  year: String(previousCalendarMonth.year),
-                })
-              }
+              onPrevious={() => moveMonth(-1)}
               year={year}
             />
             <MonthlySummary days={calendar.days} />
@@ -222,23 +231,25 @@ export function SellerOrderCalendarScreen() {
           year={year}
         />
       </SellerResponsiveFrame>
-      <MonthSelectSheet
-        initialMonth={month}
-        initialYear={year}
-        minimumDate={storeOpenedDate}
-        onClose={() => updateParams({ monthPicker: null })}
-        onConfirm={(nextYear, nextMonth) =>
-          updateParams({
-            date: null,
-            month: String(nextMonth),
-            monthPicker: null,
-            orderId: null,
-            view: null,
-            year: String(nextYear),
-          })
-        }
-        open={isMonthPickerOpen}
-      />
+      {isMonthPickerOpen ? (
+        <MonthSelectSheet
+          initialMonth={month}
+          initialYear={year}
+          minimumDate={storeOpenedDate}
+          onClose={() => updateParams({ monthPicker: null })}
+          onConfirm={(nextYear, nextMonth) =>
+            updateParams({
+              date: null,
+              month: String(nextMonth),
+              monthPicker: null,
+              orderId: null,
+              view: null,
+              year: String(nextYear),
+            })
+          }
+          open={isMonthPickerOpen}
+        />
+      ) : null}
       <SellerSidebar onOpenChange={setSidebarOpen} open={sidebarOpen} />
     </>
   );
@@ -890,12 +901,16 @@ function MonthSelectSheet({
   onConfirm: (year: number, month: number) => void;
   open: boolean;
 }) {
-  const [year, setYear] = useState(initialYear);
-  const [month, setMonth] = useState(initialMonth);
+  const initialCalendarMonth = normalizeCalendarMonth(
+    initialYear,
+    initialMonth,
+  );
+  const [year, setYear] = useState(initialCalendarMonth.year);
+  const [month, setMonth] = useState(initialCalendarMonth.month);
 
-  const years = [year - 1, year - 1, year, year - 1, year - 1];
-  const months = [month - 2, month - 1, month, month + 1, month + 2].map(
-    normalizeMonth,
+  const years = [year - 2, year - 1, year, year + 1, year + 2];
+  const months = [-2, -1, 0, 1, 2].map((offset) =>
+    shiftCalendarMonth(year, month, offset),
   );
   const isConfirmDisabled = isMonthBeforeStoreOpened(
     year,
@@ -931,14 +946,13 @@ function MonthSelectSheet({
         >
           <div className="flex h-full w-full gap-2">
             <WheelColumn
-              hideOuterRows
               testId="calendar-year-wheel"
               items={years.map((itemYear, index) => ({
                 label: `${itemYear}년`,
                 selected: index === 2,
                 disabled:
                   index === 0 ||
-                  index > 2 ||
+                  index === 4 ||
                   isYearBeforeStoreOpened(itemYear, minimumDate),
                 onClick: () => setYear(itemYear),
               }))}
@@ -946,13 +960,20 @@ function MonthSelectSheet({
             <WheelColumn
               testId="calendar-month-wheel"
               items={months.map((itemMonth, index) => ({
-                label: `${itemMonth}월`,
+                label: `${itemMonth.month}월`,
                 selected: index === 2,
                 disabled:
                   index === 0 ||
                   index === 4 ||
-                  isMonthBeforeStoreOpened(year, itemMonth, minimumDate),
-                onClick: () => setMonth(itemMonth),
+                  isMonthBeforeStoreOpened(
+                    itemMonth.year,
+                    itemMonth.month,
+                    minimumDate,
+                  ),
+                onClick: () => {
+                  setYear(itemMonth.year);
+                  setMonth(itemMonth.month);
+                },
               }))}
             />
           </div>
@@ -1206,23 +1227,31 @@ function isMonthBeforeStoreOpened(
   );
 }
 
-function getRelativeMonth(year: number, month: number, offset: number) {
-  const date = new Date(year, month - 1 + offset, 1);
+function normalizeMonth(month: number) {
+  const normalizedMonth = Number.isFinite(month)
+    ? Math.trunc(month)
+    : defaultMonth;
+
+  return modulo(normalizedMonth - 1, 12) + 1;
+}
+
+function shiftCalendarMonth(year: number, month: number, offset: number) {
+  return normalizeCalendarMonth(year, month + offset);
+}
+
+function normalizeCalendarMonth(year: number, month: number) {
+  const normalizedYear = Number.isFinite(year) ? Math.trunc(year) : defaultYear;
+  const normalizedMonth = Number.isFinite(month)
+    ? Math.trunc(month)
+    : defaultMonth;
+  const zeroBasedMonth = normalizedMonth - 1;
 
   return {
-    month: date.getMonth() + 1,
-    year: date.getFullYear(),
+    month: normalizeMonth(normalizedMonth),
+    year: normalizedYear + Math.floor(zeroBasedMonth / 12),
   };
 }
 
-function normalizeMonth(month: number) {
-  if (month < 1) {
-    return month + 12;
-  }
-
-  if (month > 12) {
-    return month - 12;
-  }
-
-  return month;
+function modulo(value: number, divisor: number) {
+  return ((value % divisor) + divisor) % divisor;
 }
