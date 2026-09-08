@@ -70,32 +70,52 @@ export function RevenueScreen({ initialView }: RevenueScreenProps) {
 
   if (view === "cancel-history") {
     return (
-      <SellerResponsiveFrame className="bg-surface-subtle" data-revenue-frame="cancel-history">
-        <RevenueHeader title={detailTitles[view]} onBack={() => goToView("cancellations")} />
-        <CancelHistoryView history={revenueCancelHistory} />
-      </SellerResponsiveFrame>
+      <>
+        <SellerResponsiveFrame
+          className="bg-surface-subtle"
+          data-revenue-frame="cancel-history"
+        >
+          <RevenueHeader
+            onBack={() => goToView("cancellations")}
+            onMenu={() => setSidebarOpen(true)}
+            showMenu
+            title={detailTitles[view]}
+          />
+          <CancelHistoryView history={revenueCancelHistory} />
+        </SellerResponsiveFrame>
+        <SellerSidebar onOpenChange={setSidebarOpen} open={sidebarOpen} />
+      </>
     );
   }
 
   if (view !== "home") {
     return (
-      <SellerResponsiveFrame data-revenue-frame={view}>
-        <RevenueHeader title={detailTitles[view]} onBack={() => goToView("home")} />
-        <RevenueDetailView
-          lines={getLinesForView(view, orders)}
-          onClearFilter={() => goToView("home")}
-          onSelectLine={() =>
-            view === "cancellations" ? goToView("cancel-history") : undefined
-          }
-          tone={view === "cancellations" ? "danger" : "default"}
-        />
-      </SellerResponsiveFrame>
+      <>
+        <SellerResponsiveFrame data-revenue-frame={view}>
+          <RevenueHeader
+            onBack={() => goToView("home")}
+            onMenu={() => setSidebarOpen(true)}
+            showMenu
+            title={detailTitles[view]}
+          />
+          <RevenueDetailView
+            lines={getLinesForView(view, orders)}
+            onClearFilter={() => goToView("home")}
+            onSelectLine={() =>
+              view === "cancellations" ? goToView("cancel-history") : undefined
+            }
+            tone={view === "cancellations" ? "danger" : "default"}
+          />
+        </SellerResponsiveFrame>
+        <SellerSidebar onOpenChange={setSidebarOpen} open={sidebarOpen} />
+      </>
     );
   }
 
   return (
     <SellerResponsiveFrame data-revenue-frame="home">
       <RevenueHeader
+        onBack={() => router.push("/seller/home")}
         onMenu={() => setSidebarOpen(true)}
         showMenu
         title="매출 분석"

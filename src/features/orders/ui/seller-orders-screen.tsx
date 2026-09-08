@@ -83,6 +83,7 @@ export function SellerOrdersScreen() {
   return (
     <SellerResponsiveFrame className="bg-surface-default">
       <OrdersHeader
+        backHref="/seller/home"
         onMenu={() => setSidebarOpen(true)}
         showMenu
         title="주문 내역"
@@ -223,17 +224,19 @@ export function SellerOrdersScreen() {
 }
 
 function OrdersHeader({
+  backHref,
   onMenu,
   showMenu = false,
   title,
 }: {
+  backHref: string;
   onMenu?: () => void;
   showMenu?: boolean;
   title: string;
 }) {
   return (
     <Header
-      backHref="/seller/store-management"
+      backHref={backHref}
       backLabel="이전 화면으로 돌아가기"
       className="border-none"
       onMenu={onMenu}
