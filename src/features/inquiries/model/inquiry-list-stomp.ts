@@ -9,10 +9,7 @@ import type {
   InquiryListItem,
   InquiryListRealtimePayload,
 } from "@/features/inquiries/model/inquiry-types";
-import {
-  connectStomp,
-  type StompConnection,
-} from "@/lib/stomp/client";
+import { connectStomp, type StompConnection } from "@/lib/stomp/client";
 
 export function useSellerInquiryListStomp(userId?: string, enabled = true) {
   const queryClient = useQueryClient();
@@ -77,7 +74,11 @@ export function useSellerInquiryListStomp(userId?: string, enabled = true) {
       })
       .catch((nextError: unknown) => {
         if (mounted) {
-          setError(nextError instanceof Error ? nextError : new Error(String(nextError)));
+          setError(
+            nextError instanceof Error
+              ? nextError
+              : new Error(String(nextError)),
+          );
         }
       });
 

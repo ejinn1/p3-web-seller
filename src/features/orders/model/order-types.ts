@@ -80,7 +80,7 @@ export type OrderOptionRow = {
 export type SellerOrderDetail = {
   optionRows: OrderOptionRow[];
   order: SellerOrder;
-  paymentAttempt: PaymentAttempt;
+  paymentAttempt: PaymentAttempt | null;
   refunds: Refund[];
 };
 
