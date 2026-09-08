@@ -677,21 +677,7 @@ function getLatestPreview(
   latestEvent: InquiryLatestEvent | null,
   latestSubmission: InquiryLatestOrderFormSubmission | null,
 ): InquiryLatestPreview | null {
-  if (!latestEvent && !latestSubmission) {
-    return null;
-  }
-
-  if (!latestEvent) {
-    return latestSubmission
-      ? {
-          createdAt: latestSubmission.submittedAt,
-          kind: "submission",
-          submission: latestSubmission,
-        }
-      : null;
-  }
-
-  if (!latestSubmission) {
+  if (latestEvent) {
     return {
       createdAt: latestEvent.createdAt,
       event: latestEvent,
@@ -699,10 +685,7 @@ function getLatestPreview(
     };
   }
 
-  if (
-    toTimestamp(latestSubmission.submittedAt) >
-    toTimestamp(latestEvent.createdAt)
-  ) {
+  if (latestSubmission) {
     return {
       createdAt: latestSubmission.submittedAt,
       kind: "submission",
@@ -710,11 +693,7 @@ function getLatestPreview(
     };
   }
 
-  return {
-    createdAt: latestEvent.createdAt,
-    event: latestEvent,
-    kind: "event",
-  };
+  return null;
 }
 
 function formatLatestMessage(latestPreview: InquiryLatestPreview | null) {
@@ -749,11 +728,6 @@ function formatLatestMessage(latestPreview: InquiryLatestPreview | null) {
   }
 
   return "새 상담이 도착했습니다.";
-}
-
-function toTimestamp(value: string) {
-  const timestamp = new Date(value).getTime();
-  return Number.isNaN(timestamp) ? 0 : timestamp;
 }
 
 function formatShortTime(value: string) {
