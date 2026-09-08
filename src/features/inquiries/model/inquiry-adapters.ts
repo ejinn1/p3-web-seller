@@ -4,6 +4,7 @@ import type {
   InquiryChatMessage,
   InquiryDetail,
   InquiryLatestEvent,
+  InquiryLatestOrderFormSubmission,
   InquiryListApiItem,
   InquiryListItem,
   InquiryOrderConfirmation,
@@ -23,24 +24,23 @@ type InquiryOrderOptionViewRow = InquiryOrderOptionRow & {
 };
 
 export function toInquiryListItem(item: InquiryListApiItem): InquiryListItem {
+  const latestPreview = getLatestPreview(
+    item.latestEvent,
+    item.latestOrderFormSubmission,
+  );
   const latestAt =
-    item.latestEvent?.createdAt ??
-    item.latestOrderFormSubmission?.submittedAt ??
-    item.latestEventAt ??
-    item.createdAt;
+    latestPreview?.createdAt ?? item.latestEventAt ?? item.createdAt;
 
   return {
     id: item.inquiryId,
     buyerName: item.participant.name,
     hasOrderFormSubmission: Boolean(item.latestOrderFormSubmission),
-    lastMessage: formatLatestMessage(
-      item.latestEvent,
-      item.latestOrderFormSubmission,
-    ),
+    lastMessage: formatLatestMessage(latestPreview),
     lastMessageAt: latestAt,
     lastMessageTimeLabel: formatShortTime(latestAt),
     profileImageUrl: item.participant.profileImageDeliveryUrl,
     status: item.status,
+    statusLabel: toInquiryStatusLabel(item.status),
     unreadCount: item.unreadCount,
   };
 }
@@ -415,10 +415,7 @@ function normalizeParsedRow(
   return [
     {
       amount: numberOrNull(item.amount) ?? numberOrNull(item.price) ?? null,
-      assetPreviews: getOptionAssetPreviews(
-        item.assetIds,
-        referenceAssetsById,
-      ),
+      assetPreviews: getOptionAssetPreviews(item.assetIds, referenceAssetsById),
       label: normalizeText(item.label ?? item.name) || `옵션 ${index + 1}`,
       priceLabel: stringOrNull(item.priceLabel),
       required: booleanOrUndefined(item.required),
@@ -501,7 +498,10 @@ function applyAnswerAssetPreviews(
   rows: InquiryOrderOptionRow[],
   answerRows: InquiryOrderOptionViewRow[],
 ): InquiryOrderOptionViewRow[] {
-  const assetPreviewsByLabel = new Map<string, InquiryReferenceAssetPreview[]>();
+  const assetPreviewsByLabel = new Map<
+    string,
+    InquiryReferenceAssetPreview[]
+  >();
 
   for (const row of answerRows) {
     if (!row.assetPreviews?.length) {
@@ -661,23 +661,69 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
-function formatLatestMessage(
+type InquiryLatestPreview =
+  | {
+      createdAt: string;
+      event: InquiryLatestEvent;
+      kind: "event";
+    }
+  | {
+      createdAt: string;
+      kind: "submission";
+      submission: InquiryLatestOrderFormSubmission;
+    };
+
+function getLatestPreview(
   latestEvent: InquiryLatestEvent | null,
-  latestSubmission: { submittedAt: string } | null,
-) {
-  if (latestEvent?.content) {
-    return latestEvent.content;
+  latestSubmission: InquiryLatestOrderFormSubmission | null,
+): InquiryLatestPreview | null {
+  if (latestEvent) {
+    return {
+      createdAt: latestEvent.createdAt,
+      event: latestEvent,
+      kind: "event",
+    };
   }
 
-  if (latestEvent?.type === "ORDER_FORM_SUBMISSION" || latestSubmission) {
+  if (latestSubmission) {
+    return {
+      createdAt: latestSubmission.submittedAt,
+      kind: "submission",
+      submission: latestSubmission,
+    };
+  }
+
+  return null;
+}
+
+function formatLatestMessage(latestPreview: InquiryLatestPreview | null) {
+  if (!latestPreview) {
+    return "새 상담이 도착했습니다.";
+  }
+
+  if (latestPreview.kind === "submission") {
     return "주문서가 작성되었습니다.";
   }
 
-  if (latestEvent?.type === "ORDER_CONFIRMATION") {
+  const { event } = latestPreview;
+
+  if (event.type === "MESSAGE") {
+    return normalizeText(event.content) || "메시지가 도착했습니다.";
+  }
+
+  if (event.type === "ORDER_FORM_SUBMISSION") {
+    return "주문서가 작성되었습니다.";
+  }
+
+  if (event.type === "ORDER_CONFIRMATION") {
     return "주문 확인서를 보냈습니다.";
   }
 
-  if (latestEvent?.type === "PAYMENT_COMPLETED") {
+  if (event.type === "ORDER_CONFIRMATION_REVISION") {
+    return "주문 확인서가 수정되었습니다.";
+  }
+
+  if (event.type === "PAYMENT_COMPLETED") {
     return "결제가 완료되었습니다.";
   }
 

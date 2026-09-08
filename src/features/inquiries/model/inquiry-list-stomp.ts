@@ -8,6 +8,7 @@ import type {
   InquiryDetail,
   InquiryListItem,
   InquiryListRealtimePayload,
+  SellerInquiryListParams,
 } from "@/features/inquiries/model/inquiry-types";
 import { connectStomp, type StompConnection } from "@/lib/stomp/client";
 
@@ -35,19 +36,33 @@ export function useSellerInquiryListStomp(userId?: string, enabled = true) {
           onMessage: (message) => {
             if (message.type !== "INQUIRY_UPDATED") return;
 
-            queryClient.setQueriesData<InquiryListItem[]>(
-              { predicate: (query) => isSellerInquiryListKey(query.queryKey) },
-              (current) =>
-                current?.map((item) =>
-                  item.id === message.inquiryId
-                    ? {
-                        ...item,
-                        status: message.status,
-                        unreadCount: message.unreadCount,
-                      }
-                    : item,
-                ),
-            );
+            queryClient
+              .getQueryCache()
+              .findAll({
+                predicate: (query) => isSellerInquiryListKey(query.queryKey),
+              })
+              .forEach((query) => {
+                const params = getSellerInquiryListParams(query.queryKey);
+
+                queryClient.setQueryData<InquiryListItem[]>(
+                  query.queryKey,
+                  (current) =>
+                    current
+                      ?.map((item) =>
+                        item.id === message.inquiryId
+                          ? {
+                              ...item,
+                              status: message.status,
+                              statusLabel: toInquiryStatusLabel(message.status),
+                              unreadCount: message.unreadCount,
+                            }
+                          : item,
+                      )
+                      .filter((item) =>
+                        matchesSellerInquiryListParams(item, params),
+                      ),
+                );
+              });
             queryClient.setQueryData<InquiryDetail>(
               inquiryKeys.detail(message.inquiryId),
               (current) =>
@@ -99,4 +114,33 @@ function isSellerInquiryListKey(queryKey: QueryKey) {
     queryKey[1] === "inquiries" &&
     queryKey[2] === "list"
   );
+}
+
+function getSellerInquiryListParams(
+  queryKey: QueryKey,
+): SellerInquiryListParams {
+  const params = Array.isArray(queryKey) ? queryKey[3] : undefined;
+
+  return isSellerInquiryListParams(params) ? params : {};
+}
+
+function isSellerInquiryListParams(
+  value: unknown,
+): value is SellerInquiryListParams {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function matchesSellerInquiryListParams(
+  item: InquiryListItem,
+  params: SellerInquiryListParams,
+) {
+  if (params.status && item.status !== params.status) {
+    return false;
+  }
+
+  if (params.unreadOnly && item.unreadCount <= 0) {
+    return false;
+  }
+
+  return true;
 }
