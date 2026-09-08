@@ -1,3 +1,4 @@
+import { getAssetDeliveryUrl } from "@/features/assets/model/asset-delivery";
 import type {
   InquiryChatDetailResponse,
   InquiryChatMessage,
@@ -11,9 +12,15 @@ import type {
   InquiryOrderFormSubmissionResponse,
   InquiryOrderOption,
   InquiryOrderOptionRow,
+  InquiryReferenceAssetPreview,
+  InquiryReferenceAssetResponse,
   InquiryStatus,
   InquiryTimelineItemResponse,
 } from "@/features/inquiries/model/inquiry-types";
+
+type InquiryOrderOptionViewRow = InquiryOrderOptionRow & {
+  assetPreviews?: InquiryReferenceAssetPreview[];
+};
 
 export function toInquiryListItem(item: InquiryListApiItem): InquiryListItem {
   const latestAt =
@@ -177,12 +184,16 @@ function toInquiryOrderConfirmation(
   preview: InquiryOrderConfirmationPreviewResponse | null,
 ): InquiryOrderConfirmation {
   const draftPreview = confirmation ? null : preview;
+  const referenceAssetsById = new Map(
+    (submission?.referenceAssets ?? []).map((asset) => [asset.assetId, asset]),
+  );
   const rows = getOptionRows(
     confirmation?.optionRows,
     confirmation?.summaryText,
     submission?.optionRows,
     submission?.answers,
     confirmation?.additionalItems,
+    referenceAssetsById,
   );
   const pickupDate = confirmation?.pickupAt
     ? formatFullDate(confirmation.pickupAt)
@@ -234,7 +245,10 @@ function toInquiryOrderConfirmation(
       confirmation?.confirmationTitle ??
       draftPreview?.confirmationTitle ??
       "주문확인서",
-    imageUrl: detail.startReferenceAsset?.deliveryUrl ?? null,
+    imageUrl:
+      detail.startReferenceAsset?.deliveryUrl ??
+      getFirstReferenceAssetPreview(submission?.referenceAssets)?.deliveryUrl ??
+      null,
     orderFormSubmissionId:
       confirmation?.orderFormSubmissionId ??
       draftPreview?.orderFormSubmissionId ??
@@ -264,47 +278,60 @@ function getOptionRows(
   submissionRows: InquiryOrderOptionRow[] | undefined,
   answers: string | undefined,
   additionalItems: string | undefined,
-) {
+  referenceAssetsById: Map<string, InquiryReferenceAssetResponse>,
+): InquiryOrderOptionViewRow[] {
+  const answerRows = parseRows(answers, referenceAssetsById);
+
   if (optionRows?.length) {
-    return optionRows;
+    return applyAnswerAssetPreviews(optionRows, answerRows);
   }
 
   const parsedRows = [
-    ...parseRows(optionSummary),
-    ...parseRows(answers),
-    ...parseRows(additionalItems),
+    ...parseRows(optionSummary, referenceAssetsById),
+    ...answerRows,
+    ...parseRows(additionalItems, referenceAssetsById),
   ];
 
-  return parsedRows.length ? parsedRows : (submissionRows ?? []);
+  return parsedRows.length
+    ? parsedRows
+    : applyAnswerAssetPreviews(submissionRows ?? [], answerRows);
 }
 
-function parseRows(value: string | undefined): InquiryOrderOptionRow[] {
+function parseRows(
+  value: string | undefined,
+  referenceAssetsById: Map<string, InquiryReferenceAssetResponse>,
+): InquiryOrderOptionViewRow[] {
   if (!value?.trim()) {
     return [];
   }
 
   try {
     const parsed: unknown = JSON.parse(value);
-    return rowsFromParsedSummary(parsed);
+    return rowsFromParsedSummary(parsed, referenceAssetsById);
   } catch {
     return [{ amount: null, label: "옵션", value }];
   }
 }
 
-function rowsFromParsedSummary(value: unknown): InquiryOrderOptionRow[] {
+function rowsFromParsedSummary(
+  value: unknown,
+  referenceAssetsById: Map<string, InquiryReferenceAssetResponse>,
+): InquiryOrderOptionViewRow[] {
   if (Array.isArray(value)) {
-    const answerRows = rowsFromAnswers(value);
+    const answerRows = rowsFromAnswers(value, referenceAssetsById);
 
     if (answerRows.length) {
       return answerRows;
     }
 
-    return value.flatMap((item, index) => normalizeParsedRow(item, index));
+    return value.flatMap((item, index) =>
+      normalizeParsedRow(item, index, referenceAssetsById),
+    );
   }
 
   if (isRecord(value)) {
     if (Array.isArray(value.answers)) {
-      const answerRows = rowsFromAnswers(value.answers);
+      const answerRows = rowsFromAnswers(value.answers, referenceAssetsById);
 
       if (answerRows.length) {
         return answerRows;
@@ -316,16 +343,21 @@ function rowsFromParsedSummary(value: unknown): InquiryOrderOptionRow[] {
         ([key]) =>
           !["orderFormSubmissionId", "templateId", "submittedAt"].includes(key),
       )
-      .flatMap(([label, rowValue]) => rowsFromUnknownValue(label, rowValue));
+      .flatMap(([label, rowValue]) =>
+        rowsFromUnknownValue(label, rowValue, referenceAssetsById),
+      );
   }
 
   return [];
 }
 
-function rowsFromAnswers(answers: unknown[]): InquiryOrderOptionRow[] {
+function rowsFromAnswers(
+  answers: unknown[],
+  referenceAssetsById: Map<string, InquiryReferenceAssetResponse>,
+): InquiryOrderOptionViewRow[] {
   return answers.flatMap((answer, index) => {
     if (!isRecord(answer)) {
-      return normalizeParsedRow(answer, index);
+      return normalizeParsedRow(answer, index, referenceAssetsById);
     }
 
     const label = normalizeText(answer.label) || `옵션 ${index + 1}`;
@@ -343,6 +375,10 @@ function rowsFromAnswers(answers: unknown[]): InquiryOrderOptionRow[] {
               {
                 amount:
                   numberOrNull(option.price) ?? numberOrNull(option.amount),
+                assetPreviews: getOptionAssetPreviews(
+                  option.assetIds,
+                  referenceAssetsById,
+                ),
                 label,
                 optionGroupId,
                 optionValue: stringOrNull(option.value ?? option.optionValue),
@@ -351,13 +387,14 @@ function rowsFromAnswers(answers: unknown[]): InquiryOrderOptionRow[] {
                 value: formatOptionValue(option),
               },
             ]
-          : rowsFromUnknownValue(label, option),
+          : rowsFromUnknownValue(label, option, referenceAssetsById),
       );
     }
 
     return rowsFromUnknownValue(
       label,
       answer.value ?? answer.answer ?? answer.content,
+      referenceAssetsById,
     );
   });
 }
@@ -365,7 +402,8 @@ function rowsFromAnswers(answers: unknown[]): InquiryOrderOptionRow[] {
 function normalizeParsedRow(
   item: unknown,
   index: number,
-): InquiryOrderOptionRow[] {
+  referenceAssetsById: Map<string, InquiryReferenceAssetResponse>,
+): InquiryOrderOptionViewRow[] {
   if (typeof item === "string") {
     return [{ amount: null, label: `옵션 ${index + 1}`, value: item }];
   }
@@ -377,6 +415,10 @@ function normalizeParsedRow(
   return [
     {
       amount: numberOrNull(item.amount) ?? numberOrNull(item.price) ?? null,
+      assetPreviews: getOptionAssetPreviews(
+        item.assetIds,
+        referenceAssetsById,
+      ),
       label: normalizeText(item.label ?? item.name) || `옵션 ${index + 1}`,
       priceLabel: stringOrNull(item.priceLabel),
       required: booleanOrUndefined(item.required),
@@ -386,7 +428,7 @@ function normalizeParsedRow(
 }
 
 function toInquiryOrderOption(
-  row: InquiryOrderOptionRow,
+  row: InquiryOrderOptionViewRow,
   index: number,
   unconfirmedOptions: Map<
     string,
@@ -404,6 +446,7 @@ function toInquiryOrderOption(
 
   return {
     amount: row.amount,
+    assetPreviews: row.assetPreviews?.length ? row.assetPreviews : undefined,
     id:
       optionGroupId && optionValue
         ? `${optionGroupId}:${optionValue}`
@@ -426,15 +469,22 @@ function toInquiryOrderOption(
 function rowsFromUnknownValue(
   label: string,
   value: unknown,
-): InquiryOrderOptionRow[] {
+  referenceAssetsById: Map<string, InquiryReferenceAssetResponse>,
+): InquiryOrderOptionViewRow[] {
   if (Array.isArray(value)) {
-    return value.flatMap((item) => rowsFromUnknownValue(label, item));
+    return value.flatMap((item) =>
+      rowsFromUnknownValue(label, item, referenceAssetsById),
+    );
   }
 
   if (isRecord(value)) {
     return [
       {
         amount: numberOrNull(value.price) ?? numberOrNull(value.amount),
+        assetPreviews: getOptionAssetPreviews(
+          value.assetIds,
+          referenceAssetsById,
+        ),
         label,
         priceLabel: stringOrNull(value.priceLabel),
         value: formatOptionValue(value, true),
@@ -445,6 +495,79 @@ function rowsFromUnknownValue(
   const text = normalizeText(value);
 
   return text ? [{ amount: null, label, value: text }] : [];
+}
+
+function applyAnswerAssetPreviews(
+  rows: InquiryOrderOptionRow[],
+  answerRows: InquiryOrderOptionViewRow[],
+): InquiryOrderOptionViewRow[] {
+  const assetPreviewsByLabel = new Map<string, InquiryReferenceAssetPreview[]>();
+
+  for (const row of answerRows) {
+    if (!row.assetPreviews?.length) {
+      continue;
+    }
+
+    assetPreviewsByLabel.set(row.label, [
+      ...(assetPreviewsByLabel.get(row.label) ?? []),
+      ...row.assetPreviews,
+    ]);
+  }
+
+  return rows.map((row) => ({
+    ...row,
+    assetPreviews: assetPreviewsByLabel.get(row.label),
+  }));
+}
+
+function getOptionAssetPreviews(
+  value: unknown,
+  referenceAssetsById: Map<string, InquiryReferenceAssetResponse>,
+): InquiryReferenceAssetPreview[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  const previews = value.flatMap((assetId) => {
+    if (typeof assetId !== "string") {
+      return [];
+    }
+
+    const asset = referenceAssetsById.get(assetId);
+    const deliveryUrl = asset
+      ? getAssetDeliveryUrl(asset.deliveryUrl, asset.variants, [
+          "THUMBNAIL",
+          "MEDIUM",
+          "LARGE",
+        ])
+      : undefined;
+
+    return deliveryUrl ? [{ assetId, deliveryUrl }] : [];
+  });
+
+  return previews.length ? previews : undefined;
+}
+
+function getFirstReferenceAssetPreview(
+  assets: InquiryReferenceAssetResponse[] | undefined,
+): InquiryReferenceAssetPreview | undefined {
+  const sortedAssets = [...(assets ?? [])].sort(
+    (first, second) => first.sortOrder - second.sortOrder,
+  );
+
+  for (const asset of sortedAssets) {
+    const deliveryUrl = getAssetDeliveryUrl(asset.deliveryUrl, asset.variants, [
+      "THUMBNAIL",
+      "MEDIUM",
+      "LARGE",
+    ]);
+
+    if (deliveryUrl) {
+      return { assetId: asset.assetId, deliveryUrl };
+    }
+  }
+
+  return undefined;
 }
 
 function formatOptionValue(

@@ -44,7 +44,9 @@ export type SellerOrderListItem = {
   updatedAt: string;
 };
 
-export type SellerOrder = Omit<SellerOrderListItem, "startReferenceAssets">;
+export type SellerOrder = Omit<SellerOrderListItem, "startReferenceAssets"> & {
+  startReferenceAssets?: string[];
+};
 
 export type PaymentAttempt = {
   paymentAttemptId: string;

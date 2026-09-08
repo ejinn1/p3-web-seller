@@ -7,14 +7,19 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { BottomSheet } from "@/components/common/bottom-sheet";
 import { Header } from "@/components/common/header";
 import { SellerSidebar } from "@/components/widgets/seller-sidebar";
 import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
+import { useAssetQueries } from "@/features/assets/model/asset-queries";
+import type { Asset } from "@/features/assets/model/asset-types";
 import { useSellerOrdersQuery } from "@/features/orders/model/order-queries";
+import {
+  getReferenceAssetIds,
+  getReferenceThumbnailUrl,
+} from "@/features/orders/model/order-reference-assets";
 import type {
   SellerOrderListItem,
   SellerOrderStatus,
@@ -54,10 +59,22 @@ export function SellerOrdersScreen() {
       }
     : {};
   const query = useSellerOrdersQuery(orderListParams);
-
-  const orders = useMemo(
-    () => (query.data ?? []).map(toOrderViewModel),
+  const referenceAssetIds = useMemo(
+    () =>
+      getReferenceAssetIds(
+        (query.data ?? []).flatMap((order) => order.startReferenceAssets),
+      ),
     [query.data],
+  );
+  const referenceAssetQueries = useAssetQueries(referenceAssetIds);
+  const referenceAssetById = new Map(
+    referenceAssetQueries.flatMap((assetQuery) =>
+      assetQuery.data ? [[assetQuery.data.id, assetQuery.data] as const] : [],
+    ),
+  );
+
+  const orders = (query.data ?? []).map((order) =>
+    toOrderViewModel(order, referenceAssetById),
   );
   const groupedOrders = useMemo(
     () => groupOrdersByPaymentDate(orders),
@@ -254,11 +271,10 @@ function OrderListItem({
     >
       <div className="relative size-[70px] shrink-0 overflow-hidden rounded-seller-sm bg-surface-subtle">
         {order.thumbnailUrl ? (
-          <Image
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
             alt=""
-            className="object-cover"
-            fill
-            sizes="70px"
+            className="size-full object-cover"
             src={order.thumbnailUrl}
           />
         ) : null}
@@ -600,7 +616,10 @@ function OrdersState({ message }: { message: string }) {
   );
 }
 
-function toOrderViewModel(order: SellerOrderListItem): SellerOrderViewModel {
+function toOrderViewModel(
+  order: SellerOrderListItem,
+  referenceAssetById: Map<string, Asset>,
+): SellerOrderViewModel {
   return {
     ...order,
     buyerName: "고객",
@@ -609,7 +628,10 @@ function toOrderViewModel(order: SellerOrderListItem): SellerOrderViewModel {
       { label: "옵션", value: order.optionSummary, price: null },
     ],
     storeName: "스토어",
-    thumbnailUrl: null,
+    thumbnailUrl: getReferenceThumbnailUrl(
+      order.startReferenceAssets,
+      referenceAssetById,
+    ),
   };
 }
 
