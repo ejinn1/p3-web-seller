@@ -1,6 +1,6 @@
 export const noticeCategories = [
   {
-    label: "픽업 및 배송 안내",
+    label: "픽업 안내",
     slug: "pickup-delivery",
     type: "PICKUP_DELIVERY",
   },

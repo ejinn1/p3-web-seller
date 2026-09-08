@@ -4,7 +4,6 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
-  Menu,
   SlidersHorizontal,
   X,
 } from "lucide-react";
@@ -12,7 +11,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { SellerScreenShell } from "@/features/seller-shell/ui/seller-screen-shell";
+import { BottomSheet } from "@/components/common/bottom-sheet";
+import { Header } from "@/components/common/header";
+import { SellerSidebar } from "@/components/widgets/seller-sidebar";
+import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
 import {
   longTextSellerOrderFixture,
   nullStatusSellerOrderFixture,
@@ -26,7 +28,8 @@ import type {
 } from "@/features/orders/model/order-types";
 import { cn } from "@/lib/utils";
 
-type ForcedState = "loading" | "empty" | "error" | "long" | "null-status" | null;
+type ForcedState =
+  "loading" | "empty" | "error" | "long" | "null-status" | null;
 type FilterPreset = "1개월" | "3개월" | "6개월" | "직접선택";
 type CustomDateStep = "start" | "end" | "done" | null;
 
@@ -43,9 +46,12 @@ export function SellerOrdersScreen() {
   const searchParams = useSearchParams();
   const forcedState = parseForcedState(searchParams.get("state"));
   const [filterOpen, setFilterOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [customStep, setCustomStep] = useState<CustomDateStep>(null);
   const [customDateSelected, setCustomDateSelected] = useState(false);
-  const [selectedPreset, setSelectedPreset] = useState<FilterPreset | null>(null);
+  const [selectedPreset, setSelectedPreset] = useState<FilterPreset | null>(
+    null,
+  );
   const [selectedRange, setSelectedRange] = useState({
     start: "2026.07.11",
     end: "2026.08.11",
@@ -63,7 +69,10 @@ export function SellerOrdersScreen() {
     () => getOrdersForState(forcedState, query.data),
     [forcedState, query.data],
   );
-  const groupedOrders = useMemo(() => groupOrdersByPaymentDate(orders), [orders]);
+  const groupedOrders = useMemo(
+    () => groupOrdersByPaymentDate(orders),
+    [orders],
+  );
   const isLoading = forcedState === "loading" || query.isLoading;
   const isError = forcedState === "error" || query.isError;
 
@@ -72,8 +81,12 @@ export function SellerOrdersScreen() {
     : null;
 
   return (
-    <SellerScreenShell className="bg-surface-default">
-      <OrdersHeader showMenu title="주문 내역" />
+    <SellerResponsiveFrame className="bg-surface-default">
+      <OrdersHeader
+        onMenu={() => setSidebarOpen(true)}
+        showMenu
+        title="주문 내역"
+      />
       <section className="flex flex-1 flex-col gap-1 overflow-y-auto">
         <div className="flex h-[60px] items-center gap-2 px-4 pt-4 pb-2">
           <button
@@ -105,13 +118,15 @@ export function SellerOrdersScreen() {
                 }}
                 type="button"
               >
-                <X aria-hidden="true" className="size-4" />
+                <X aria-hidden="true" className="size-3 translate-x-2" />
               </button>
             </span>
           ) : null}
         </div>
 
-        {isLoading ? <OrdersState message="주문 내역을 불러오고 있어요." /> : null}
+        {isLoading ? (
+          <OrdersState message="주문 내역을 불러오고 있어요." />
+        ) : null}
         {isError ? (
           <OrdersState
             message={
@@ -137,7 +152,11 @@ export function SellerOrdersScreen() {
                 <div className="flex flex-col gap-2">
                   {group.orders.map((order, orderIndex) => (
                     <OrderListItem
-                      highlighted={Boolean(activeFilterLabel) && groupIndex === 0 && orderIndex === 0}
+                      highlighted={
+                        Boolean(activeFilterLabel) &&
+                        groupIndex === 0 &&
+                        orderIndex === 0
+                      }
                       key={order.id}
                       order={order}
                     />
@@ -149,95 +168,78 @@ export function SellerOrdersScreen() {
         ) : null}
       </section>
 
-      {filterOpen ? (
-        <DateFilterSheet
-          onClose={() => setFilterOpen(false)}
-          onCustom={() => {
-            setFilterOpen(false);
-            setCustomDateSelected(false);
-            setCustomStep("start");
-          }}
-          onSelect={(preset) => {
-            setSelectedPreset(preset);
-            setSelectedRange(rangeForPreset(preset));
-          }}
-          selectedPreset={selectedPreset}
-          selectedRange={selectedRange}
-        />
-      ) : null}
+      <DateFilterSheet
+        onClose={() => setFilterOpen(false)}
+        onCustom={() => {
+          setFilterOpen(false);
+          setCustomDateSelected(false);
+          setCustomStep("start");
+        }}
+        onSelect={(preset) => {
+          setSelectedPreset(preset);
+          setSelectedRange(rangeForPreset(preset));
+        }}
+        open={filterOpen}
+        selectedPreset={selectedPreset}
+        selectedRange={selectedRange}
+      />
 
-      {customStep ? (
-        <CustomDateSheet
-          onBack={() => {
-            if (customStep === "start") {
-              setCustomStep(null);
-              setFilterOpen(true);
-              return;
-            }
-
-            setCustomStep(customStep === "end" ? "start" : "end");
-          }}
-          onClose={() => setCustomStep(null)}
-          onNext={() => {
-            if (customStep === "start") {
-              setSelectedRange((range) => ({ ...range, start: "2026.08.18" }));
-              setCustomDateSelected(false);
-              setCustomStep("end");
-              return;
-            }
-
-            if (customStep === "end") {
-              setSelectedRange((range) => ({ ...range, end: "2026.08.18" }));
-              setCustomStep("done");
-              return;
-            }
-
-            setSelectedPreset("직접선택");
+      <CustomDateSheet
+        onBack={() => {
+          if (customStep === "start") {
             setCustomStep(null);
-          }}
-          onSelectDate={() => setCustomDateSelected(true)}
-          selected={customDateSelected}
-          step={customStep}
-        />
-      ) : null}
-    </SellerScreenShell>
+            setFilterOpen(true);
+            return;
+          }
+
+          setCustomStep(customStep === "end" ? "start" : "end");
+        }}
+        onClose={() => setCustomStep(null)}
+        onNext={() => {
+          if (customStep === "start") {
+            setSelectedRange((range) => ({ ...range, start: "2026.08.18" }));
+            setCustomDateSelected(false);
+            setCustomStep("end");
+            return;
+          }
+
+          if (customStep === "end") {
+            setSelectedRange((range) => ({ ...range, end: "2026.08.18" }));
+            setCustomStep("done");
+            return;
+          }
+
+          setSelectedPreset("직접선택");
+          setCustomStep(null);
+        }}
+        onSelectDate={() => setCustomDateSelected(true)}
+        open={customStep !== null}
+        selected={customDateSelected}
+        step={customStep ?? "start"}
+      />
+      <SellerSidebar onOpenChange={setSidebarOpen} open={sidebarOpen} />
+    </SellerResponsiveFrame>
   );
 }
 
 function OrdersHeader({
+  onMenu,
   showMenu = false,
   title,
 }: {
+  onMenu?: () => void;
   showMenu?: boolean;
   title: string;
 }) {
   return (
-    <header className="grid h-14 grid-cols-[48px_1fr_48px] items-center bg-surface-default">
-      <Link
-        aria-label="이전 화면으로 돌아가기"
-        className="flex size-12 items-center justify-center text-icon-default"
-        href="/seller/store-management"
-      >
-        <ChevronLeft aria-hidden="true" className="size-6" strokeWidth={2} />
-      </Link>
-      <h1
-        className="text-center text-seller-display-sm leading-[30px] font-bold tracking-[-0.66px] text-text-primary"
-        data-qa="orders-title"
-      >
-        {title}
-      </h1>
-      {showMenu ? (
-        <button
-          aria-label="메뉴 열기"
-          className="flex size-12 items-center justify-center text-icon-default"
-          type="button"
-        >
-          <Menu aria-hidden="true" className="size-6" strokeWidth={2} />
-        </button>
-      ) : (
-        <span aria-hidden="true" />
-      )}
-    </header>
+    <Header
+      backHref="/seller/store-management"
+      backLabel="이전 화면으로 돌아가기"
+      className="border-none"
+      onMenu={onMenu}
+      showMenu={showMenu}
+      title={<span data-qa="orders-title">{title}</span>}
+    />
   );
 }
 
@@ -296,12 +298,14 @@ function DateFilterSheet({
   onClose,
   onCustom,
   onSelect,
+  open,
   selectedPreset,
   selectedRange,
 }: {
   onClose: () => void;
   onCustom: () => void;
   onSelect: (preset: FilterPreset) => void;
+  open: boolean;
   selectedPreset: FilterPreset | null;
   selectedRange: { end: string; start: string };
 }) {
@@ -309,9 +313,9 @@ function DateFilterSheet({
   const disabled = !selectedPreset;
 
   return (
-    <SheetOverlay>
+    <BottomSheet onOpenChange={(nextOpen) => !nextOpen && onClose()} open={open}>
       <div
-        className="flex w-full flex-col items-center gap-8 rounded-t-seller-lg bg-surface-default px-4 pt-8 pb-[34px]"
+        className="flex w-full flex-col items-center gap-8"
         data-qa="orders-filter-sheet"
       >
         <div className="flex w-full flex-col gap-2">
@@ -344,8 +348,16 @@ function DateFilterSheet({
           </div>
         </div>
         <div className="flex w-full gap-[10px]">
-          <DateField active={!disabled} label="시작일" value={selectedRange.start} />
-          <DateField active={!disabled} label="종료일" value={selectedRange.end} />
+          <DateField
+            active={!disabled}
+            label="시작일"
+            value={selectedRange.start}
+          />
+          <DateField
+            active={!disabled}
+            label="종료일"
+            value={selectedRange.end}
+          />
         </div>
         <button
           className="flex h-[52px] w-full items-center justify-center rounded-seller-md bg-brand-primary px-6 text-seller-heading-md leading-6 font-semibold tracking-[-0.54px] text-text-inverse disabled:bg-brand-disabled disabled:text-text-disabled"
@@ -356,7 +368,7 @@ function DateFilterSheet({
           확인
         </button>
       </div>
-    </SheetOverlay>
+    </BottomSheet>
   );
 }
 
@@ -365,6 +377,7 @@ function CustomDateSheet({
   onClose,
   onNext,
   onSelectDate,
+  open,
   selected,
   step,
 }: {
@@ -372,36 +385,48 @@ function CustomDateSheet({
   onClose: () => void;
   onNext: () => void;
   onSelectDate: () => void;
+  open: boolean;
   selected: boolean;
   step: CustomDateStep;
 }) {
-  const title = step === "end" ? "종료일" : step === "done" ? "종료일" : "시작일";
+  const title =
+    step === "end" ? "종료일" : step === "done" ? "종료일" : "시작일";
   const nextLabel = step === "done" ? "확인" : "다음";
   const nextDisabled = step !== "done" && !selected;
 
   return (
-    <SheetOverlay>
+    <BottomSheet
+      className="bg-surface-elevated shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
+      onOpenChange={(nextOpen) => !nextOpen && onClose()}
+      open={open}
+    >
       <div
-        className="flex w-full flex-col gap-4 rounded-t-seller-lg bg-surface-elevated pt-8 shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
+        className="flex w-full flex-col gap-4"
         data-qa="orders-custom-date-sheet"
       >
-        <div className="px-4">
+        <div>
           <SheetTitle onClose={onClose}>{title}</SheetTitle>
         </div>
-        <div className="flex flex-col gap-4 px-4">
+        <div className="flex flex-col gap-4">
           <div className="flex h-6 items-center justify-center gap-4 overflow-hidden">
-            <ChevronLeft aria-hidden="true" className="size-6 text-icon-disabled" />
+            <ChevronLeft
+              aria-hidden="true"
+              className="size-6 text-icon-disabled"
+            />
             <p className="text-seller-heading-md leading-6 font-semibold tracking-[-0.54px] text-text-primary">
               2026년 8월
             </p>
-            <ChevronRight aria-hidden="true" className="size-6 text-icon-default" />
+            <ChevronRight
+              aria-hidden="true"
+              className="size-6 text-icon-default"
+            />
           </div>
           <CalendarGrid
             onSelect={onSelectDate}
             selectedDay={selected || step === "done" ? 18 : null}
           />
         </div>
-        <div className="flex gap-2 px-4 pt-4 pb-[34px]">
+        <div className="flex gap-2 pt-4">
           <button
             className="flex h-11 flex-1 items-center justify-center rounded-seller-md border border-border-default bg-surface-default px-6 text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-primary"
             data-qa="orders-custom-date-back"
@@ -421,15 +446,7 @@ function CustomDateSheet({
           </button>
         </div>
       </div>
-    </SheetOverlay>
-  );
-}
-
-function SheetOverlay({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-surface-scrim">
-      <div className="w-full lg:max-w-[390px]">{children}</div>
-    </div>
+    </BottomSheet>
   );
 }
 
@@ -443,7 +460,9 @@ function SheetTitle({
   onClose: () => void;
 }) {
   return (
-    <div className={cn("flex h-7 w-full items-start justify-between", className)}>
+    <div
+      className={cn("flex h-7 w-full items-start justify-between", className)}
+    >
       <h2 className="text-seller-heading-lg leading-7 font-bold tracking-[-0.6px] text-text-primary">
         {children}
       </h2>
@@ -483,7 +502,10 @@ function DateField({
         </span>
         <CalendarDays
           aria-hidden="true"
-          className={cn("size-6", active ? "text-icon-default" : "text-icon-muted")}
+          className={cn(
+            "size-6",
+            active ? "text-icon-default" : "text-icon-muted",
+          )}
         />
       </div>
     </div>
@@ -498,7 +520,11 @@ function CalendarGrid({
   selectedDay: number | null;
 }) {
   const days = ["일", "월", "화", "수", "목", "금", "토"];
-  const cells = [...Array.from({ length: 6 }, () => null), ...Array.from({ length: 31 }, (_, index) => index + 1), ...Array.from({ length: 5 }, () => null)];
+  const cells = [
+    ...Array.from({ length: 6 }, () => null),
+    ...Array.from({ length: 31 }, (_, index) => index + 1),
+    ...Array.from({ length: 5 }, () => null),
+  ];
 
   return (
     <div className="flex flex-col gap-1" data-qa="orders-calendar">
@@ -591,7 +617,10 @@ function getOrdersForState(
   }
 
   if (state === "null-status") {
-    return [nullStatusSellerOrderFixture, ...sellerOrderViewFixtures.slice(1, 3)];
+    return [
+      nullStatusSellerOrderFixture,
+      ...sellerOrderViewFixtures.slice(1, 3),
+    ];
   }
 
   return (apiOrders ?? []).map(toOrderViewModel);
@@ -640,7 +669,13 @@ function parseForcedState(value: string | null): ForcedState {
   return null;
 }
 
-export { OrderStatusBadge, OrdersHeader, formatFullDate, formatPrice, formatTime };
+export {
+  OrderStatusBadge,
+  OrdersHeader,
+  formatFullDate,
+  formatPrice,
+  formatTime,
+};
 
 function formatTime(value: string) {
   return new Intl.DateTimeFormat("ko-KR", {

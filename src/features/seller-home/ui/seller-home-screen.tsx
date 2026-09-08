@@ -2,11 +2,12 @@
 
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Bell, ChevronLeft, ChevronRight, Menu, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Button } from "@/components/common/button";
+import { Header } from "@/components/common/header";
 import { IconButton } from "@/components/common/icon-button";
 import { SellerSidebar } from "@/components/widgets/seller-sidebar";
-import { SellerScreenShell } from "@/features/seller-shell/ui/seller-screen-shell";
+import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
 import { useSellerHomeDashboardQuery } from "@/features/seller-home/model/seller-home-queries";
 import type {
   SellerHomeDashboard,
@@ -50,7 +51,7 @@ export function SellerHomeScreen() {
 
   if (dashboardQuery.isError) {
     return (
-      <SellerScreenShell>
+      <SellerResponsiveFrame>
         <div className="flex h-dvh flex-col items-center justify-center gap-4 px-4 text-center">
           <p className="text-seller-body-md text-text-secondary">
             {dashboardQuery.error instanceof Error
@@ -61,17 +62,17 @@ export function SellerHomeScreen() {
             다시 시도
           </Button>
         </div>
-      </SellerScreenShell>
+      </SellerResponsiveFrame>
     );
   }
 
   if (dashboardQuery.isLoading || !dashboard) {
     return (
-      <SellerScreenShell>
+      <SellerResponsiveFrame>
         <div className="flex h-dvh items-center justify-center text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-secondary">
           판매자 홈을 불러오는 중
         </div>
-      </SellerScreenShell>
+      </SellerResponsiveFrame>
     );
   }
 
@@ -120,7 +121,7 @@ export function SellerHomeScreen() {
   }
 
   return (
-    <SellerScreenShell className="relative overflow-x-hidden">
+    <SellerResponsiveFrame className="relative overflow-x-hidden">
       <HomeHeader onMenu={() => setState({ sidebar: "open" })} />
       <section className="flex flex-col items-center gap-12 overflow-hidden pt-4 pb-[calc(34px+env(safe-area-inset-bottom))]">
         <DashboardOverview dashboard={dashboard} />
@@ -180,14 +181,15 @@ export function SellerHomeScreen() {
         onOpenChange={(open) => setState({ sidebar: open ? "open" : null })}
         open={showSidebar}
       />
-    </SellerScreenShell>
+    </SellerResponsiveFrame>
   );
 }
 
 function HomeHeader({ onMenu }: { onMenu: () => void }) {
   return (
-    <header className="flex h-14 w-full items-center justify-between overflow-hidden bg-surface-default pl-4">
-      <div className="flex w-12 items-center pr-2">
+    <Header
+      className="w-full border-none pl-4"
+      leading={
         <Image
           alt="wihada"
           className="size-8"
@@ -196,16 +198,11 @@ function HomeHeader({ onMenu }: { onMenu: () => void }) {
           src="/seller-home/wihada-symbol.svg"
           width={32}
         />
-      </div>
-      <div className="flex items-center justify-end px-1">
-        <IconButton className="size-11" label="알림">
-          <Bell aria-hidden="true" className="size-5" strokeWidth={1.8} />
-        </IconButton>
-        <IconButton className="size-11" label="메뉴" onClick={onMenu}>
-          <Menu aria-hidden="true" className="size-5" strokeWidth={1.8} />
-        </IconButton>
-      </div>
-    </header>
+      }
+      onMenu={onMenu}
+      showMenu
+      showNotification
+    />
   );
 }
 
@@ -217,17 +214,7 @@ function DetailHeader({
   title: string;
 }) {
   return (
-    <header className="flex h-14 w-full items-center justify-between overflow-hidden bg-surface-default">
-      <div className="flex min-w-0 flex-1 items-center">
-        <IconButton className="size-11" label="뒤로 가기" onClick={onBack}>
-          <ChevronLeft aria-hidden="true" className="size-5" />
-        </IconButton>
-      </div>
-      <h1 className="text-[22px] leading-[30px] font-bold tracking-[-0.66px] text-text-primary">
-        {title}
-      </h1>
-      <div className="h-12 min-w-0 flex-1" />
-    </header>
+    <Header className="w-full border-none" onBack={onBack} title={title} />
   );
 }
 
@@ -559,7 +546,7 @@ function ConfirmationView({
   onBack: () => void;
 }) {
   return (
-    <SellerScreenShell className="bg-surface-subtle">
+    <SellerResponsiveFrame className="bg-surface-subtle">
       <DetailHeader onBack={onBack} title="주문확인서" />
       <section className="flex w-full flex-col items-center gap-4 overflow-hidden px-4 pt-6 pb-4">
         <div className="flex w-full flex-col gap-8 rounded-seller-sm bg-surface-default px-4 py-8 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
@@ -605,7 +592,7 @@ function ConfirmationView({
           결제 완료
         </Button>
       </section>
-    </SellerScreenShell>
+    </SellerResponsiveFrame>
   );
 }
 
@@ -660,7 +647,7 @@ function OrderFormView({
   orderForm: SellerHomeOrderForm;
 }) {
   return (
-    <SellerScreenShell className="bg-surface-subtle">
+    <SellerResponsiveFrame className="bg-surface-subtle">
       <DetailHeader onBack={onBack} title="주문서" />
       <section className="flex flex-1 flex-col gap-4 overflow-hidden px-4 pt-4 pb-[calc(94px+env(safe-area-inset-bottom))]">
         <div className="flex w-full flex-col gap-12 rounded-seller-sm bg-surface-default px-4 py-6 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
@@ -680,7 +667,7 @@ function OrderFormView({
           ))}
         </div>
       </section>
-      <div className="fixed right-0 bottom-0 left-0 mx-auto flex w-full gap-2 bg-surface-default px-4 pt-4 pb-[calc(34px+env(safe-area-inset-bottom))] lg:max-w-[390px]">
+      <div className="fixed right-0 bottom-0 left-0 mx-auto flex w-full gap-2 bg-surface-default px-4 pt-4 pb-[calc(34px+env(safe-area-inset-bottom))] max-w-[768px]">
         <Button
           className="h-11 flex-1 rounded-seller-md border-border-strong text-[15px] leading-5 font-semibold tracking-[-0.3px]"
           onClick={onRevision}
@@ -692,7 +679,7 @@ function OrderFormView({
           주문확인서 작성
         </Button>
       </div>
-    </SellerScreenShell>
+    </SellerResponsiveFrame>
   );
 }
 
@@ -709,13 +696,13 @@ function OrderFormSection({
 }) {
   return (
     <section className="flex w-full flex-col gap-4">
-      <h2 className="flex items-start text-[20px] leading-7 font-bold tracking-[-0.6px] text-text-primary">
+      <h2 className="flex items-start gap-1 text-[20px] leading-7 font-bold tracking-[-0.6px] text-text-primary">
+        {label}
         {required ? (
-          <span className="text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-error">
+          <span className="relative -top-1 text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-error">
             *
           </span>
         ) : null}
-        {label}
       </h2>
       <div className="flex h-6 w-full items-center justify-between gap-3">
         <div className="flex h-11 min-w-0 items-center">
@@ -755,23 +742,15 @@ function ChatView({
   const isRevision = mode === "revision";
 
   return (
-    <SellerScreenShell className="bg-surface-subtle">
+    <SellerResponsiveFrame className="bg-surface-subtle">
       <header className="sticky top-0 z-10 bg-surface-default">
-        <div className="flex h-14 w-full items-center justify-between overflow-hidden">
-          <div className="flex min-w-0 flex-1 items-center">
-            <IconButton className="size-11" label="뒤로 가기" onClick={onBack}>
-              <ChevronLeft aria-hidden="true" className="size-5" />
-            </IconButton>
-          </div>
-          <h1 className="text-[22px] leading-[30px] font-bold tracking-[-0.66px] text-text-primary">
-            {dashboard.chat.storeName}
-          </h1>
-          <div className="flex min-w-0 flex-1 items-center justify-end px-1">
-            <IconButton className="size-11" label="메뉴" onClick={onMenu}>
-              <Menu aria-hidden="true" className="size-5" />
-            </IconButton>
-          </div>
-        </div>
+        <Header
+          className="border-none"
+          onBack={onBack}
+          onMenu={onMenu}
+          showMenu
+          title={dashboard.chat.storeName}
+        />
         <div className="flex w-full items-center justify-between px-4 py-2">
           <p className="text-[13px] leading-[18px] font-normal tracking-[-0.13px] text-text-secondary">
             {dashboard.chat.info}
@@ -828,7 +807,7 @@ function ChatView({
         )}
       </section>
       <ChatComposer />
-    </SellerScreenShell>
+    </SellerResponsiveFrame>
   );
 }
 

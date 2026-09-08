@@ -4,7 +4,8 @@ import { ChevronLeft, ChevronRight, SlidersHorizontal, X } from "lucide-react";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
-import { SellerScreenShell } from "@/features/seller-shell/ui/seller-screen-shell";
+import { BottomSheet } from "@/components/common/bottom-sheet";
+import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
 import {
   orderCalendarDayRevenue,
   orderCalendarDisplayMeta,
@@ -74,11 +75,11 @@ export function SellerOrderCalendarScreen() {
 
   if (calendarQuery.isLoading || !calendar) {
     return (
-      <SellerScreenShell className="items-center justify-center">
+      <SellerResponsiveFrame className="items-center justify-center">
         <p className="text-[15px] leading-[22px] font-semibold tracking-[-0.15px] text-text-primary">
           주문 캘린더를 불러오는 중입니다.
         </p>
-      </SellerScreenShell>
+      </SellerResponsiveFrame>
     );
   }
 
@@ -114,7 +115,7 @@ export function SellerOrderCalendarScreen() {
 
   return (
     <>
-      <SellerScreenShell>
+      <SellerResponsiveFrame>
         <CalendarHeader onBack={() => router.back()} title="주문 캘린더" />
         <section
           className="bg-surface-subtle px-4 pt-4 pb-6"
@@ -152,7 +153,7 @@ export function SellerOrderCalendarScreen() {
           selectedDate={selectedDate}
           year={year}
         />
-      </SellerScreenShell>
+      </SellerResponsiveFrame>
       <MonthSelectSheet
         initialMonth={month}
         initialYear={year}
@@ -425,7 +426,7 @@ function SellerOrderListView({
   const orders = day?.orders ?? [];
 
   return (
-    <SellerScreenShell>
+    <SellerResponsiveFrame>
       <CalendarHeader onBack={onBack} title="주문 내역" />
       <section className="flex min-h-0 flex-1 flex-col gap-1">
         <div
@@ -482,7 +483,7 @@ function SellerOrderListView({
           </div>
         </div>
       </section>
-    </SellerScreenShell>
+    </SellerResponsiveFrame>
   );
 }
 
@@ -549,7 +550,7 @@ function SellerOrderDetailView({
       : orderCalendarOptionLines;
 
   return (
-    <SellerScreenShell className="bg-surface-subtle">
+    <SellerResponsiveFrame className="bg-surface-subtle">
       <CalendarHeader
         className="bg-surface-default"
         onBack={onBack}
@@ -635,7 +636,7 @@ function SellerOrderDetailView({
           )}
         </div>
       </section>
-    </SellerScreenShell>
+    </SellerResponsiveFrame>
   );
 }
 
@@ -676,22 +677,15 @@ function MonthSelectSheet({
   const [year, setYear] = useState(initialYear);
   const [month, setMonth] = useState(initialMonth);
 
-  if (!open) {
-    return null;
-  }
-
   const years = [year - 1, year - 1, year, year - 1, year - 1];
   const months = [month - 2, month - 1, month, month + 1, month + 2].map(
     normalizeMonth,
   );
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-surface-scrim"
-      data-testid="calendar-month-overlay"
-    >
+    <BottomSheet onOpenChange={(nextOpen) => !nextOpen && onClose()} open={open}>
       <div
-        className="flex w-full flex-col items-center gap-8 rounded-t-seller-lg bg-surface-default px-4 pt-8 pb-[calc(34px+env(safe-area-inset-bottom))] lg:max-w-[390px]"
+        className="flex w-full flex-col items-center gap-8"
         data-testid="calendar-month-sheet"
       >
         <div className="flex h-12 w-full items-start justify-between">
@@ -743,7 +737,7 @@ function MonthSelectSheet({
           확인
         </button>
       </div>
-    </div>
+    </BottomSheet>
   );
 }
 

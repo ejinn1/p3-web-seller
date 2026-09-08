@@ -103,10 +103,10 @@ export function OrderFormOptionSheet({
                 <div className="flex items-start gap-4">
                   <label className="flex min-w-0 flex-1 flex-col gap-2">
                     <span className="flex items-center gap-1 text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-tertiary">
-                      <span className="text-[15px] leading-4 font-semibold text-text-error">
+                      옵션명
+                      <span className="relative -top-1 text-[15px] leading-4 font-semibold text-text-error">
                         *
                       </span>
-                      옵션명
                     </span>
                     <span className="flex flex-col items-end gap-1">
                       <Input
@@ -123,10 +123,10 @@ export function OrderFormOptionSheet({
                   </label>
                   <label className="flex w-[100px] shrink-0 flex-col gap-2">
                     <span className="flex items-center gap-1 text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-tertiary">
-                      <span className="text-[15px] leading-4 font-semibold text-text-error">
+                      가격
+                      <span className="relative -top-1 text-[15px] leading-4 font-semibold text-text-error">
                         *
                       </span>
-                      가격
                     </span>
                     <span className="flex flex-col items-end gap-1">
                       <Input
@@ -182,10 +182,10 @@ export function OrderFormOptionSheet({
               <>
                 <label className="flex flex-col gap-2">
                   <span className="flex items-center gap-1 text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-tertiary">
-                    <span className="text-[15px] leading-4 font-semibold text-text-error">
+                    옵션명
+                    <span className="relative -top-1 text-[15px] leading-4 font-semibold text-text-error">
                       *
                     </span>
-                    옵션명
                   </span>
                   <span className="flex flex-col items-end gap-1">
                     <Input
@@ -203,10 +203,10 @@ export function OrderFormOptionSheet({
                 <div className="flex gap-4">
                   <label className="flex min-w-0 flex-1 flex-col gap-2">
                     <span className="flex items-center gap-1 text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-tertiary">
-                      <span className="text-[15px] leading-4 font-semibold text-text-error">
+                      가격
+                      <span className="relative -top-1 text-[15px] leading-4 font-semibold text-text-error">
                         *
                       </span>
-                      가격
                     </span>
                     <span className="flex flex-col items-end gap-1">
                       <Input
@@ -322,10 +322,10 @@ export function OrderFormOptionSheet({
               <>
                 <label className="flex flex-col gap-2">
                   <span className="flex items-center gap-1 text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-tertiary">
-                    <span className="text-[15px] leading-4 font-semibold text-text-error">
+                    옵션명
+                    <span className="relative -top-1 text-[15px] leading-4 font-semibold text-text-error">
                       *
                     </span>
-                    옵션명
                   </span>
                   <span className="flex flex-col items-end gap-1">
                     <Input
@@ -342,10 +342,10 @@ export function OrderFormOptionSheet({
                 </label>
                 <label className="flex flex-col gap-2">
                   <span className="flex items-center gap-1 text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-tertiary">
-                    <span className="text-[15px] leading-4 font-semibold text-text-error">
+                    가격
+                    <span className="relative -top-1 text-[15px] leading-4 font-semibold text-text-error">
                       *
                     </span>
-                    가격
                   </span>
                   <span className="flex flex-col items-end gap-1">
                     <Input

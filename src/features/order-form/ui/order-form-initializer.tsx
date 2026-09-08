@@ -28,7 +28,7 @@ export function OrderFormInitializer({ children }: OrderFormInitializerProps) {
 
   if (activeOrderFormQuery.isError) {
     return (
-      <main className="mx-auto flex min-h-dvh w-full max-w-[390px] flex-col items-center justify-center gap-4 bg-surface-default px-4 text-center text-text-primary">
+      <main className="mx-auto flex min-h-dvh w-full max-w-[768px] flex-col items-center justify-center gap-4 bg-surface-default px-4 text-center text-text-primary">
         <p className="text-seller-body-md text-text-secondary">
           {activeOrderFormQuery.error instanceof Error
             ? activeOrderFormQuery.error.message
@@ -43,7 +43,7 @@ export function OrderFormInitializer({ children }: OrderFormInitializerProps) {
 
   if (!draftReady) {
     return (
-      <main className="mx-auto flex min-h-dvh w-full max-w-[390px] items-center justify-center bg-surface-default px-4 text-text-secondary">
+      <main className="mx-auto flex min-h-dvh w-full max-w-[768px] items-center justify-center bg-surface-default px-4 text-text-secondary">
         <p className="text-seller-body-md">주문서 양식을 불러오고 있어요.</p>
       </main>
     );
