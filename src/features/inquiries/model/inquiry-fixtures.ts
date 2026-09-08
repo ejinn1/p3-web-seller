@@ -53,9 +53,13 @@ export const inquiryDetailFixture: InquiryDetail = {
   order: {
     buyerName: "이동후",
     buyerPhone: "010-0000-0000",
+    confirmationTitle: "주문확인서",
     imageUrl: "/inquiries/cake-attachment.png",
+    orderFormSubmissionId: "submission-001",
+    pickupAt: "2026-08-19T06:30:00.000Z",
     pickupDate: "8월 19일 수요일",
     pickupTime: "오후 3:30",
+    summaryText: "주문확인서",
     totalPrice: 64000,
     options: [
       {

@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight, Menu, Plus, X } from "lucide-react";
 import { SellerSidebar } from "@/components/widgets/seller-sidebar";
 import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
+import { useSendSellerOrderConfirmationMutation } from "@/features/inquiries/model/inquiry-mutations";
 import { useSellerInquiryQuery } from "@/features/inquiries/model/inquiry-queries";
 import { useSellerInquiryStomp } from "@/features/inquiries/model/inquiry-stomp";
 import type {
@@ -13,6 +14,7 @@ import type {
   InquiryDetail,
   InquiryOrderConfirmation,
   InquiryOrderOption,
+  SendSellerOrderConfirmationRequest,
 } from "@/features/inquiries/model/inquiry-types";
 import { ProfileImage } from "@/features/inquiries/ui/inquiry-list-screen";
 import { cn } from "@/lib/utils";
@@ -27,6 +29,8 @@ type InquiryScreenState =
   | "order-history"
   | "confirmation-view";
 
+const EMPTY_PRICE_DRAFTS: Record<string, number> = {};
+
 export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -37,10 +41,56 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
   const modal = searchParams.get("modal");
   const chatScrollRef = useRef<HTMLElement>(null);
   const stomp = useSellerInquiryStomp(inquiryId, Boolean(inquiry));
+  const sendConfirmationMutation =
+    useSendSellerOrderConfirmationMutation(inquiryId);
+  const [priceDraftState, setPriceDraftState] = useState<{
+    drafts: Record<string, number>;
+    inquiryId: string;
+  }>({ drafts: {}, inquiryId });
+  const [paymentRequestErrorState, setPaymentRequestErrorState] = useState<{
+    inquiryId: string;
+    message: string | null;
+  }>({ inquiryId, message: null });
+  const priceDrafts =
+    priceDraftState.inquiryId === inquiryId
+      ? priceDraftState.drafts
+      : EMPTY_PRICE_DRAFTS;
+  const paymentRequestError =
+    paymentRequestErrorState.inquiryId === inquiryId
+      ? paymentRequestErrorState.message
+      : null;
+
+  const documentOrder = useMemo(
+    () => (inquiry ? applyPriceDrafts(inquiry.order, priceDrafts) : null),
+    [inquiry, priceDrafts],
+  );
+  const displayInquiry = useMemo(
+    () =>
+      inquiry && documentOrder
+        ? {
+            ...inquiry,
+            order: documentOrder,
+          }
+        : inquiry,
+    [documentOrder, inquiry],
+  );
+  const priceRequiredOptions = useMemo(
+    () => inquiry?.order.options.filter((option) => option.needsPrice) ?? [],
+    [inquiry],
+  );
+  const hasMissingPrice = priceRequiredOptions.some(
+    (option) => !Number.isFinite(priceDrafts[option.id]),
+  );
+  const canRequestPayment = Boolean(
+    documentOrder?.orderFormSubmissionId &&
+      documentOrder.pickupAt &&
+      documentOrder.totalPrice > 0 &&
+      !hasMissingPrice,
+  );
 
   const messages = useMemo(
-    () => (inquiry ? buildMessages(inquiry, state) : []),
-    [inquiry, state],
+    () => (displayInquiry ? buildMessages(displayInquiry, state) : []),
+    [displayInquiry, state],
   );
 
   useEffect(() => {
@@ -53,7 +103,7 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
     scrollArea.scrollTop = scrollArea.scrollHeight;
   }, [messages.length]);
 
-  if (!inquiry) {
+  if (!displayInquiry || !documentOrder || !inquiry) {
     return (
       <SellerResponsiveFrame className="items-center justify-center bg-surface-subtle text-[16px] leading-6 tracking-[-0.32px] text-text-secondary">
         상담을 불러오는 중입니다.
@@ -61,10 +111,33 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
     );
   }
 
+  const handleSendPaymentRequest = async () => {
+    if (!canRequestPayment) {
+      return;
+    }
+
+    setPaymentRequestErrorState({ inquiryId, message: null });
+
+    try {
+      await sendConfirmationMutation.mutateAsync(
+        buildSendOrderConfirmationRequest(inquiry.order, priceDrafts),
+      );
+      setState(router, inquiryId, "payment-requested");
+    } catch (error) {
+      setPaymentRequestErrorState({
+        inquiryId,
+        message:
+          error instanceof Error
+            ? error.message
+            : "결제 요청을 처리하지 못했습니다.",
+      });
+    }
+  };
+
   if (state === "order-form") {
     return (
       <OrderDocumentScreen
-        inquiry={inquiry}
+        inquiry={displayInquiry}
         mode="order-form"
         onBack={() => setState(router, inquiryId, "chat")}
         onPrimary={() => setState(router, inquiryId, "confirmation-draft")}
@@ -81,7 +154,7 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
     return (
       <>
         <OrderDocumentScreen
-          inquiry={inquiry}
+          inquiry={displayInquiry}
           mode={state}
           onBack={() => setState(router, inquiryId, "chat")}
           onOpenPrice={() =>
@@ -89,6 +162,8 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
               `/seller/inquiries/${inquiryId}?state=confirmation-draft&sheet=price`,
             )
           }
+          paymentRequestDisabled={!canRequestPayment}
+          paymentRequestPending={sendConfirmationMutation.isPending}
           onPrimary={() =>
             router.push(
               `/seller/inquiries/${inquiryId}?state=confirmation-priced&modal=payment-request`,
@@ -98,13 +173,21 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
         {sheet === "price" ? (
           <PriceSheet
             onClose={() => setState(router, inquiryId, "confirmation-draft")}
-            onConfirm={() => setState(router, inquiryId, "confirmation-priced")}
+            onConfirm={(nextDrafts) => {
+              setPriceDraftState({ drafts: nextDrafts, inquiryId });
+              setPaymentRequestErrorState({ inquiryId, message: null });
+              setState(router, inquiryId, "confirmation-priced");
+            }}
+            options={priceRequiredOptions}
+            prices={priceDrafts}
           />
         ) : null}
         {modal === "payment-request" ? (
           <PaymentRequestModal
+            errorMessage={paymentRequestError}
+            isPending={sendConfirmationMutation.isPending}
             onCancel={() => setState(router, inquiryId, "confirmation-priced")}
-            onConfirm={() => setState(router, inquiryId, "payment-requested")}
+            onConfirm={handleSendPaymentRequest}
           />
         ) : null}
       </>
@@ -114,11 +197,11 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
   return (
     <SellerResponsiveFrame className="h-dvh bg-surface-subtle">
       <ChatHeader
-        inquiry={inquiry}
+        inquiry={displayInquiry}
         title={
           state === "payment-requested" || state === "payment-completed"
             ? "위하다"
-            : inquiry.buyerName
+            : displayInquiry.buyerName
         }
         onBack={() => router.push("/seller/inquiries")}
       />
@@ -131,7 +214,7 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
         <div className="flex flex-col gap-8">
           {messages.map((message) => (
             <ChatMessage
-              buyerProfileImageUrl={inquiry.profileImageUrl}
+              buyerProfileImageUrl={displayInquiry.profileImageUrl}
               inquiryId={inquiryId}
               key={message.id}
               message={message}
@@ -483,6 +566,8 @@ function OrderDocumentScreen({
   onBack,
   onOpenPrice,
   onPrimary,
+  paymentRequestDisabled = false,
+  paymentRequestPending = false,
 }: {
   inquiry: InquiryDetail;
   mode:
@@ -494,10 +579,13 @@ function OrderDocumentScreen({
   onBack: () => void;
   onOpenPrice?: () => void;
   onPrimary?: () => void;
+  paymentRequestDisabled?: boolean;
+  paymentRequestPending?: boolean;
 }) {
   const isOrderForm = mode === "order-form";
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const isDraft = mode === "confirmation-draft";
+  const isPaymentRequestDisabled =
+    paymentRequestDisabled || paymentRequestPending;
   const isPriced =
     mode === "confirmation-priced" ||
     mode === "confirmation-view" ||
@@ -555,15 +643,15 @@ function OrderDocumentScreen({
           <button
             className={cn(
               "h-11 flex-1 rounded-seller-md text-[15px] leading-5 font-semibold tracking-[-0.3px]",
-              isDraft
+              isPaymentRequestDisabled
                 ? "bg-brand-disabled text-text-disabled"
                 : "bg-brand-primary text-text-inverse",
             )}
-            disabled={isDraft}
+            disabled={isPaymentRequestDisabled}
             onClick={onPrimary}
             type="button"
           >
-            결제요청
+            {paymentRequestPending ? "요청 중" : "결제요청"}
           </button>
         </div>
       )}
@@ -849,14 +937,29 @@ function OrderOptionRow({
 function PriceSheet({
   onClose,
   onConfirm,
+  options,
+  prices,
 }: {
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: (prices: Record<string, number>) => void;
+  options: InquiryOrderOption[];
+  prices: Record<string, number>;
 }) {
-  const searchParams = useSearchParams();
-  const startsComplete = searchParams.get("priceState") === "complete";
-  const [hasEditedPrice, setHasEditedPrice] = useState(startsComplete);
-  const isComplete = startsComplete || hasEditedPrice;
+  const [drafts, setDrafts] = useState<Record<string, string>>(() =>
+    Object.fromEntries(
+      options.map((option) => [
+        option.id,
+        prices[option.id] === undefined
+          ? ""
+          : prices[option.id].toLocaleString("ko-KR"),
+      ]),
+    ),
+  );
+  const isComplete = options.every((option) => {
+    const amount = parsePriceInput(drafts[option.id]);
+
+    return amount !== null && amount >= 0;
+  });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-surface-scrim px-4">
@@ -875,20 +978,20 @@ function PriceSheet({
           </button>
         </div>
         <div className="space-y-6">
-          <PriceInput
-            completeValue="10,000"
-            isComplete={isComplete}
-            label="케이크 디자인"
-            onValueChange={() => setHasEditedPrice(true)}
-            value="12,000"
-          />
-          <PriceInput
-            completeValue="3,000"
-            isComplete={isComplete}
-            label="기타 추가비용"
-            onValueChange={() => setHasEditedPrice(true)}
-            value="10,000"
-          />
+          {options.map((option) => (
+            <PriceInput
+              key={option.id}
+              isComplete={isComplete}
+              label={option.label}
+              onValueChange={(value) =>
+                setDrafts((current) => ({
+                  ...current,
+                  [option.id]: value,
+                }))
+              }
+              value={drafts[option.id] ?? ""}
+            />
+          ))}
           <div className="h-px bg-surface-subtle opacity-90" />
         </div>
         <button
@@ -899,7 +1002,16 @@ function PriceSheet({
               : "bg-brand-disabled text-text-disabled",
           )}
           disabled={!isComplete}
-          onClick={onConfirm}
+          onClick={() => {
+            const nextPrices = Object.fromEntries(
+              options.map((option) => [
+                option.id,
+                parsePriceInput(drafts[option.id]) ?? 0,
+              ]),
+            );
+
+            onConfirm(nextPrices);
+          }}
           type="button"
         >
           확인
@@ -910,16 +1022,14 @@ function PriceSheet({
 }
 
 function PriceInput({
-  completeValue,
   isComplete,
   label,
   onValueChange,
   value,
 }: {
-  completeValue: string;
   isComplete: boolean;
   label: string;
-  onValueChange: () => void;
+  onValueChange: (value: string) => void;
   value: string;
 }) {
   return (
@@ -938,9 +1048,10 @@ function PriceInput({
               ? "text-[22px] leading-[30px] font-bold tracking-[-0.66px] text-text-primary"
               : "text-[16px] leading-6 font-normal tracking-[-0.32px] text-text-disabled",
           )}
-          defaultValue={isComplete ? completeValue : value}
           inputMode="numeric"
-          onChange={onValueChange}
+          onChange={(event) => onValueChange(event.target.value)}
+          placeholder="금액 입력"
+          value={value}
         />
         <span className="flex h-11 w-4 items-center text-[18px] leading-6 font-semibold tracking-[-0.54px] text-text-primary">
           원
@@ -951,9 +1062,13 @@ function PriceInput({
 }
 
 function PaymentRequestModal({
+  errorMessage,
+  isPending,
   onCancel,
   onConfirm,
 }: {
+  errorMessage?: string | null;
+  isPending: boolean;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
@@ -967,26 +1082,117 @@ function PaymentRequestModal({
           <p className="text-[13px] leading-[18px] font-normal tracking-[-0.13px] text-text-secondary">
             결제를 요청하시면 주문확인서가 확정됩니다
           </p>
+          {errorMessage ? (
+            <p className="px-4 pt-3 text-[13px] leading-[18px] font-normal tracking-[-0.13px] text-text-error">
+              {errorMessage}
+            </p>
+          ) : null}
         </div>
         <div className="flex w-full gap-2 px-4">
           <button
             className="h-11 flex-1 rounded-seller-md border border-border-default bg-surface-default text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-primary"
+            disabled={isPending}
             onClick={onCancel}
             type="button"
           >
             취소
           </button>
           <button
-            className="h-11 flex-1 rounded-seller-md bg-brand-primary text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-inverse"
+            className="h-11 flex-1 rounded-seller-md bg-brand-primary text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-inverse disabled:bg-brand-disabled disabled:text-text-disabled"
+            disabled={isPending}
             onClick={onConfirm}
             type="button"
           >
-            계속하기
+            {isPending ? "요청 중" : "계속하기"}
           </button>
         </div>
       </div>
     </div>
   );
+}
+
+function applyPriceDrafts(
+  order: InquiryOrderConfirmation,
+  priceDrafts: Record<string, number>,
+): InquiryOrderConfirmation {
+  let additionalAmount = 0;
+  const options = order.options.map((option) => {
+    const amount = priceDrafts[option.id];
+
+    if (!option.needsPrice || !Number.isFinite(amount)) {
+      return option;
+    }
+
+    additionalAmount += amount;
+
+    return {
+      ...option,
+      needsPrice: false,
+      priceText: amount > 0 ? `+ ${formatPrice(amount)}` : "",
+    };
+  });
+
+  return {
+    ...order,
+    options,
+    totalPrice: order.totalPrice + additionalAmount,
+  };
+}
+
+function buildSendOrderConfirmationRequest(
+  order: InquiryOrderConfirmation,
+  priceDrafts: Record<string, number>,
+): SendSellerOrderConfirmationRequest {
+  if (!order.pickupAt) {
+    throw new Error("픽업 일시가 없어 결제 요청을 보낼 수 없습니다.");
+  }
+
+  const additionalItems = order.options
+    .filter((option) => option.needsPrice)
+    .flatMap((option) => {
+      const amount = priceDrafts[option.id];
+
+      if (!Number.isFinite(amount)) {
+        return [];
+      }
+
+      return [
+        {
+          amount,
+          label: option.label,
+          value: option.value,
+        },
+      ];
+    });
+  const additionalAmount = additionalItems.reduce(
+    (sum, item) => sum + item.amount,
+    0,
+  );
+  const summaryText =
+    order.summaryText.trim() ||
+    order.options.map((option) => `${option.label}: ${option.value}`).join("\n");
+
+  return {
+    additionalItems,
+    amount: order.totalPrice + additionalAmount,
+    confirmationTitle: order.confirmationTitle || "주문확인서",
+    orderFormSubmissionId: order.orderFormSubmissionId,
+    pickupAt: order.pickupAt,
+    sellerNote: null,
+    summaryText: summaryText || "주문확인서",
+  };
+}
+
+function parsePriceInput(value: string | undefined) {
+  const normalized = value?.replace(/[,\s]/g, "") ?? "";
+
+  if (!normalized) {
+    return null;
+  }
+
+  const amount = Number(normalized);
+
+  return Number.isFinite(amount) && amount >= 0 ? amount : null;
 }
 
 function buildMessages(
