@@ -11,7 +11,10 @@ import {
   parseInquiryScreenState,
 } from "@/features/inquiries/model/inquiry-detail-state";
 import { useSellerInquiryListStomp } from "@/features/inquiries/model/inquiry-list-stomp";
-import { useSendSellerOrderConfirmationMutation } from "@/features/inquiries/model/inquiry-mutations";
+import {
+  useMarkSellerInquiryReadMutation,
+  useSendSellerOrderConfirmationMutation,
+} from "@/features/inquiries/model/inquiry-mutations";
 import {
   applyPriceDrafts,
   buildSendOrderConfirmationRequest,
@@ -39,9 +42,11 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
   const state = parseInquiryScreenState(searchParams.get("state"));
   const sheet = searchParams.get("sheet");
   const modal = searchParams.get("modal");
+  const markedReadInquiryRef = useRef<string | null>(null);
   const reviewedSubmissionRef = useRef<string | null>(null);
   const stomp = useSellerInquiryStomp(inquiryId, Boolean(inquiry));
   useSellerInquiryListStomp(currentUserQuery.data?.userId, Boolean(inquiry));
+  const markReadMutation = useMarkSellerInquiryReadMutation(inquiryId);
   const sendConfirmationMutation =
     useSendSellerOrderConfirmationMutation(inquiryId);
   const [priceDraftState, setPriceDraftState] = useState<{
@@ -86,6 +91,23 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
     nextState: Parameters<typeof getInquiryDetailHref>[1],
     overlay?: Parameters<typeof getInquiryDetailHref>[2],
   ) => router.push(getInquiryDetailHref(inquiryId, nextState, overlay));
+
+  useEffect(() => {
+    if (
+      !inquiry ||
+      !process.env.NEXT_PUBLIC_P3_API_BASE_URL ||
+      markedReadInquiryRef.current === inquiryId
+    ) {
+      return;
+    }
+
+    markedReadInquiryRef.current = inquiryId;
+    markReadMutation.mutate(undefined, {
+      onError: () => {
+        markedReadInquiryRef.current = null;
+      },
+    });
+  }, [inquiry, inquiryId, markReadMutation]);
 
   useEffect(() => {
     const submissionId = documentOrder?.orderFormSubmissionId;
