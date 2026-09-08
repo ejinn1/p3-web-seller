@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, type QueryKey } from "@tanstack/react-query";
 import { appendTimelineItem } from "@/features/inquiries/model/inquiry-adapters";
 import { inquiryKeys } from "@/features/inquiries/model/inquiry-keys";
 import type {
@@ -16,6 +16,7 @@ import {
 export function useSellerInquiryStomp(inquiryId: string, enabled = true) {
   const queryClient = useQueryClient();
   const connectionRef = useRef<StompConnection | null>(null);
+  const receivedEventIdsRef = useRef<Set<string>>(new Set());
   const [error, setError] = useState<Error | null>(null);
   const [isConnected, setIsConnected] = useState(false);
 
@@ -46,11 +47,21 @@ export function useSellerInquiryStomp(inquiryId: string, enabled = true) {
         {
           destination: `/topic/inquiries/${inquiryId}`,
           onMessage: (message) => {
+            if (isDuplicateEvent(message.eventId, receivedEventIdsRef.current)) {
+              return;
+            }
+
             queryClient.setQueryData<InquiryDetail>(
               inquiryKeys.detail(inquiryId),
-              (current) =>
-                current ? appendTimelineItem(current, message) : current,
+              (current) => appendTimelineItemOnce(current, message),
             );
+
+            if (isCtaTimelineItem(message)) {
+              void queryClient.invalidateQueries({ queryKey: inquiryKeys.detail(inquiryId) });
+              void queryClient.invalidateQueries({
+                predicate: (query) => isSellerInquiryListKey(query.queryKey),
+              });
+            }
           },
         },
       ],
@@ -113,4 +124,44 @@ export function useSellerInquiryStomp(inquiryId: string, enabled = true) {
 
 function toError(error: unknown) {
   return error instanceof Error ? error : new Error(String(error));
+}
+
+function appendTimelineItemOnce(
+  current: InquiryDetail | undefined,
+  item: InquiryTimelineItemResponse,
+) {
+  if (!current || current.messages.some((message) => message.id === item.eventId)) {
+    return current;
+  }
+
+  return appendTimelineItem(current, item);
+}
+
+function isCtaTimelineItem(item: InquiryTimelineItemResponse) {
+  return (
+    item.type === "ORDER_FORM_SUBMISSION" ||
+    item.type === "ORDER_CONFIRMATION" ||
+    item.type === "ORDER_CONFIRMATION_REVISION" ||
+    item.type === "PAYMENT_COMPLETED"
+  );
+}
+
+function isDuplicateEvent(eventId: string, receivedEventIds: Set<string>) {
+  if (receivedEventIds.has(eventId)) return true;
+
+  receivedEventIds.add(eventId);
+  if (receivedEventIds.size > 100) {
+    const oldestEventId = receivedEventIds.values().next().value;
+    if (oldestEventId) receivedEventIds.delete(oldestEventId);
+  }
+  return false;
+}
+
+function isSellerInquiryListKey(queryKey: QueryKey) {
+  return (
+    Array.isArray(queryKey) &&
+    queryKey[0] === "seller" &&
+    queryKey[1] === "inquiries" &&
+    queryKey[2] === "list"
+  );
 }
