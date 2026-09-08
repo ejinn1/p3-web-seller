@@ -1,10 +1,16 @@
 import { SellerMenuHeader } from "@/components/widgets/seller-menu-header";
 
-export function StoreManagementHeader() {
+type StoreManagementHeaderProps = {
+  backHref: string;
+};
+
+export function StoreManagementHeader({
+  backHref,
+}: StoreManagementHeaderProps) {
   return (
     <SellerMenuHeader
-      backHref="/seller"
-      backLabel="판매자 홈으로 돌아가기"
+      backHref={backHref}
+      backLabel="이전 화면으로 돌아가기"
       className="border-none"
       title="스토어 관리"
     />

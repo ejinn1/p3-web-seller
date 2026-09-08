@@ -57,7 +57,9 @@ export function StoreManagementScreen() {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-[768px] flex-col bg-surface-default text-text-primary">
-      <StoreManagementHeader />
+      <StoreManagementHeader
+        backHref={canEnterSellerHome ? "/seller/home" : "/auth/role"}
+      />
       <section className="flex flex-1 flex-col gap-8 overflow-y-auto px-4 pt-6 pb-4">
         <div className="space-y-2">
           <h2 className="text-seller-display-lg font-bold tracking-[-0.84px] whitespace-pre-line">
