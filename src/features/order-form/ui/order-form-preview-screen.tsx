@@ -4,6 +4,7 @@ import { orderFormCategories } from "@/features/order-form/model/order-form-cate
 import { useOrderFormDraftStore } from "@/features/order-form/model/order-form-draft";
 import { OrderFormHeader } from "@/features/order-form/ui/order-form-header";
 import { OrderFormPreviewCategory } from "@/features/order-form/ui/order-form-preview-category";
+import { getSellerBackHref } from "@/lib/navigation/seller-back-routes";
 
 export function OrderFormPreviewScreen() {
   const optionsByCategory = useOrderFormDraftStore(
@@ -17,7 +18,7 @@ export function OrderFormPreviewScreen() {
     <main className="mx-auto min-h-dvh w-full max-w-[768px] bg-surface-subtle text-text-primary">
       <div className="bg-surface-default">
         <OrderFormHeader
-          backHref="/seller/order-form"
+          backHref={getSellerBackHref("orderFormPreview")}
           backLabel="주문서 양식으로 돌아가기"
 
           title="미리보기"

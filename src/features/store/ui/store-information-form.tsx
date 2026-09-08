@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Button } from "@/components/common/button";
 import { Textarea } from "@/components/common/textarea";
 import { OrderFormHeader } from "@/features/order-form/ui/order-form-header";
+import { getSellerBackHref } from "@/lib/navigation/seller-back-routes";
 import type { Store } from "@/features/store/model/store-types";
 
 type StoreInformationFormProps = {
@@ -182,7 +183,7 @@ export function StoreInformationForm({
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-[768px] flex-col bg-surface-default text-text-primary">
       <OrderFormHeader
-        backHref="/seller/store-management"
+        backHref={getSellerBackHref("storeInformation")}
         backLabel="스토어 관리로 돌아가기"
 
         title="스토어 정보"

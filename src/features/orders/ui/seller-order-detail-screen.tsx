@@ -26,6 +26,7 @@ import {
   OrderStatusBadge,
   OrdersHeader,
 } from "@/features/orders/ui/seller-orders-screen";
+import { getSellerBackHref } from "@/lib/navigation/seller-back-routes";
 
 export function SellerOrderDetailScreen({ orderId }: { orderId: string }) {
   const router = useRouter();
@@ -52,7 +53,7 @@ export function SellerOrderDetailScreen({ orderId }: { orderId: string }) {
   return (
     <SellerResponsiveFrame className="bg-surface-subtle">
       <OrdersHeader
-        backHref="/seller/orders"
+        backHref={getSellerBackHref("orderDetail")}
         onMenu={() => setSidebarOpen(true)}
         showMenu
         title="주문 내역"

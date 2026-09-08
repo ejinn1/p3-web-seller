@@ -6,6 +6,10 @@ import { useCompleteAccountRegistrationMutation } from "@/features/store/model/s
 import { useStoreManagementStatusQuery } from "@/features/store/model/store-queries";
 import { StoreManagementHeader } from "@/features/store/ui/store-management-header";
 import { SettingRow } from "@/components/widgets/setting-row";
+import {
+  getSellerBackHref,
+  getSellerStoreManagementBackHref,
+} from "@/lib/navigation/seller-back-routes";
 
 export function StoreManagementScreen() {
   const router = useRouter();
@@ -58,7 +62,7 @@ export function StoreManagementScreen() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-[768px] flex-col bg-surface-default text-text-primary">
       <StoreManagementHeader
-        backHref={canEnterSellerHome ? "/seller/home" : "/auth/role"}
+        backHref={getSellerStoreManagementBackHref(canEnterSellerHome)}
       />
       <section className="flex flex-1 flex-col gap-8 overflow-y-auto px-4 pt-6 pb-4">
         <div className="space-y-2">
@@ -87,7 +91,7 @@ export function StoreManagementScreen() {
           className="h-11 rounded-seller-md text-[15px] font-semibold"
           disabled={!canEnterSellerHome}
           fullWidth
-          onClick={() => router.push("/seller/home")}
+          onClick={() => router.push(getSellerBackHref("storeManagement"))}
           size="md"
         >
           저장
