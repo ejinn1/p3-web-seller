@@ -172,8 +172,12 @@ function toInquiryOrderConfirmation(
     : submission?.pickupTime
       ? formatLocalTime(submission.pickupTime)
       : "";
+  const basePrice =
+    confirmation?.amount ??
+    rows.reduce((sum, row) => sum + (row.amount ?? 0), 0);
 
   return {
+    basePrice,
     buyerName: detail.participant.name,
     buyerPhone: "",
     confirmationTitle: confirmation?.confirmationTitle ?? "주문확인서",
@@ -192,9 +196,7 @@ function toInquiryOrderConfirmation(
       confirmation?.summaryText ??
       rows.map((row) => `${row.label}: ${row.value}`).join("\n") ??
       "주문확인서",
-    totalPrice:
-      confirmation?.amount ??
-      rows.reduce((sum, row) => sum + (row.amount ?? 0), 0),
+    totalPrice: confirmation?.amount ?? basePrice,
   };
 }
 
@@ -329,6 +331,7 @@ function toInquiryOrderOption(
   const priceLabel = row.priceLabel?.trim();
 
   return {
+    amount: row.amount,
     id: `${toOptionId(row.label)}-${index}`,
     label: row.label,
     needsPrice: Boolean(priceLabel && row.amount === null),

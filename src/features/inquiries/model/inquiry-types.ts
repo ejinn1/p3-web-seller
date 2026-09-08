@@ -202,6 +202,7 @@ export type InquiryChatMessage =
     };
 
 export type InquiryOrderOption = {
+  amount: number | null;
   id: string;
   label: string;
   value: string;
@@ -211,6 +212,7 @@ export type InquiryOrderOption = {
 };
 
 export type InquiryOrderConfirmation = {
+  basePrice: number;
   buyerName: string;
   buyerPhone: string;
   confirmationTitle: string;

@@ -12,6 +12,7 @@ import { useSendSellerOrderConfirmationMutation } from "@/features/inquiries/mod
 import {
   applyPriceDrafts,
   buildSendOrderConfirmationRequest,
+  calculateInquiryOrderPrice,
 } from "@/features/inquiries/model/inquiry-order-confirmation";
 import { useSellerInquiryQuery } from "@/features/inquiries/model/inquiry-queries";
 import { useSellerInquiryStomp } from "@/features/inquiries/model/inquiry-stomp";
@@ -59,14 +60,17 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
     () => inquiry?.order.options.filter((option) => option.needsPrice) ?? [],
     [inquiry],
   );
-  const hasMissingPrice = priceRequiredOptions.some(
-    (option) => !Number.isFinite(priceDrafts[option.id]),
+  const priceCalculation = useMemo(
+    () =>
+      inquiry ? calculateInquiryOrderPrice(inquiry.order, priceDrafts) : null,
+    [inquiry, priceDrafts],
   );
   const canRequestPayment = Boolean(
     documentOrder?.orderFormSubmissionId &&
     documentOrder.pickupAt &&
-    documentOrder.totalPrice > 0 &&
-    !hasMissingPrice,
+    priceCalculation &&
+    priceCalculation.totalAmount > 0 &&
+    priceCalculation.missingOptionIds.length === 0,
   );
 
   const navigate = (
