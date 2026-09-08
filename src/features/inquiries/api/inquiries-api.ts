@@ -15,6 +15,11 @@ import type {
   SendSellerOrderConfirmationRequest,
 } from "@/features/inquiries/model/inquiry-types";
 
+const pendingOrderConfirmationRequests = new Map<
+  string,
+  Promise<InquiryOrderConfirmationResponse>
+>();
+
 export async function getSellerInquiries(
   params: SellerInquiryListParams = {},
 ): Promise<InquiryListItem[]> {
@@ -69,15 +74,34 @@ export const moveSellerInquiryToTrash = (inquiryId: string) =>
 export const restoreSellerInquiryFromTrash = (inquiryId: string) =>
   sendJson<void>(`/seller/inquiries/${inquiryId}/restore`, "PATCH");
 
-export const sendSellerOrderConfirmation = ({
+export function sendSellerOrderConfirmation({
   inquiryId,
   request,
 }: {
   inquiryId: string;
   request: SendSellerOrderConfirmationRequest;
-}) =>
-  sendJson<InquiryOrderConfirmationResponse>(
+}) {
+  const pendingRequest = pendingOrderConfirmationRequests.get(inquiryId);
+
+  if (pendingRequest) {
+    return pendingRequest;
+  }
+
+  const nextRequest = sendJson<InquiryOrderConfirmationResponse>(
     `/seller/inquiries/${inquiryId}/confirmations`,
     "POST",
     request,
   );
+
+  pendingOrderConfirmationRequests.set(inquiryId, nextRequest);
+
+  const clearPendingRequest = () => {
+    if (pendingOrderConfirmationRequests.get(inquiryId) === nextRequest) {
+      pendingOrderConfirmationRequests.delete(inquiryId);
+    }
+  };
+
+  void nextRequest.then(clearPendingRequest, clearPendingRequest);
+
+  return nextRequest;
+}

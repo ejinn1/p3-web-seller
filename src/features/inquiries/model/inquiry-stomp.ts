@@ -8,10 +8,9 @@ import type {
   InquiryDetail,
   InquiryTimelineItemResponse,
 } from "@/features/inquiries/model/inquiry-types";
-import {
-  connectStomp,
-  type StompConnection,
-} from "@/lib/stomp/client";
+import { connectStomp, type StompConnection } from "@/lib/stomp/client";
+import { orderCalendarKeys } from "@/features/orders/model/order-calendar-keys";
+import { orderKeys } from "@/features/orders/model/order-keys";
 
 export function useSellerInquiryStomp(inquiryId: string, enabled = true) {
   const queryClient = useQueryClient();
@@ -51,6 +50,15 @@ export function useSellerInquiryStomp(inquiryId: string, enabled = true) {
               (current) =>
                 current ? appendTimelineItem(current, message) : current,
             );
+
+            void queryClient.invalidateQueries({ queryKey: inquiryKeys.all });
+
+            if (message.type === "PAYMENT_COMPLETED") {
+              void queryClient.invalidateQueries({ queryKey: orderKeys.all });
+              void queryClient.invalidateQueries({
+                queryKey: orderCalendarKeys.all,
+              });
+            }
           },
         },
       ],
@@ -81,22 +89,7 @@ export function useSellerInquiryStomp(inquiryId: string, enabled = true) {
       const connection = connectionRef.current;
 
       if (!connection) {
-        if (!process.env.NEXT_PUBLIC_P3_API_BASE_URL) {
-          queryClient.setQueryData<InquiryDetail>(
-            inquiryKeys.detail(inquiryId),
-            (current) =>
-              current
-                ? appendTimelineItem(current, {
-                    assetIds: [],
-                    content,
-                    createdAt: new Date().toISOString(),
-                    eventId: crypto.randomUUID(),
-                    senderUserId: null,
-                    type: "MESSAGE",
-                  })
-                : current,
-          );
-        }
+        setError(new Error("채팅 서버에 연결되어 있지 않습니다."));
         return;
       }
 
@@ -105,7 +98,7 @@ export function useSellerInquiryStomp(inquiryId: string, enabled = true) {
         content,
       });
     },
-    [inquiryId, queryClient],
+    [inquiryId],
   );
 
   return { error, isConnected, sendMessage };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
 import {
@@ -34,7 +34,6 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
   const stomp = useSellerInquiryStomp(inquiryId, Boolean(inquiry));
   const sendConfirmationMutation =
     useSendSellerOrderConfirmationMutation(inquiryId);
-  const requestInFlightRef = useRef(false);
   const [priceDraftState, setPriceDraftState] = useState<{
     drafts: Record<string, number>;
     inquiryId: string;
@@ -89,11 +88,10 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
   const displayInquiry = { ...inquiry, order: documentOrder };
 
   const handleSendPaymentRequest = async () => {
-    if (!canRequestPayment || requestInFlightRef.current) {
+    if (!canRequestPayment || sendConfirmationMutation.isPending) {
       return;
     }
 
-    requestInFlightRef.current = true;
     setPaymentRequestErrorState({ inquiryId, message: null });
 
     try {
@@ -109,8 +107,6 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
             ? error.message
             : "결제 요청을 처리하지 못했습니다.",
       });
-    } finally {
-      requestInFlightRef.current = false;
     }
   };
 
