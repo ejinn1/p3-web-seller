@@ -1,9 +1,5 @@
 import { getJson, sendJson } from "@/lib/api/client";
 import {
-  inquiryDetailFixture,
-  inquiryListFixture,
-} from "@/features/inquiries/model/inquiry-fixtures";
-import {
   toInquiryDetail,
   toInquiryListItem,
 } from "@/features/inquiries/model/inquiry-adapters";
@@ -19,23 +15,9 @@ import type {
   SendSellerOrderConfirmationRequest,
 } from "@/features/inquiries/model/inquiry-types";
 
-const useFixtures =
-  process.env.NEXT_PUBLIC_P3_USE_MOCKS === "true" ||
-  !process.env.NEXT_PUBLIC_P3_API_BASE_URL;
-
 export async function getSellerInquiries(
   params: SellerInquiryListParams = {},
 ): Promise<InquiryListItem[]> {
-  if (useFixtures) {
-    return inquiryListFixture.filter((item) => {
-      if (params.status && item.status !== params.status) {
-        return false;
-      }
-
-      return !(params.unreadOnly && item.unreadCount <= 0);
-    });
-  }
-
   const searchParams = new URLSearchParams();
 
   if (params.status) {
@@ -57,10 +39,6 @@ export async function getSellerInquiries(
 export async function getSellerInquiry(
   inquiryId: string,
 ): Promise<InquiryDetail> {
-  if (useFixtures) {
-    return { ...inquiryDetailFixture, id: inquiryId };
-  }
-
   const [detail, timeline, submissions, confirmations] = await Promise.all([
     getJson<InquiryChatDetailResponse>(`/seller/inquiries/${inquiryId}`),
     getJson<InquiryTimelinePageResponse>(

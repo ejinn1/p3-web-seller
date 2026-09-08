@@ -24,7 +24,10 @@ export function toInquiryListItem(item: InquiryListApiItem): InquiryListItem {
     id: item.inquiryId,
     buyerName: item.participant.name,
     hasOrderFormSubmission: Boolean(item.latestOrderFormSubmission),
-    lastMessage: formatLatestMessage(item.latestEvent, item.latestOrderFormSubmission),
+    lastMessage: formatLatestMessage(
+      item.latestEvent,
+      item.latestOrderFormSubmission,
+    ),
     lastMessageAt: latestAt,
     lastMessageTimeLabel: formatShortTime(latestAt),
     profileImageUrl: item.participant.profileImageDeliveryUrl,
@@ -46,13 +49,32 @@ export function toInquiryDetail({
 }): InquiryDetail {
   const latestSubmission = newestBy(submissions, "submittedAt");
   const latestConfirmation = newestBy(confirmations, "createdAt");
+  const confirmationAmounts = new Map(
+    confirmations.map((confirmation) => [
+      confirmation.confirmationId,
+      confirmation.amount,
+    ]),
+  );
 
   return {
+    createdAt: detail.createdAt,
     id: detail.inquiryId,
     buyerName: detail.participant.name,
     chatInfo: "픽업 상담",
-    messages: timeline.map((item) => toChatMessage(item, detail.participant.userId)),
-    order: toInquiryOrderConfirmation(detail, latestSubmission, latestConfirmation),
+    messages: timeline.map((item) =>
+      toChatMessage(
+        item,
+        detail.participant.userId,
+        confirmationAmounts.get(item.referenceId ?? "") ??
+          latestConfirmation?.amount ??
+          0,
+      ),
+    ),
+    order: toInquiryOrderConfirmation(
+      detail,
+      latestSubmission,
+      latestConfirmation,
+    ),
     participantUserId: detail.participant.userId,
     profileImageUrl: detail.participant.profileImageDeliveryUrl,
     status: "IN_PROGRESS",
@@ -68,7 +90,7 @@ export function appendTimelineItem(
     ...inquiry,
     messages: [
       ...inquiry.messages,
-      toChatMessage(item, inquiry.participantUserId),
+      toChatMessage(item, inquiry.participantUserId, inquiry.order.totalPrice),
     ],
   };
 }
@@ -76,6 +98,7 @@ export function appendTimelineItem(
 function toChatMessage(
   item: InquiryTimelineItemResponse,
   buyerUserId: string | null,
+  confirmationAmount: number,
 ): InquiryChatMessage {
   const owner: "buyer" | "seller" =
     buyerUserId && item.senderUserId === buyerUserId ? "buyer" : "seller";
@@ -102,7 +125,7 @@ function toChatMessage(
 
   if (item.type === "ORDER_CONFIRMATION") {
     return {
-      amount: 0,
+      amount: confirmationAmount,
       id: item.eventId,
       kind: "payment-request" as const,
       owner: "seller" as const,
@@ -112,7 +135,7 @@ function toChatMessage(
 
   if (item.type === "PAYMENT_COMPLETED") {
     return {
-      amount: 0,
+      amount: confirmationAmount,
       id: item.eventId,
       kind: "payment-complete" as const,
       owner: "buyer" as const,
@@ -160,7 +183,9 @@ function toInquiryOrderConfirmation(
     options: rows.map(toInquiryOrderOption),
     pickupAt:
       confirmation?.pickupAt ??
-      (submission ? toPickupInstant(submission.pickupDate, submission.pickupTime) : null),
+      (submission
+        ? toPickupInstant(submission.pickupDate, submission.pickupTime)
+        : null),
     pickupDate,
     pickupTime,
     summaryText:
@@ -255,7 +280,8 @@ function rowsFromAnswers(answers: unknown[]): InquiryOrderOptionRow[] {
         isRecord(option)
           ? [
               {
-                amount: numberOrNull(option.price) ?? numberOrNull(option.amount),
+                amount:
+                  numberOrNull(option.price) ?? numberOrNull(option.amount),
                 label,
                 priceLabel: stringOrNull(option.priceLabel),
                 required: booleanOrUndefined(answer.required),
@@ -266,7 +292,10 @@ function rowsFromAnswers(answers: unknown[]): InquiryOrderOptionRow[] {
       );
     }
 
-    return rowsFromUnknownValue(label, answer.value ?? answer.answer ?? answer.content);
+    return rowsFromUnknownValue(
+      label,
+      answer.value ?? answer.answer ?? answer.content,
+    );
   });
 }
 
@@ -284,10 +313,7 @@ function normalizeParsedRow(
 
   return [
     {
-      amount:
-        numberOrNull(item.amount) ??
-        numberOrNull(item.price) ??
-        null,
+      amount: numberOrNull(item.amount) ?? numberOrNull(item.price) ?? null,
       label: normalizeText(item.label ?? item.name) || `옵션 ${index + 1}`,
       priceLabel: stringOrNull(item.priceLabel),
       required: booleanOrUndefined(item.required),
@@ -296,7 +322,10 @@ function normalizeParsedRow(
   ];
 }
 
-function toInquiryOrderOption(row: InquiryOrderOptionRow, index: number): InquiryOrderOption {
+function toInquiryOrderOption(
+  row: InquiryOrderOptionRow,
+  index: number,
+): InquiryOrderOption {
   const priceLabel = row.priceLabel?.trim();
 
   return {
@@ -305,7 +334,7 @@ function toInquiryOrderOption(row: InquiryOrderOptionRow, index: number): Inquir
     needsPrice: Boolean(priceLabel && row.amount === null),
     priceText:
       row.amount === null
-        ? priceLabel ?? ""
+        ? (priceLabel ?? "")
         : row.amount > 0
           ? `+ ${formatPrice(row.amount)}`
           : "",
@@ -487,7 +516,9 @@ function newestBy<T extends Record<K, string>, K extends keyof T>(
   items: T[],
   key: K,
 ) {
-  return [...items].sort(
-    (a, b) => new Date(a[key]).getTime() - new Date(b[key]).getTime(),
-  ).at(-1) ?? null;
+  return (
+    [...items]
+      .sort((a, b) => new Date(a[key]).getTime() - new Date(b[key]).getTime())
+      .at(-1) ?? null
+  );
 }
