@@ -18,6 +18,7 @@ export type OrderCalendarItem = {
   buyerUserId: string;
   orderNumber: string;
   menuName: string;
+  startReferenceAssets?: string[];
   paidAmount: number;
   pickupAt: string;
   pickupDate: string;
@@ -48,6 +49,7 @@ export type OrderResponse = {
   orderNumber: string;
   menuName: string;
   optionSummary: string;
+  startReferenceAssets?: string[];
   paidAmount: number;
   pickupAt: string;
   status: OrderStatus;
