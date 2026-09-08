@@ -17,12 +17,12 @@ export function OrderFormPreviewCategory({
   return (
     <section className="flex flex-col gap-6">
       <h2 className="flex items-center gap-1 text-seller-heading-lg font-bold tracking-[-0.6px]">
+        {title}
         {required ? (
-          <span className="text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-error">
+          <span className="relative -top-1 text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-error">
             *
           </span>
         ) : null}
-        {title}
       </h2>
       <div className="flex flex-col gap-6">
         {options.map((option, index) => (

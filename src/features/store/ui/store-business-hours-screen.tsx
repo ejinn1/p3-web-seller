@@ -4,6 +4,7 @@ import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/common/button";
+import { Header } from "@/components/common/header";
 import { useUpdateStoreBusinessHoursMutation } from "@/features/store/model/store-mutations";
 import { useStoreBusinessHoursQuery } from "@/features/store/model/store-queries";
 import type {
@@ -12,8 +13,6 @@ import type {
   StoreBusinessHoursInput,
 } from "@/features/store/model/store-types";
 import { cn } from "@/lib/utils";
-
-import { PickupLocationHeader } from "./pickup-location-header";
 
 type StoreBusinessHoursScreenProps = {
   onBack: () => void;
@@ -149,7 +148,9 @@ function StoreBusinessHoursForm({
       : null,
   );
   const [breakEnd, setBreakEnd] = useState(
-    businessHours?.breakEndTime ? normalizeTime(businessHours.breakEndTime) : null,
+    businessHours?.breakEndTime
+      ? normalizeTime(businessHours.breakEndTime)
+      : null,
   );
   const [holidays, setHolidays] = useState<DayOfWeek[]>(() =>
     hasSavedBusinessHours
@@ -209,14 +210,19 @@ function StoreBusinessHoursForm({
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-[390px] flex-col bg-surface-default text-text-primary">
-      <PickupLocationHeader onBack={onBack} title="영업시간" />
+      <Header
+        backLabel="이전 화면으로 돌아가기"
+        className="border-none"
+        onBack={onBack}
+        title="영업시간"
+      />
       <section className="flex flex-1 flex-col gap-6 overflow-y-auto pb-4">
         <section className="flex flex-col gap-4 px-4 pt-6">
           <p className="flex text-seller-heading-md font-semibold tracking-[-0.54px]">
             영업시간
             <span
               aria-hidden="true"
-              className="pb-1 text-[15px] text-text-error"
+              className="relative -top-1 text-[15px] text-text-error"
             >
               *
             </span>
@@ -343,7 +349,12 @@ export function StoreBusinessHoursScreen({
   if (businessHoursQuery.isPending) {
     return (
       <main className="mx-auto flex min-h-dvh w-full max-w-[390px] flex-col bg-surface-default text-text-primary">
-        <PickupLocationHeader onBack={onBack} title="영업시간" />
+        <Header
+          backLabel="이전 화면으로 돌아가기"
+          className="border-none"
+          onBack={onBack}
+          title="영업시간"
+        />
         <p className="px-4 pt-6 text-sm text-text-secondary">
           영업시간을 불러오고 있습니다.
         </p>

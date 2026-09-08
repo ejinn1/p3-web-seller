@@ -10,7 +10,7 @@ type OrderFormHeaderProps = {
 export function OrderFormHeader({
   backLabel = "스토어 관리로 돌아가기",
   backHref,
-  showMenu = true,
+  showMenu = false,
   title,
 }: OrderFormHeaderProps) {
   return (

@@ -140,7 +140,9 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
         </div>
       </section>
       <ChatComposer
-        disabled={!stomp.isConnected && Boolean(process.env.NEXT_PUBLIC_P3_API_BASE_URL)}
+        disabled={
+          !stomp.isConnected && Boolean(process.env.NEXT_PUBLIC_P3_API_BASE_URL)
+        }
         onSend={stomp.sendMessage}
       />
       {stomp.error ? (
@@ -626,9 +628,7 @@ function OrderCard({
   }
 
   return (
-    <article
-      className="w-full rounded-seller-sm bg-surface-default px-4 py-8 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]"
-    >
+    <article className="w-full rounded-seller-sm bg-surface-default px-4 py-8 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
       <div className="flex justify-between text-[22px] leading-[30px] font-bold tracking-[-0.66px] text-text-primary">
         <p>{order.pickupDate}</p>
         <p>{order.pickupTime}</p>
@@ -703,10 +703,9 @@ function formatOrderFormPrice(option: InquiryOrderOption) {
     return "문의 필요";
   }
 
-  return option.priceText.replace("+ 3000원", "+ 3,000원 ~").replace(
-    "+ 4000원",
-    "+ 4,000원 ~",
-  );
+  return option.priceText
+    .replace("+ 3000원", "+ 3,000원 ~")
+    .replace("+ 4000원", "+ 4,000원 ~");
 }
 
 function OrderFormSection({
@@ -724,13 +723,13 @@ function OrderFormSection({
 }) {
   return (
     <section className="space-y-4">
-      <h2 className="text-[20px] leading-7 font-bold tracking-[-0.6px] text-text-primary">
+      <h2 className="flex items-center gap-1 text-[20px] leading-7 font-bold tracking-[-0.6px] text-text-primary">
+        {title}
         {required ? (
-          <span className="text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-error">
+          <span className="relative -top-1 text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-error">
             *
           </span>
         ) : null}
-        {title}
       </h2>
       <button
         className="flex h-6 w-full items-center gap-4 text-left"
@@ -792,13 +791,13 @@ function OrderOptionRow({
 
   return (
     <div className="space-y-2">
-      <p className="text-[13px] leading-4 font-medium tracking-[-0.13px] text-text-tertiary">
+      <p className="flex items-center gap-1 text-[13px] leading-4 font-medium tracking-[-0.13px] text-text-tertiary">
+        {option.label}
         {isOrderForm && option.required ? (
-          <span className="text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-error">
+          <span className="relative -top-1 text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-error">
             *
           </span>
         ) : null}
-        {option.label}
       </p>
       <button
         className="flex min-h-6 w-full items-center justify-between text-left"
@@ -918,11 +917,11 @@ function PriceInput({
 }) {
   return (
     <label className="block space-y-2">
-      <span className="text-[13px] leading-4 font-medium tracking-[-0.13px] text-text-tertiary">
-        <span className="text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-error">
+      <span className="flex items-center gap-1 text-[13px] leading-4 font-medium tracking-[-0.13px] text-text-tertiary">
+        {label}
+        <span className="relative -top-1 text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-error">
           *
         </span>
-        {label}
       </span>
       <span className="flex h-11 items-start gap-2">
         <input

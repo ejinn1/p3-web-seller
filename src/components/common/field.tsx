@@ -39,13 +39,19 @@ export function Field({
         htmlFor={htmlFor}
       >
         {required && requiredPosition === "before" ? (
-          <span aria-hidden="true" className="text-seller-danger">
+          <span
+            aria-hidden="true"
+            className="relative -top-1 text-seller-danger"
+          >
             *
           </span>
         ) : null}
         {label}
         {required && requiredPosition === "after" ? (
-          <span aria-hidden="true" className="text-seller-danger">
+          <span
+            aria-hidden="true"
+            className="relative -top-1 text-seller-danger"
+          >
             *
           </span>
         ) : null}

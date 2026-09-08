@@ -3,9 +3,8 @@
 import { Search, X } from "lucide-react";
 import { useState } from "react";
 
+import { Header } from "@/components/common/header";
 import { useStoreLocationSearchQuery } from "@/features/store/model/store-queries";
-
-import { PickupLocationHeader } from "./pickup-location-header";
 
 type PickupLocationSearchScreenProps = {
   onBack: () => void;
@@ -23,7 +22,12 @@ export function PickupLocationSearchScreen({
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-[390px] flex-col bg-surface-default text-text-primary">
-      <PickupLocationHeader onBack={onBack} />
+      <Header
+        backLabel="이전 화면으로 돌아가기"
+        className="border-none"
+        onBack={onBack}
+        title="픽업 장소"
+      />
       <section className="flex flex-1 flex-col px-4 pt-6">
         <div className="flex h-11 items-center gap-2 rounded-seller-sm bg-surface-subtle px-4">
           <Search

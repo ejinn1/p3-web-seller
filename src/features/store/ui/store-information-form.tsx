@@ -41,11 +41,7 @@ function StoreInformationField({
   const displayValue = value ?? "";
   const inputContent = (
     <span
-      className={
-        displayValue
-          ? "text-text-primary"
-          : "text-text-unavailable"
-      }
+      className={displayValue ? "text-text-primary" : "text-text-unavailable"}
     >
       {displayValue || placeholder}
     </span>
@@ -64,9 +60,7 @@ function StoreInformationField({
     >
       <span
         className={`flex w-full rounded-seller-sm bg-surface-subtle px-4 text-base leading-6 tracking-[-0.32px] ${
-          multiline
-            ? "h-[88px] items-start py-2"
-            : "h-11 items-center truncate"
+          multiline ? "h-[88px] items-start py-2" : "h-11 items-center truncate"
         }`}
       >
         <span className={multiline ? "line-clamp-3" : "truncate"}>
@@ -79,9 +73,7 @@ function StoreInformationField({
     <div className="flex w-full flex-col items-end gap-1">
       <span
         className={`flex w-full rounded-seller-sm bg-surface-subtle px-4 text-base leading-6 tracking-[-0.32px] ${
-          multiline
-            ? "h-[88px] items-start py-2"
-            : "h-11 items-center truncate"
+          multiline ? "h-[88px] items-start py-2" : "h-11 items-center truncate"
         }`}
       >
         <span className={multiline ? "line-clamp-3" : "truncate"}>
@@ -94,14 +86,14 @@ function StoreInformationField({
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="flex items-center text-seller-heading-md font-semibold tracking-[-0.54px]">
+      <p className="flex items-center gap-1 text-seller-heading-md font-semibold tracking-[-0.54px]">
+        {label}
         <span
           aria-hidden="true"
-          className="w-[9px] pb-1 text-[15px] leading-5 text-text-error"
+          className="relative -top-1 text-[15px] leading-5 text-text-error"
         >
           *
         </span>
-        {label}
       </p>
       {field}
     </div>
@@ -119,14 +111,14 @@ function StoreDescriptionField({
 
   return (
     <label className="flex flex-col gap-2">
-      <p className="flex items-center text-seller-heading-md font-semibold tracking-[-0.54px]">
+      <p className="flex items-center gap-1 text-seller-heading-md font-semibold tracking-[-0.54px]">
+        매장 소개
         <span
           aria-hidden="true"
-          className="w-[9px] pb-1 text-[15px] leading-5 text-text-error"
+          className="relative -top-1 text-[15px] leading-5 text-text-error"
         >
           *
         </span>
-        매장 소개
       </p>
       <span className="flex flex-col items-end gap-1">
         <Textarea
@@ -169,7 +161,8 @@ export function StoreInformationForm({
   );
   const normalizedDescription = description.trim();
   const canSaveDescription =
-    normalizedDescription.length > 0 && normalizedDescription !== savedDescription;
+    normalizedDescription.length > 0 &&
+    normalizedDescription !== savedDescription;
 
   const saveDescription = async () => {
     if (!canSaveDescription) {
@@ -217,10 +210,7 @@ export function StoreInformationForm({
           value={refundPeriod}
           onClick={onRefundPeriodClick}
         />
-        <StoreDescriptionField
-          onChange={setDescription}
-          value={description}
-        />
+        <StoreDescriptionField onChange={setDescription} value={description} />
         {descriptionSaveError ? (
           <p aria-live="polite" className="text-sm text-text-error">
             {descriptionSaveError}

@@ -696,13 +696,13 @@ function OrderFormSection({
 }) {
   return (
     <section className="flex w-full flex-col gap-4">
-      <h2 className="flex items-start text-[20px] leading-7 font-bold tracking-[-0.6px] text-text-primary">
+      <h2 className="flex items-start gap-1 text-[20px] leading-7 font-bold tracking-[-0.6px] text-text-primary">
+        {label}
         {required ? (
-          <span className="text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-error">
+          <span className="relative -top-1 text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-error">
             *
           </span>
         ) : null}
-        {label}
       </h2>
       <div className="flex h-6 w-full items-center justify-between gap-3">
         <div className="flex h-11 min-w-0 items-center">
