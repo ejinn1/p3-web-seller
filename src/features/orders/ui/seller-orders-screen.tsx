@@ -14,7 +14,7 @@ import { useSearchParams } from "next/navigation";
 import { BottomSheet } from "@/components/common/bottom-sheet";
 import { Header } from "@/components/common/header";
 import { SellerSidebar } from "@/components/widgets/seller-sidebar";
-import { SellerScreenShell } from "@/features/seller-shell/ui/seller-screen-shell";
+import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
 import {
   longTextSellerOrderFixture,
   nullStatusSellerOrderFixture,
@@ -81,7 +81,7 @@ export function SellerOrdersScreen() {
     : null;
 
   return (
-    <SellerScreenShell className="bg-surface-default">
+    <SellerResponsiveFrame className="bg-surface-default">
       <OrdersHeader
         onMenu={() => setSidebarOpen(true)}
         showMenu
@@ -218,7 +218,7 @@ export function SellerOrdersScreen() {
         step={customStep ?? "start"}
       />
       <SellerSidebar onOpenChange={setSidebarOpen} open={sidebarOpen} />
-    </SellerScreenShell>
+    </SellerResponsiveFrame>
   );
 }
 

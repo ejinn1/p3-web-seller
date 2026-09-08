@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight, Menu, Plus, X } from "lucide-react";
 import { SellerSidebar } from "@/components/widgets/seller-sidebar";
-import { SellerScreenShell } from "@/features/seller-shell/ui/seller-screen-shell";
+import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
 import { useSellerInquiryQuery } from "@/features/inquiries/model/inquiry-queries";
 import { useSellerInquiryStomp } from "@/features/inquiries/model/inquiry-stomp";
 import type {
@@ -55,9 +55,9 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
 
   if (!inquiry) {
     return (
-      <SellerScreenShell className="items-center justify-center bg-surface-subtle text-[16px] leading-6 tracking-[-0.32px] text-text-secondary">
+      <SellerResponsiveFrame className="items-center justify-center bg-surface-subtle text-[16px] leading-6 tracking-[-0.32px] text-text-secondary">
         상담을 불러오는 중입니다.
-      </SellerScreenShell>
+      </SellerResponsiveFrame>
     );
   }
 
@@ -112,7 +112,7 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
   }
 
   return (
-    <SellerScreenShell className="h-dvh bg-surface-subtle">
+    <SellerResponsiveFrame className="h-dvh bg-surface-subtle">
       <ChatHeader
         inquiry={inquiry}
         title={
@@ -149,7 +149,7 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
       {stomp.error ? (
         <p className="sr-only">채팅 연결 오류: {stomp.error.message}</p>
       ) : null}
-    </SellerScreenShell>
+    </SellerResponsiveFrame>
   );
 }
 
@@ -504,7 +504,7 @@ function OrderDocumentScreen({
     mode === "order-history";
 
   return (
-    <SellerScreenShell className="h-dvh bg-surface-subtle">
+    <SellerResponsiveFrame className="h-dvh bg-surface-subtle">
       <DocumentHeader
         onBack={onBack}
         onMenu={() => setSidebarOpen(true)}
@@ -568,7 +568,7 @@ function OrderDocumentScreen({
         </div>
       )}
       <SellerSidebar onOpenChange={setSidebarOpen} open={sidebarOpen} />
-    </SellerScreenShell>
+    </SellerResponsiveFrame>
   );
 }
 

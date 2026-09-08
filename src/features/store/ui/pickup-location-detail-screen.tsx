@@ -27,7 +27,7 @@ export function PickupLocationDetailScreen({
   const canConfirm = Boolean(address.trim() && pickupAddress.length <= 255);
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-[390px] flex-col bg-surface-default text-text-primary">
+    <main className="mx-auto flex min-h-dvh w-full max-w-[768px] flex-col bg-surface-default text-text-primary">
       <Header
         backLabel="이전 화면으로 돌아가기"
         className="border-none"

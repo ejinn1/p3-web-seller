@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, Menu, SlidersHorizontal, X } from "lucide-react";
 import { SellerSidebar } from "@/components/widgets/seller-sidebar";
-import { SellerScreenShell } from "@/features/seller-shell/ui/seller-screen-shell";
+import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
 import { revenueCancelHistory } from "@/features/revenue/model/revenue-fixtures";
 import { useSellerOrdersQuery } from "@/features/orders/model/order-queries";
 import type {
@@ -70,16 +70,16 @@ export function RevenueScreen({ initialView }: RevenueScreenProps) {
 
   if (view === "cancel-history") {
     return (
-      <SellerScreenShell className="bg-surface-subtle" data-revenue-frame="cancel-history">
+      <SellerResponsiveFrame className="bg-surface-subtle" data-revenue-frame="cancel-history">
         <RevenueHeader title={detailTitles[view]} onBack={() => goToView("cancellations")} />
         <CancelHistoryView history={revenueCancelHistory} />
-      </SellerScreenShell>
+      </SellerResponsiveFrame>
     );
   }
 
   if (view !== "home") {
     return (
-      <SellerScreenShell data-revenue-frame={view}>
+      <SellerResponsiveFrame data-revenue-frame={view}>
         <RevenueHeader title={detailTitles[view]} onBack={() => goToView("home")} />
         <RevenueDetailView
           lines={getLinesForView(view, orders)}
@@ -89,12 +89,12 @@ export function RevenueScreen({ initialView }: RevenueScreenProps) {
           }
           tone={view === "cancellations" ? "danger" : "default"}
         />
-      </SellerScreenShell>
+      </SellerResponsiveFrame>
     );
   }
 
   return (
-    <SellerScreenShell data-revenue-frame="home">
+    <SellerResponsiveFrame data-revenue-frame="home">
       <RevenueHeader
         onMenu={() => setSidebarOpen(true)}
         showMenu
@@ -132,7 +132,7 @@ export function RevenueScreen({ initialView }: RevenueScreenProps) {
         </span>
       ) : null}
       <SellerSidebar onOpenChange={setSidebarOpen} open={sidebarOpen} />
-    </SellerScreenShell>
+    </SellerResponsiveFrame>
   );
 }
 

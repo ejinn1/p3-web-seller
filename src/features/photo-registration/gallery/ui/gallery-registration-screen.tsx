@@ -302,7 +302,7 @@ export function GalleryRegistrationScreen() {
   };
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-[390px] flex-col bg-surface-default text-text-primary">
+    <main className="mx-auto flex min-h-dvh w-full max-w-[768px] flex-col bg-surface-default text-text-primary">
       <OrderFormHeader
         backHref="/seller/photo-registration/representative"
         title=""

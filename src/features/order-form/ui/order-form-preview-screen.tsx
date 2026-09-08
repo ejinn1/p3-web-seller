@@ -14,7 +14,7 @@ export function OrderFormPreviewScreen() {
   );
 
   return (
-    <main className="mx-auto min-h-dvh w-full max-w-[390px] bg-surface-subtle text-text-primary">
+    <main className="mx-auto min-h-dvh w-full max-w-[768px] bg-surface-subtle text-text-primary">
       <div className="bg-surface-default">
         <OrderFormHeader
           backHref="/seller/order-form"

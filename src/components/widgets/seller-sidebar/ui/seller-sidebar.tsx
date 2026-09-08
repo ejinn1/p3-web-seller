@@ -17,7 +17,7 @@ export function SellerSidebar({ onOpenChange, open }: SellerSidebarProps) {
       <Dialog.Portal>
         <Dialog.Overlay className="seller-sidebar-overlay fixed inset-0 z-20 bg-surface-scrim" />
         <Dialog.Content asChild>
-          <aside className="seller-sidebar-content fixed top-0 right-0 z-20 flex h-dvh w-[300px] flex-col overflow-hidden bg-surface-elevated pb-[41px] focus:outline-none">
+          <aside className="seller-sidebar-content fixed top-0 right-[max(0px,calc((100vw-768px)/2))] z-20 flex h-dvh w-[300px] flex-col overflow-hidden bg-surface-elevated pb-[41px] focus:outline-none">
             <Dialog.Title className="sr-only">판매자 메뉴</Dialog.Title>
             <div className="flex h-14 w-full shrink-0 items-center justify-between px-6">
               <Image

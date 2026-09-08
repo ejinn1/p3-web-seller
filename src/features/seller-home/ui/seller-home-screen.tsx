@@ -7,7 +7,7 @@ import { Button } from "@/components/common/button";
 import { Header } from "@/components/common/header";
 import { IconButton } from "@/components/common/icon-button";
 import { SellerSidebar } from "@/components/widgets/seller-sidebar";
-import { SellerScreenShell } from "@/features/seller-shell/ui/seller-screen-shell";
+import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
 import { useSellerHomeDashboardQuery } from "@/features/seller-home/model/seller-home-queries";
 import type {
   SellerHomeDashboard,
@@ -51,7 +51,7 @@ export function SellerHomeScreen() {
 
   if (dashboardQuery.isError) {
     return (
-      <SellerScreenShell>
+      <SellerResponsiveFrame>
         <div className="flex h-dvh flex-col items-center justify-center gap-4 px-4 text-center">
           <p className="text-seller-body-md text-text-secondary">
             {dashboardQuery.error instanceof Error
@@ -62,17 +62,17 @@ export function SellerHomeScreen() {
             다시 시도
           </Button>
         </div>
-      </SellerScreenShell>
+      </SellerResponsiveFrame>
     );
   }
 
   if (dashboardQuery.isLoading || !dashboard) {
     return (
-      <SellerScreenShell>
+      <SellerResponsiveFrame>
         <div className="flex h-dvh items-center justify-center text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-secondary">
           판매자 홈을 불러오는 중
         </div>
-      </SellerScreenShell>
+      </SellerResponsiveFrame>
     );
   }
 
@@ -121,7 +121,7 @@ export function SellerHomeScreen() {
   }
 
   return (
-    <SellerScreenShell className="relative overflow-x-hidden">
+    <SellerResponsiveFrame className="relative overflow-x-hidden">
       <HomeHeader onMenu={() => setState({ sidebar: "open" })} />
       <section className="flex flex-col items-center gap-12 overflow-hidden pt-4 pb-[calc(34px+env(safe-area-inset-bottom))]">
         <DashboardOverview dashboard={dashboard} />
@@ -181,7 +181,7 @@ export function SellerHomeScreen() {
         onOpenChange={(open) => setState({ sidebar: open ? "open" : null })}
         open={showSidebar}
       />
-    </SellerScreenShell>
+    </SellerResponsiveFrame>
   );
 }
 
@@ -546,7 +546,7 @@ function ConfirmationView({
   onBack: () => void;
 }) {
   return (
-    <SellerScreenShell className="bg-surface-subtle">
+    <SellerResponsiveFrame className="bg-surface-subtle">
       <DetailHeader onBack={onBack} title="주문확인서" />
       <section className="flex w-full flex-col items-center gap-4 overflow-hidden px-4 pt-6 pb-4">
         <div className="flex w-full flex-col gap-8 rounded-seller-sm bg-surface-default px-4 py-8 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
@@ -592,7 +592,7 @@ function ConfirmationView({
           결제 완료
         </Button>
       </section>
-    </SellerScreenShell>
+    </SellerResponsiveFrame>
   );
 }
 
@@ -647,7 +647,7 @@ function OrderFormView({
   orderForm: SellerHomeOrderForm;
 }) {
   return (
-    <SellerScreenShell className="bg-surface-subtle">
+    <SellerResponsiveFrame className="bg-surface-subtle">
       <DetailHeader onBack={onBack} title="주문서" />
       <section className="flex flex-1 flex-col gap-4 overflow-hidden px-4 pt-4 pb-[calc(94px+env(safe-area-inset-bottom))]">
         <div className="flex w-full flex-col gap-12 rounded-seller-sm bg-surface-default px-4 py-6 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
@@ -667,7 +667,7 @@ function OrderFormView({
           ))}
         </div>
       </section>
-      <div className="fixed right-0 bottom-0 left-0 mx-auto flex w-full gap-2 bg-surface-default px-4 pt-4 pb-[calc(34px+env(safe-area-inset-bottom))] lg:max-w-[390px]">
+      <div className="fixed right-0 bottom-0 left-0 mx-auto flex w-full gap-2 bg-surface-default px-4 pt-4 pb-[calc(34px+env(safe-area-inset-bottom))] max-w-[768px]">
         <Button
           className="h-11 flex-1 rounded-seller-md border-border-strong text-[15px] leading-5 font-semibold tracking-[-0.3px]"
           onClick={onRevision}
@@ -679,7 +679,7 @@ function OrderFormView({
           주문확인서 작성
         </Button>
       </div>
-    </SellerScreenShell>
+    </SellerResponsiveFrame>
   );
 }
 
@@ -742,7 +742,7 @@ function ChatView({
   const isRevision = mode === "revision";
 
   return (
-    <SellerScreenShell className="bg-surface-subtle">
+    <SellerResponsiveFrame className="bg-surface-subtle">
       <header className="sticky top-0 z-10 bg-surface-default">
         <Header
           className="border-none"
@@ -807,7 +807,7 @@ function ChatView({
         )}
       </section>
       <ChatComposer />
-    </SellerScreenShell>
+    </SellerResponsiveFrame>
   );
 }
 

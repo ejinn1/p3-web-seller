@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/common/button";
-import { SellerScreenShell } from "@/features/seller-shell/ui/seller-screen-shell";
+import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
 import {
   findSellerOrderFixture,
   longTextSellerOrderFixture,
@@ -44,7 +44,7 @@ export function SellerOrderDetailScreen({ orderId }: { orderId: string }) {
   const isError = forcedState === "error" || query.isError;
 
   return (
-    <SellerScreenShell className="bg-surface-subtle">
+    <SellerResponsiveFrame className="bg-surface-subtle">
       <OrdersHeader title="주문 내역" />
       <section className="flex flex-1 flex-col gap-8 overflow-y-auto px-4 pt-4 pb-[34px]">
         {isLoading ? <DetailState message="주문 상세를 불러오고 있어요." /> : null}
@@ -89,7 +89,7 @@ export function SellerOrderDetailScreen({ orderId }: { orderId: string }) {
           </Button>
         </div>
       ) : null}
-    </SellerScreenShell>
+    </SellerResponsiveFrame>
   );
 }
 

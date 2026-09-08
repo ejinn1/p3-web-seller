@@ -9,7 +9,7 @@ import {
   useStoreSettingsQuery,
   useStoreShareLinkQuery,
 } from "@/features/store/model/store-queries";
-import { SellerScreenShell } from "@/features/seller-shell/ui/seller-screen-shell";
+import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
 
 export function AccountSettingsScreen() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -19,7 +19,7 @@ export function AccountSettingsScreen() {
   const shareLinkQuery = useStoreShareLinkQuery();
 
   return (
-    <SellerScreenShell className="bg-surface-subtle">
+    <SellerResponsiveFrame className="bg-surface-subtle">
       <Header
         backHref="/seller/home"
         backLabel="판매자 홈으로 돌아가기"
@@ -72,7 +72,7 @@ export function AccountSettingsScreen() {
         />
       </section>
       <SellerSidebar onOpenChange={setSidebarOpen} open={sidebarOpen} />
-    </SellerScreenShell>
+    </SellerResponsiveFrame>
   );
 }
 
