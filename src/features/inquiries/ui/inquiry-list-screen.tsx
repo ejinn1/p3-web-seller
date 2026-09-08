@@ -133,7 +133,7 @@ function InquiryRow({
             </p>
           </div>
           <time className="w-11 shrink-0 text-right text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-tertiary">
-            {inquiry.lastMessageAt}
+            {inquiry.lastMessageTimeLabel}
           </time>
         </div>
       </div>
