@@ -1,24 +1,17 @@
 "use client";
 
+import { Header } from "@/components/common/header";
 import { roleOptions } from "@/features/auth/constants/roles";
-import { ChevronLeft } from "lucide-react";
 
 export function RoleSelectionScreen() {
   return (
     <main className="flex min-h-dvh flex-col bg-surface-default text-text-primary">
-      <header className="flex h-14 items-center justify-between">
-        <a
-          aria-label="로그인 화면으로 돌아가기"
-          className="flex size-12 items-center justify-center"
-          href="/seller"
-        >
-          <ChevronLeft aria-hidden="true" className="size-6" strokeWidth={2} />
-        </a>
-        <h1 className="text-[22px] leading-[30px] font-bold tracking-[-0.66px]">
-          회원가입
-        </h1>
-        <span aria-hidden="true" className="size-12" />
-      </header>
+      <Header
+        backHref="/seller"
+        backLabel="로그인 화면으로 돌아가기"
+        className="border-none"
+        title="회원가입"
+      />
 
       <section className="flex flex-1 flex-col gap-8 px-4 pt-12">
         <h2 className="text-[28px] leading-9 font-bold tracking-[-0.84px] whitespace-pre-line">

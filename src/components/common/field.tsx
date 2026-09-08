@@ -28,13 +28,14 @@ export function Field({
   requiredPosition = "after",
   required = false,
 }: FieldProps) {
+  const labelTypographyClass = labelClassName
+    ? "flex items-center gap-1"
+    : "flex items-center gap-1 text-seller-body font-medium";
+
   return (
     <div className={cn("space-y-2", className)}>
       <label
-        className={cn(
-          "flex items-center gap-1 text-seller-body font-medium",
-          labelClassName,
-        )}
+        className={cn(labelTypographyClass, labelClassName)}
         htmlFor={htmlFor}
       >
         {required && requiredPosition === "before" ? (

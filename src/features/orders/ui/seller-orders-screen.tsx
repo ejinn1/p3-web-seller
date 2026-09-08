@@ -4,7 +4,6 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
-  Menu,
   SlidersHorizontal,
   X,
 } from "lucide-react";
@@ -12,6 +11,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { Header } from "@/components/common/header";
 import { SellerScreenShell } from "@/features/seller-shell/ui/seller-screen-shell";
 import {
   longTextSellerOrderFixture,
@@ -26,7 +26,8 @@ import type {
 } from "@/features/orders/model/order-types";
 import { cn } from "@/lib/utils";
 
-type ForcedState = "loading" | "empty" | "error" | "long" | "null-status" | null;
+type ForcedState =
+  "loading" | "empty" | "error" | "long" | "null-status" | null;
 type FilterPreset = "1개월" | "3개월" | "6개월" | "직접선택";
 type CustomDateStep = "start" | "end" | "done" | null;
 
@@ -45,7 +46,9 @@ export function SellerOrdersScreen() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [customStep, setCustomStep] = useState<CustomDateStep>(null);
   const [customDateSelected, setCustomDateSelected] = useState(false);
-  const [selectedPreset, setSelectedPreset] = useState<FilterPreset | null>(null);
+  const [selectedPreset, setSelectedPreset] = useState<FilterPreset | null>(
+    null,
+  );
   const [selectedRange, setSelectedRange] = useState({
     start: "2026.07.11",
     end: "2026.08.11",
@@ -63,7 +66,10 @@ export function SellerOrdersScreen() {
     () => getOrdersForState(forcedState, query.data),
     [forcedState, query.data],
   );
-  const groupedOrders = useMemo(() => groupOrdersByPaymentDate(orders), [orders]);
+  const groupedOrders = useMemo(
+    () => groupOrdersByPaymentDate(orders),
+    [orders],
+  );
   const isLoading = forcedState === "loading" || query.isLoading;
   const isError = forcedState === "error" || query.isError;
 
@@ -111,7 +117,9 @@ export function SellerOrdersScreen() {
           ) : null}
         </div>
 
-        {isLoading ? <OrdersState message="주문 내역을 불러오고 있어요." /> : null}
+        {isLoading ? (
+          <OrdersState message="주문 내역을 불러오고 있어요." />
+        ) : null}
         {isError ? (
           <OrdersState
             message={
@@ -137,7 +145,11 @@ export function SellerOrdersScreen() {
                 <div className="flex flex-col gap-2">
                   {group.orders.map((order, orderIndex) => (
                     <OrderListItem
-                      highlighted={Boolean(activeFilterLabel) && groupIndex === 0 && orderIndex === 0}
+                      highlighted={
+                        Boolean(activeFilterLabel) &&
+                        groupIndex === 0 &&
+                        orderIndex === 0
+                      }
                       key={order.id}
                       order={order}
                     />
@@ -212,32 +224,13 @@ function OrdersHeader({
   title: string;
 }) {
   return (
-    <header className="grid h-14 grid-cols-[48px_1fr_48px] items-center bg-surface-default">
-      <Link
-        aria-label="이전 화면으로 돌아가기"
-        className="flex size-12 items-center justify-center text-icon-default"
-        href="/seller/store-management"
-      >
-        <ChevronLeft aria-hidden="true" className="size-6" strokeWidth={2} />
-      </Link>
-      <h1
-        className="text-center text-seller-display-sm leading-[30px] font-bold tracking-[-0.66px] text-text-primary"
-        data-qa="orders-title"
-      >
-        {title}
-      </h1>
-      {showMenu ? (
-        <button
-          aria-label="메뉴 열기"
-          className="flex size-12 items-center justify-center text-icon-default"
-          type="button"
-        >
-          <Menu aria-hidden="true" className="size-6" strokeWidth={2} />
-        </button>
-      ) : (
-        <span aria-hidden="true" />
-      )}
-    </header>
+    <Header
+      backHref="/seller/store-management"
+      backLabel="이전 화면으로 돌아가기"
+      className="border-none"
+      showMenu={showMenu}
+      title={<span data-qa="orders-title">{title}</span>}
+    />
   );
 }
 
@@ -344,8 +337,16 @@ function DateFilterSheet({
           </div>
         </div>
         <div className="flex w-full gap-[10px]">
-          <DateField active={!disabled} label="시작일" value={selectedRange.start} />
-          <DateField active={!disabled} label="종료일" value={selectedRange.end} />
+          <DateField
+            active={!disabled}
+            label="시작일"
+            value={selectedRange.start}
+          />
+          <DateField
+            active={!disabled}
+            label="종료일"
+            value={selectedRange.end}
+          />
         </div>
         <button
           className="flex h-[52px] w-full items-center justify-center rounded-seller-md bg-brand-primary px-6 text-seller-heading-md leading-6 font-semibold tracking-[-0.54px] text-text-inverse disabled:bg-brand-disabled disabled:text-text-disabled"
@@ -375,7 +376,8 @@ function CustomDateSheet({
   selected: boolean;
   step: CustomDateStep;
 }) {
-  const title = step === "end" ? "종료일" : step === "done" ? "종료일" : "시작일";
+  const title =
+    step === "end" ? "종료일" : step === "done" ? "종료일" : "시작일";
   const nextLabel = step === "done" ? "확인" : "다음";
   const nextDisabled = step !== "done" && !selected;
 
@@ -390,11 +392,17 @@ function CustomDateSheet({
         </div>
         <div className="flex flex-col gap-4 px-4">
           <div className="flex h-6 items-center justify-center gap-4 overflow-hidden">
-            <ChevronLeft aria-hidden="true" className="size-6 text-icon-disabled" />
+            <ChevronLeft
+              aria-hidden="true"
+              className="size-6 text-icon-disabled"
+            />
             <p className="text-seller-heading-md leading-6 font-semibold tracking-[-0.54px] text-text-primary">
               2026년 8월
             </p>
-            <ChevronRight aria-hidden="true" className="size-6 text-icon-default" />
+            <ChevronRight
+              aria-hidden="true"
+              className="size-6 text-icon-default"
+            />
           </div>
           <CalendarGrid
             onSelect={onSelectDate}
@@ -443,7 +451,9 @@ function SheetTitle({
   onClose: () => void;
 }) {
   return (
-    <div className={cn("flex h-7 w-full items-start justify-between", className)}>
+    <div
+      className={cn("flex h-7 w-full items-start justify-between", className)}
+    >
       <h2 className="text-seller-heading-lg leading-7 font-bold tracking-[-0.6px] text-text-primary">
         {children}
       </h2>
@@ -483,7 +493,10 @@ function DateField({
         </span>
         <CalendarDays
           aria-hidden="true"
-          className={cn("size-6", active ? "text-icon-default" : "text-icon-muted")}
+          className={cn(
+            "size-6",
+            active ? "text-icon-default" : "text-icon-muted",
+          )}
         />
       </div>
     </div>
@@ -498,7 +511,11 @@ function CalendarGrid({
   selectedDay: number | null;
 }) {
   const days = ["일", "월", "화", "수", "목", "금", "토"];
-  const cells = [...Array.from({ length: 6 }, () => null), ...Array.from({ length: 31 }, (_, index) => index + 1), ...Array.from({ length: 5 }, () => null)];
+  const cells = [
+    ...Array.from({ length: 6 }, () => null),
+    ...Array.from({ length: 31 }, (_, index) => index + 1),
+    ...Array.from({ length: 5 }, () => null),
+  ];
 
   return (
     <div className="flex flex-col gap-1" data-qa="orders-calendar">
@@ -591,7 +608,10 @@ function getOrdersForState(
   }
 
   if (state === "null-status") {
-    return [nullStatusSellerOrderFixture, ...sellerOrderViewFixtures.slice(1, 3)];
+    return [
+      nullStatusSellerOrderFixture,
+      ...sellerOrderViewFixtures.slice(1, 3),
+    ];
   }
 
   return (apiOrders ?? []).map(toOrderViewModel);
@@ -640,7 +660,13 @@ function parseForcedState(value: string | null): ForcedState {
   return null;
 }
 
-export { OrderStatusBadge, OrdersHeader, formatFullDate, formatPrice, formatTime };
+export {
+  OrderStatusBadge,
+  OrdersHeader,
+  formatFullDate,
+  formatPrice,
+  formatTime,
+};
 
 function formatTime(value: string) {
   return new Intl.DateTimeFormat("ko-KR", {

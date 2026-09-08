@@ -2,8 +2,9 @@
 
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Bell, ChevronLeft, ChevronRight, Menu, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Button } from "@/components/common/button";
+import { Header } from "@/components/common/header";
 import { IconButton } from "@/components/common/icon-button";
 import { SellerSidebar } from "@/components/widgets/seller-sidebar";
 import { SellerScreenShell } from "@/features/seller-shell/ui/seller-screen-shell";
@@ -186,8 +187,9 @@ export function SellerHomeScreen() {
 
 function HomeHeader({ onMenu }: { onMenu: () => void }) {
   return (
-    <header className="flex h-14 w-full items-center justify-between overflow-hidden bg-surface-default pl-4">
-      <div className="flex w-12 items-center pr-2">
+    <Header
+      className="w-full border-none pl-4"
+      leading={
         <Image
           alt="wihada"
           className="size-8"
@@ -196,16 +198,11 @@ function HomeHeader({ onMenu }: { onMenu: () => void }) {
           src="/seller-home/wihada-symbol.svg"
           width={32}
         />
-      </div>
-      <div className="flex items-center justify-end px-1">
-        <IconButton className="size-11" label="알림">
-          <Bell aria-hidden="true" className="size-5" strokeWidth={1.8} />
-        </IconButton>
-        <IconButton className="size-11" label="메뉴" onClick={onMenu}>
-          <Menu aria-hidden="true" className="size-5" strokeWidth={1.8} />
-        </IconButton>
-      </div>
-    </header>
+      }
+      onMenu={onMenu}
+      showMenu
+      showNotification
+    />
   );
 }
 
@@ -217,17 +214,7 @@ function DetailHeader({
   title: string;
 }) {
   return (
-    <header className="flex h-14 w-full items-center justify-between overflow-hidden bg-surface-default">
-      <div className="flex min-w-0 flex-1 items-center">
-        <IconButton className="size-11" label="뒤로 가기" onClick={onBack}>
-          <ChevronLeft aria-hidden="true" className="size-5" />
-        </IconButton>
-      </div>
-      <h1 className="text-[22px] leading-[30px] font-bold tracking-[-0.66px] text-text-primary">
-        {title}
-      </h1>
-      <div className="h-12 min-w-0 flex-1" />
-    </header>
+    <Header className="w-full border-none" onBack={onBack} title={title} />
   );
 }
 
@@ -757,21 +744,13 @@ function ChatView({
   return (
     <SellerScreenShell className="bg-surface-subtle">
       <header className="sticky top-0 z-10 bg-surface-default">
-        <div className="flex h-14 w-full items-center justify-between overflow-hidden">
-          <div className="flex min-w-0 flex-1 items-center">
-            <IconButton className="size-11" label="뒤로 가기" onClick={onBack}>
-              <ChevronLeft aria-hidden="true" className="size-5" />
-            </IconButton>
-          </div>
-          <h1 className="text-[22px] leading-[30px] font-bold tracking-[-0.66px] text-text-primary">
-            {dashboard.chat.storeName}
-          </h1>
-          <div className="flex min-w-0 flex-1 items-center justify-end px-1">
-            <IconButton className="size-11" label="메뉴" onClick={onMenu}>
-              <Menu aria-hidden="true" className="size-5" />
-            </IconButton>
-          </div>
-        </div>
+        <Header
+          className="border-none"
+          onBack={onBack}
+          onMenu={onMenu}
+          showMenu
+          title={dashboard.chat.storeName}
+        />
         <div className="flex w-full items-center justify-between px-4 py-2">
           <p className="text-[13px] leading-[18px] font-normal tracking-[-0.13px] text-text-secondary">
             {dashboard.chat.info}

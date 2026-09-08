@@ -1,7 +1,8 @@
 "use client";
 
-import { ChevronLeft, Menu } from "lucide-react";
-import Link from "next/link";
+import { useState } from "react";
+import { Header } from "@/components/common/header";
+import { SellerSidebar } from "@/components/widgets/seller-sidebar";
 import { useCurrentUserQuery } from "@/features/auth/model/auth-queries";
 import {
   useStoreQuery,
@@ -11,6 +12,7 @@ import {
 import { SellerScreenShell } from "@/features/seller-shell/ui/seller-screen-shell";
 
 export function AccountSettingsScreen() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const userQuery = useCurrentUserQuery();
   const storeQuery = useStoreQuery();
   const settingsQuery = useStoreSettingsQuery();
@@ -18,25 +20,13 @@ export function AccountSettingsScreen() {
 
   return (
     <SellerScreenShell className="bg-surface-subtle">
-      <header className="grid h-14 shrink-0 grid-cols-[48px_1fr_48px] items-center bg-surface-default">
-        <Link
-          aria-label="이전 화면으로 돌아가기"
-          className="flex size-12 items-center justify-center text-icon-default"
-          href="/seller/home"
-        >
-          <ChevronLeft aria-hidden="true" className="size-6" strokeWidth={2} />
-        </Link>
-        <h1 className="text-center text-[22px] leading-[30px] font-bold tracking-[-0.66px] text-text-primary">
-          계정 설정
-        </h1>
-        <button
-          aria-label="메뉴 열기"
-          className="flex size-12 items-center justify-center text-icon-default"
-          type="button"
-        >
-          <Menu aria-hidden="true" className="size-6" strokeWidth={2} />
-        </button>
-      </header>
+      <Header
+        backHref="/seller/home"
+        backLabel="판매자 홈으로 돌아가기"
+        onMenu={() => setSidebarOpen(true)}
+        showMenu
+        title="계정 설정"
+      />
       <section className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pt-4 pb-[calc(34px+env(safe-area-inset-bottom))]">
         <SettingsCard
           rows={[
@@ -59,8 +49,14 @@ export function AccountSettingsScreen() {
         />
         <SettingsCard
           rows={[
-            ["주문 리드타임", formatMinutes(settingsQuery.data?.leadTimeMinutes)],
-            ["취소 마감", formatDays(settingsQuery.data?.cancellationCutoffDays)],
+            [
+              "주문 리드타임",
+              formatMinutes(settingsQuery.data?.leadTimeMinutes),
+            ],
+            [
+              "취소 마감",
+              formatDays(settingsQuery.data?.cancellationCutoffDays),
+            ],
             ["휴무일", settingsQuery.data?.holidays.join(", ")],
           ]}
           state={stateLabel(settingsQuery)}
@@ -75,6 +71,7 @@ export function AccountSettingsScreen() {
           title="공유 링크"
         />
       </section>
+      <SellerSidebar onOpenChange={setSidebarOpen} open={sidebarOpen} />
     </SellerScreenShell>
   );
 }
@@ -106,7 +103,7 @@ function SettingsCard({
             <p className="shrink-0 text-[13px] leading-4 font-medium tracking-[-0.13px] text-text-tertiary">
               {label}
             </p>
-            <p className="min-w-0 text-right text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-primary break-words">
+            <p className="min-w-0 text-right text-[15px] leading-5 font-semibold tracking-[-0.3px] break-words text-text-primary">
               {value || "-"}
             </p>
           </div>
