@@ -8,7 +8,10 @@ import type {
   SellerHomeOrderStatus,
   SellerHomePickup,
 } from "@/features/seller-home/model/seller-home-types";
-import type { InquiryListItem } from "@/features/inquiries/model/inquiry-types";
+import type {
+  InquiryListItem,
+  InquiryStatus,
+} from "@/features/inquiries/model/inquiry-types";
 
 const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
 const pickupImageFallbacks = [
@@ -16,6 +19,8 @@ const pickupImageFallbacks = [
   "/seller-home/cake-berries.png",
   "/seller-home/cake-box.png",
 ];
+export const SELLER_HOME_WAITING_INQUIRY_STATUS =
+  "WAITING" satisfies InquiryStatus;
 
 export function toSellerHomeDashboard(
   response: SellerDashboardResponse,
@@ -31,8 +36,14 @@ export function toSellerHomeDashboard(
     waitingInquiryCount: response.unansweredInquiryCount,
     weekDays: weekdays,
     pickups: todayPickups,
-    inquiries: inquiries.map(toSellerHomeInquiry),
+    inquiries: inquiries
+      .filter(isSellerHomeWaitingInquiry)
+      .map(toSellerHomeInquiry),
   };
+}
+
+export function isSellerHomeWaitingInquiry(inquiry: InquiryListItem) {
+  return inquiry.status === SELLER_HOME_WAITING_INQUIRY_STATUS;
 }
 
 function toSellerHomePickup(
