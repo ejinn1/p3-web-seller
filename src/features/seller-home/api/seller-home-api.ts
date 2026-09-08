@@ -1,5 +1,8 @@
 import { getSellerInquiries } from "@/features/inquiries/api/inquiries-api";
-import { toSellerHomeDashboard } from "@/features/seller-home/model/seller-home-adapters";
+import {
+  SELLER_HOME_WAITING_INQUIRY_STATUS,
+  toSellerHomeDashboard,
+} from "@/features/seller-home/model/seller-home-adapters";
 import { sellerHomeDashboardFixture } from "@/features/seller-home/model/seller-home-fixtures";
 import type {
   SellerDashboardResponse,
@@ -18,7 +21,10 @@ export async function getSellerHomeDashboard(): Promise<SellerHomeDashboard> {
 
   const [dashboard, inquiries] = await Promise.all([
     getJson<SellerDashboardResponse>("/seller/dashboard"),
-    getSellerInquiries({ unreadOnly: true }),
+    getSellerInquiries({
+      status: SELLER_HOME_WAITING_INQUIRY_STATUS,
+      unreadOnly: true,
+    }),
   ]);
 
   return toSellerHomeDashboard(dashboard, inquiries);
