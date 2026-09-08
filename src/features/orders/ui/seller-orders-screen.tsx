@@ -118,7 +118,7 @@ export function SellerOrdersScreen() {
                 }}
                 type="button"
               >
-                <X aria-hidden="true" className="size-4" />
+                <X aria-hidden="true" className="size-3 translate-x-2" />
               </button>
             </span>
           ) : null}
