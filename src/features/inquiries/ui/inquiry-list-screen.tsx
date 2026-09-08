@@ -2,12 +2,13 @@
 
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { type PointerEvent, useRef, useState } from "react";
 import { Header } from "@/components/common/header";
 import { SellerSidebar } from "@/components/widgets/seller-sidebar";
 import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
 import { useCurrentUserQuery } from "@/features/auth/model/auth-queries";
 import { useSellerInquiryListStomp } from "@/features/inquiries/model/inquiry-list-stomp";
+import { useMoveSellerInquiryToTrashMutation } from "@/features/inquiries/model/inquiry-mutations";
 import { useSellerInquiriesQuery } from "@/features/inquiries/model/inquiry-queries";
 import type {
   InquiryListItem,
@@ -25,21 +26,36 @@ const tabs: Array<{ label: string; status?: InquiryStatus }> = [
   { label: "휴지통", status: "TRASH" },
 ];
 
+const SWIPE_ACTION_WIDTH = 152;
+const SWIPE_OPEN_THRESHOLD = 56;
+const SWIPE_START_THRESHOLD = 8;
+
 export function InquiryListScreen() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [openInquiryId, setOpenInquiryId] = useState<string | null>(null);
   const activeStatus = parseInquiryStatus(searchParams.get("status"));
   const unreadOnly = searchParams.get("unreadOnly") === "true";
   const inquiriesQuery = useSellerInquiriesQuery({
     status: activeStatus,
     unreadOnly,
   });
+  const moveToTrashMutation = useMoveSellerInquiryToTrashMutation();
   const currentUserQuery = useCurrentUserQuery(
     Boolean(process.env.NEXT_PUBLIC_P3_API_BASE_URL),
   );
   useSellerInquiryListStomp(currentUserQuery.data?.userId);
   const inquiries = inquiriesQuery.data ?? [];
+
+  const openInquiry = (inquiryId: string) => {
+    router.push(`/seller/inquiries/${inquiryId}`);
+  };
+
+  const leaveInquiry = (inquiryId: string) => {
+    setOpenInquiryId(null);
+    moveToTrashMutation.mutate(inquiryId);
+  };
 
   return (
     <SellerResponsiveFrame className="bg-surface-default">
@@ -86,8 +102,17 @@ export function InquiryListScreen() {
           {inquiries.map((inquiry, index) => (
             <InquiryRow
               inquiry={inquiry}
+              isLeaving={
+                moveToTrashMutation.isPending &&
+                moveToTrashMutation.variables === inquiry.id
+              }
               key={inquiry.id}
-              onClick={() => router.push(`/seller/inquiries/${inquiry.id}`)}
+              onConsult={() => openInquiry(inquiry.id)}
+              onLeave={() => leaveInquiry(inquiry.id)}
+              onOpenChange={(open) =>
+                setOpenInquiryId(open ? inquiry.id : null)
+              }
+              open={openInquiryId === inquiry.id}
               pressed={index === 1}
             />
           ))}
@@ -100,52 +125,214 @@ export function InquiryListScreen() {
 
 function InquiryRow({
   inquiry,
-  onClick,
+  isLeaving,
+  onConsult,
+  onLeave,
+  onOpenChange,
+  open,
   pressed,
 }: {
   inquiry: InquiryListItem;
-  onClick: () => void;
+  isLeaving: boolean;
+  onConsult: () => void;
+  onLeave: () => void;
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
   pressed?: boolean;
 }) {
+  const pointerStateRef = useRef<{
+    pointerId: number;
+    startOffset: number;
+    startX: number;
+    startY: number;
+    suppressClick: boolean;
+    swiping: boolean;
+  } | null>(null);
+  const [dragOffset, setDragOffset] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const offset = isDragging ? dragOffset : open ? -SWIPE_ACTION_WIDTH : 0;
+
+  const handlePointerDown = (event: PointerEvent<HTMLButtonElement>) => {
+    if (event.pointerType === "mouse" && event.button !== 0) {
+      return;
+    }
+
+    pointerStateRef.current = {
+      pointerId: event.pointerId,
+      startOffset: open ? -SWIPE_ACTION_WIDTH : 0,
+      startX: event.clientX,
+      startY: event.clientY,
+      suppressClick: false,
+      swiping: false,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handlePointerMove = (event: PointerEvent<HTMLButtonElement>) => {
+    const pointerState = pointerStateRef.current;
+
+    if (!pointerState || pointerState.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const deltaX = event.clientX - pointerState.startX;
+    const deltaY = event.clientY - pointerState.startY;
+    const absoluteDeltaX = Math.abs(deltaX);
+    const absoluteDeltaY = Math.abs(deltaY);
+
+    if (!pointerState.swiping) {
+      if (
+        absoluteDeltaY >= SWIPE_START_THRESHOLD &&
+        absoluteDeltaY > absoluteDeltaX
+      ) {
+        pointerState.suppressClick = true;
+        return;
+      }
+
+      if (
+        absoluteDeltaX < SWIPE_START_THRESHOLD ||
+        absoluteDeltaX <= absoluteDeltaY
+      ) {
+        return;
+      }
+
+      pointerState.swiping = true;
+      setIsDragging(true);
+    }
+
+    event.preventDefault();
+    pointerState.suppressClick = absoluteDeltaX >= SWIPE_START_THRESHOLD;
+    setDragOffset(
+      clamp(pointerState.startOffset + deltaX, -SWIPE_ACTION_WIDTH, 0),
+    );
+  };
+
+  const handlePointerEnd = (event: PointerEvent<HTMLButtonElement>) => {
+    const pointerState = pointerStateRef.current;
+
+    if (!pointerState || pointerState.pointerId !== event.pointerId) {
+      return;
+    }
+
+    if (pointerState.swiping) {
+      const nextOffset = clamp(
+        pointerState.startOffset + event.clientX - pointerState.startX,
+        -SWIPE_ACTION_WIDTH,
+        0,
+      );
+      onOpenChange(nextOffset <= -SWIPE_OPEN_THRESHOLD);
+    }
+
+    setIsDragging(false);
+    setDragOffset(0);
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  };
+
+  const handlePointerCancel = (event: PointerEvent<HTMLButtonElement>) => {
+    pointerStateRef.current = null;
+    setIsDragging(false);
+    setDragOffset(0);
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  };
+
+  const handleConsultClick = () => {
+    if (pointerStateRef.current?.suppressClick) {
+      pointerStateRef.current = null;
+      return;
+    }
+
+    pointerStateRef.current = null;
+    onConsult();
+  };
+
   return (
-    <button
-      className={cn(
-        "flex h-20 w-full items-center gap-4 px-4 py-4 text-left",
-        pressed ? "bg-surface-subtle" : "bg-surface-default",
-      )}
-      onClick={onClick}
-      type="button"
+    <div
+      className="relative h-20 w-full overflow-hidden bg-surface-default"
+      data-qa="inquiry-swipe-row"
     >
-      <ProfileImage imageUrl={inquiry.profileImageUrl} size={48} />
-      <div className="min-w-0 flex-1 self-stretch">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1">
-              <p className="truncate text-[18px] leading-6 font-semibold tracking-[-0.54px] text-text-primary">
-                {inquiry.buyerName}
-              </p>
-              {inquiry.unreadCount > 0 ? (
-                <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-destructive px-[3px] text-center text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-inverse">
-                  {inquiry.unreadCount}
-                </span>
-              ) : null}
-              {inquiry.hasOrderFormSubmission ? (
-                <span className="rounded-seller-sm bg-brand-subtle px-1.5 py-0.5 text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-secondary">
-                  주문서
-                </span>
-              ) : null}
-            </div>
-            <p className="truncate text-[16px] leading-6 font-normal tracking-[-0.32px] text-text-secondary">
-              {inquiry.lastMessage}
-            </p>
-          </div>
-          <time className="w-11 shrink-0 text-right text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-tertiary">
-            {inquiry.lastMessageTimeLabel}
-          </time>
-        </div>
+      <div
+        aria-hidden={!open}
+        className="absolute inset-y-0 right-4 flex items-center justify-end gap-2"
+        data-qa="inquiry-swipe-actions"
+      >
+        <button
+          className="flex size-[72px] items-center justify-center rounded-seller-md bg-surface-inverse text-center text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-inverse disabled:opacity-40"
+          data-qa="inquiry-consult-action"
+          onClick={onConsult}
+          tabIndex={open ? 0 : -1}
+          type="button"
+        >
+          상담
+        </button>
+        <button
+          className="flex size-[72px] items-center justify-center rounded-seller-md bg-brand-destructive text-center text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-inverse disabled:opacity-40"
+          data-qa="inquiry-leave-action"
+          disabled={isLeaving}
+          onClick={onLeave}
+          tabIndex={open ? 0 : -1}
+          type="button"
+        >
+          나가기
+        </button>
       </div>
-    </button>
+      <button
+        aria-label={`${inquiry.buyerName} 상담 열기`}
+        className={cn(
+          "relative z-10 flex h-20 w-full touch-pan-y items-center gap-4 px-4 py-4 text-left transition-transform duration-200 ease-out",
+          pressed || open ? "bg-surface-subtle" : "bg-surface-default",
+          open && "rounded-seller-md",
+          isDragging && "transition-none",
+        )}
+        data-qa="inquiry-row-button"
+        onClick={handleConsultClick}
+        onPointerCancel={handlePointerCancel}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerEnd}
+        style={{ transform: `translateX(${offset}px)` }}
+        type="button"
+      >
+        <ProfileImage imageUrl={inquiry.profileImageUrl} size={48} />
+        <div className="min-w-0 flex-1 self-stretch">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1">
+                <p className="truncate text-[18px] leading-6 font-semibold tracking-[-0.54px] text-text-primary">
+                  {inquiry.buyerName}
+                </p>
+                {inquiry.unreadCount > 0 ? (
+                  <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-destructive px-[3px] text-center text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-inverse">
+                    {inquiry.unreadCount}
+                  </span>
+                ) : null}
+                {inquiry.hasOrderFormSubmission ? (
+                  <span className="rounded-seller-sm bg-brand-subtle px-1.5 py-0.5 text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-secondary">
+                    주문서
+                  </span>
+                ) : null}
+              </div>
+              <p className="truncate text-[16px] leading-6 font-normal tracking-[-0.32px] text-text-secondary">
+                {inquiry.lastMessage}
+              </p>
+            </div>
+            <time className="w-11 shrink-0 text-right text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-tertiary">
+              {inquiry.lastMessageTimeLabel}
+            </time>
+          </div>
+        </div>
+      </button>
+    </div>
   );
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
 }
 
 export function ProfileImage({
