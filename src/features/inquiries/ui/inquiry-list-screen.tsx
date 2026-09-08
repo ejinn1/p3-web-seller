@@ -4,6 +4,8 @@ import { ChevronLeft } from "lucide-react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
+import { useCurrentUserQuery } from "@/features/auth/model/auth-queries";
+import { useSellerInquiryListStomp } from "@/features/inquiries/model/inquiry-list-stomp";
 import { useSellerInquiriesQuery } from "@/features/inquiries/model/inquiry-queries";
 import type {
   InquiryListItem,
@@ -13,7 +15,7 @@ import { cn } from "@/lib/utils";
 
 const tabs: Array<{ label: string; status?: InquiryStatus }> = [
   { label: "전체" },
-  { label: "접수됨", status: "WAITING" },
+  { label: "접수대기", status: "WAITING" },
   { label: "상담중", status: "IN_PROGRESS" },
   { label: "결제완료", status: "PAID" },
   { label: "픽업완료", status: "PICKED_UP" },
@@ -29,6 +31,8 @@ export function InquiryListScreen() {
     status: activeStatus,
     unreadOnly,
   });
+  const currentUserQuery = useCurrentUserQuery(Boolean(process.env.NEXT_PUBLIC_P3_API_BASE_URL));
+  useSellerInquiryListStomp(currentUserQuery.data?.userId);
   const inquiries = inquiriesQuery.data ?? [];
 
   return (

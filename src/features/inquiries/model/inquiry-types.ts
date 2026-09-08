@@ -47,6 +47,14 @@ export type InquiryListApiItem = {
   createdAt: string;
 };
 
+export type InquiryListRealtimePayload = {
+  type: "INQUIRY_UPDATED" | string;
+  inquiryId: string;
+  unreadCount: number;
+  latestEventAt: string | null;
+  status: InquiryStatus;
+};
+
 export type InquiryChatDetailResponse = {
   inquiryId: string;
   storeId: string;

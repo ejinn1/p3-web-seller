@@ -6,6 +6,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight, Menu, Plus, X } from "lucide-react";
 import { SellerSidebar } from "@/components/widgets/seller-sidebar";
 import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
+import { getSellerOrderFormSubmission } from "@/features/inquiries/api/inquiries-api";
+import { useCurrentUserQuery } from "@/features/auth/model/auth-queries";
+import { useSellerInquiryListStomp } from "@/features/inquiries/model/inquiry-list-stomp";
 import { useSendSellerOrderConfirmationMutation } from "@/features/inquiries/model/inquiry-mutations";
 import { useSellerInquiryQuery } from "@/features/inquiries/model/inquiry-queries";
 import { useSellerInquiryStomp } from "@/features/inquiries/model/inquiry-stomp";
@@ -36,11 +39,14 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
   const searchParams = useSearchParams();
   const inquiryQuery = useSellerInquiryQuery(inquiryId);
   const inquiry = inquiryQuery.data;
+  const currentUserQuery = useCurrentUserQuery(Boolean(process.env.NEXT_PUBLIC_P3_API_BASE_URL));
   const state = (searchParams.get("state") ?? "chat") as InquiryScreenState;
   const sheet = searchParams.get("sheet");
   const modal = searchParams.get("modal");
   const chatScrollRef = useRef<HTMLElement>(null);
+  const reviewedSubmissionRef = useRef<string | null>(null);
   const stomp = useSellerInquiryStomp(inquiryId, Boolean(inquiry));
+  useSellerInquiryListStomp(currentUserQuery.data?.userId, Boolean(inquiry));
   const sendConfirmationMutation =
     useSendSellerOrderConfirmationMutation(inquiryId);
   const [priceDraftState, setPriceDraftState] = useState<{
@@ -102,6 +108,27 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
 
     scrollArea.scrollTop = scrollArea.scrollHeight;
   }, [messages.length]);
+
+  useEffect(() => {
+    const submissionId = documentOrder?.orderFormSubmissionId;
+    const shouldMarkReviewed =
+      state === "order-form" ||
+      state === "confirmation-draft" ||
+      state === "confirmation-priced";
+
+    if (!shouldMarkReviewed || !submissionId || reviewedSubmissionRef.current === submissionId) {
+      return;
+    }
+
+    reviewedSubmissionRef.current = submissionId;
+    getSellerOrderFormSubmission(inquiryId, submissionId)
+      .then(() => {
+        void inquiryQuery.refetch();
+      })
+      .catch(() => {
+        reviewedSubmissionRef.current = null;
+      });
+  }, [documentOrder?.orderFormSubmissionId, inquiryId, inquiryQuery, state]);
 
   if (!displayInquiry || !documentOrder || !inquiry) {
     return (
