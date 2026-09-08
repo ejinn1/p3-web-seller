@@ -135,6 +135,7 @@ function toInquiryOrderConfirmation(
   const rows = getOptionRows(
     confirmation?.optionRows,
     confirmation?.summaryText,
+    submission?.optionRows,
     submission?.answers,
     confirmation?.additionalItems,
   );
@@ -145,15 +146,27 @@ function toInquiryOrderConfirmation(
       : "";
   const pickupTime = confirmation?.pickupAt
     ? formatShortTime(confirmation.pickupAt)
-    : submission?.pickupTime ?? "";
+    : submission?.pickupTime
+      ? formatLocalTime(submission.pickupTime)
+      : "";
 
   return {
     buyerName: detail.participant.name,
     buyerPhone: "",
+    confirmationTitle: confirmation?.confirmationTitle ?? "주문확인서",
     imageUrl: detail.startReferenceAsset?.deliveryUrl ?? null,
+    orderFormSubmissionId:
+      confirmation?.orderFormSubmissionId ?? submission?.id ?? null,
     options: rows.map(toInquiryOrderOption),
+    pickupAt:
+      confirmation?.pickupAt ??
+      (submission ? toPickupInstant(submission.pickupDate, submission.pickupTime) : null),
     pickupDate,
     pickupTime,
+    summaryText:
+      confirmation?.summaryText ??
+      rows.map((row) => `${row.label}: ${row.value}`).join("\n") ??
+      "주문확인서",
     totalPrice:
       confirmation?.amount ??
       rows.reduce((sum, row) => sum + (row.amount ?? 0), 0),
@@ -163,6 +176,7 @@ function toInquiryOrderConfirmation(
 function getOptionRows(
   optionRows: InquiryOrderOptionRow[] | undefined,
   optionSummary: string | undefined,
+  submissionRows: InquiryOrderOptionRow[] | undefined,
   answers: string | undefined,
   additionalItems: string | undefined,
 ) {
@@ -170,11 +184,13 @@ function getOptionRows(
     return optionRows;
   }
 
-  return [
+  const parsedRows = [
     ...parseRows(optionSummary),
     ...parseRows(answers),
     ...parseRows(additionalItems),
   ];
+
+  return parsedRows.length ? parsedRows : (submissionRows ?? []);
 }
 
 function parseRows(value: string | undefined): InquiryOrderOptionRow[] {
@@ -184,56 +200,233 @@ function parseRows(value: string | undefined): InquiryOrderOptionRow[] {
 
   try {
     const parsed: unknown = JSON.parse(value);
-    if (Array.isArray(parsed)) {
-      return parsed.flatMap((item, index) => normalizeParsedRow(item, index));
-    }
-
-    if (typeof parsed === "object" && parsed !== null) {
-      return Object.entries(parsed).map(([label, rowValue]) => ({
-        amount: null,
-        label,
-        value: String(rowValue ?? ""),
-      }));
-    }
+    return rowsFromParsedSummary(parsed);
   } catch {
     return [{ amount: null, label: "옵션", value }];
   }
-
-  return [{ amount: null, label: "옵션", value }];
 }
 
-function normalizeParsedRow(item: unknown, index: number): InquiryOrderOptionRow[] {
+function rowsFromParsedSummary(value: unknown): InquiryOrderOptionRow[] {
+  if (Array.isArray(value)) {
+    const answerRows = rowsFromAnswers(value);
+
+    if (answerRows.length) {
+      return answerRows;
+    }
+
+    return value.flatMap((item, index) => normalizeParsedRow(item, index));
+  }
+
+  if (isRecord(value)) {
+    if (Array.isArray(value.answers)) {
+      const answerRows = rowsFromAnswers(value.answers);
+
+      if (answerRows.length) {
+        return answerRows;
+      }
+    }
+
+    return Object.entries(value)
+      .filter(
+        ([key]) =>
+          !["orderFormSubmissionId", "templateId", "submittedAt"].includes(key),
+      )
+      .flatMap(([label, rowValue]) => rowsFromUnknownValue(label, rowValue));
+  }
+
+  return [];
+}
+
+function rowsFromAnswers(answers: unknown[]): InquiryOrderOptionRow[] {
+  return answers.flatMap((answer, index) => {
+    if (!isRecord(answer)) {
+      return normalizeParsedRow(answer, index);
+    }
+
+    const label = normalizeText(answer.label) || `옵션 ${index + 1}`;
+    const selectedOptions = Array.isArray(answer.selectedOptions)
+      ? answer.selectedOptions
+      : Array.isArray(answer.value)
+        ? answer.value
+        : [];
+
+    if (selectedOptions.length) {
+      return selectedOptions.flatMap((option) =>
+        isRecord(option)
+          ? [
+              {
+                amount: numberOrNull(option.price) ?? numberOrNull(option.amount),
+                label,
+                priceLabel: stringOrNull(option.priceLabel),
+                required: booleanOrUndefined(answer.required),
+                value: formatOptionValue(option),
+              },
+            ]
+          : rowsFromUnknownValue(label, option),
+      );
+    }
+
+    return rowsFromUnknownValue(label, answer.value ?? answer.answer ?? answer.content);
+  });
+}
+
+function normalizeParsedRow(
+  item: unknown,
+  index: number,
+): InquiryOrderOptionRow[] {
   if (typeof item === "string") {
     return [{ amount: null, label: `옵션 ${index + 1}`, value: item }];
   }
 
-  if (typeof item !== "object" || item === null) {
+  if (!isRecord(item)) {
     return [];
   }
-
-  const record = item as Record<string, unknown>;
 
   return [
     {
       amount:
-        typeof record.amount === "number"
-          ? record.amount
-          : typeof record.price === "number"
-            ? record.price
-            : null,
-      label: String(record.label ?? record.name ?? `옵션 ${index + 1}`),
-      value: String(record.value ?? record.answer ?? record.content ?? ""),
+        numberOrNull(item.amount) ??
+        numberOrNull(item.price) ??
+        null,
+      label: normalizeText(item.label ?? item.name) || `옵션 ${index + 1}`,
+      priceLabel: stringOrNull(item.priceLabel),
+      required: booleanOrUndefined(item.required),
+      value: formatOptionValue(item, true),
     },
   ];
 }
 
 function toInquiryOrderOption(row: InquiryOrderOptionRow, index: number): InquiryOrderOption {
+  const priceLabel = row.priceLabel?.trim();
+
   return {
-    id: `${row.label}-${index}`,
+    id: `${toOptionId(row.label)}-${index}`,
     label: row.label,
-    priceText: row.amount === null ? "" : `+ ${formatPrice(row.amount)}`,
+    needsPrice: Boolean(priceLabel && row.amount === null),
+    priceText:
+      row.amount === null
+        ? priceLabel ?? ""
+        : row.amount > 0
+          ? `+ ${formatPrice(row.amount)}`
+          : "",
+    required: row.required,
     value: row.value,
   };
+}
+
+function rowsFromUnknownValue(
+  label: string,
+  value: unknown,
+): InquiryOrderOptionRow[] {
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => rowsFromUnknownValue(label, item));
+  }
+
+  if (isRecord(value)) {
+    return [
+      {
+        amount: numberOrNull(value.price) ?? numberOrNull(value.amount),
+        label,
+        priceLabel: stringOrNull(value.priceLabel),
+        value: formatOptionValue(value, true),
+      },
+    ];
+  }
+
+  const text = normalizeText(value);
+
+  return text ? [{ amount: null, label, value: text }] : [];
+}
+
+function formatOptionValue(
+  option: Record<string, unknown>,
+  preferValue = false,
+) {
+  const text = normalizeText(option.text);
+
+  if (text) {
+    return text;
+  }
+
+  const value = normalizeText(option.value ?? option.optionValue);
+
+  if (preferValue && value) {
+    return value;
+  }
+
+  const label = normalizeText(option.label ?? option.optionLabel);
+
+  if (label) {
+    return label;
+  }
+
+  if (value) {
+    return value;
+  }
+
+  const assetIds = option.assetIds;
+
+  if (Array.isArray(assetIds) && assetIds.length) {
+    return `첨부 이미지 ${assetIds.length}개`;
+  }
+
+  return "-";
+}
+
+function toOptionId(label: string) {
+  if (label.includes("사이즈")) {
+    return "size";
+  }
+
+  if (label.includes("모양")) {
+    return "shape";
+  }
+
+  if (label.includes("맛")) {
+    return "flavor";
+  }
+
+  if (label.includes("포장")) {
+    return "packaging";
+  }
+
+  if (label.includes("디자인")) {
+    return "design";
+  }
+
+  if (label.includes("기타")) {
+    return "extra";
+  }
+
+  return label;
+}
+
+function toPickupInstant(pickupDate: string, pickupTime: string) {
+  return new Date(`${pickupDate}T${pickupTime}+09:00`).toISOString();
+}
+
+function formatLocalTime(value: string) {
+  return formatShortTime(`1970-01-01T${value}+09:00`);
+}
+
+function normalizeText(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function numberOrNull(value: unknown) {
+  return typeof value === "number" ? value : null;
+}
+
+function stringOrNull(value: unknown) {
+  return typeof value === "string" ? value : null;
+}
+
+function booleanOrUndefined(value: unknown) {
+  return typeof value === "boolean" ? value : undefined;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
 function formatLatestMessage(
