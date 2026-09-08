@@ -8,6 +8,7 @@ import { Header } from "@/components/common/header";
 import { IconButton } from "@/components/common/icon-button";
 import { SellerSidebar } from "@/components/widgets/seller-sidebar";
 import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
+import { getInquiryDetailHref } from "@/features/inquiries/model/inquiry-detail-state";
 import { useSellerHomeDashboardQuery } from "@/features/seller-home/model/seller-home-queries";
 import type {
   SellerHomeDashboard,
@@ -31,7 +32,7 @@ export function SellerHomeScreen() {
   const view = (searchParams.get("view") ?? "home") as SellerHomeView;
   const tab = (searchParams.get("tab") ?? "pickup") as SellerHomeTab;
   const pickupId = searchParams.get("pickupId");
-  const inquiryState = searchParams.get("inquiryState");
+  const inquiryId = searchParams.get("inquiryId");
   const showSidebar = searchParams.get("sidebar") === "open";
   const showRevisionModal = searchParams.get("modal") === "revision";
   const dashboard = dashboardQuery.data;
@@ -146,7 +147,12 @@ export function SellerHomeScreen() {
             <TabButton
               active={tab === "pickup"}
               onClick={() =>
-                setState({ tab: "pickup", pickupId: null, inquiryState: null })
+                setState({
+                  tab: "pickup",
+                  pickupId: null,
+                  inquiryId: null,
+                  inquiryState: null,
+                })
               }
             >
               오늘 픽업
@@ -157,6 +163,7 @@ export function SellerHomeScreen() {
                 setState({
                   tab: "waiting",
                   pickupId: null,
+                  inquiryId: null,
                   inquiryState: null,
                 })
               }
@@ -175,10 +182,14 @@ export function SellerHomeScreen() {
           ) : (
             <InquiryList
               inquiries={dashboard.inquiries}
-              selectedState={inquiryState}
-              onChat={() => setState({ view: "chat" })}
+              selectedInquiryId={inquiryId}
+              onChat={(selectedInquiryId) =>
+                router.push(getInquiryDetailHref(selectedInquiryId, "chat"))
+              }
               onOrderForm={() => setState({ view: "order-form" })}
-              onSelect={(state) => setState({ inquiryState: state })}
+              onSelect={(selectedInquiryId) =>
+                setState({ inquiryId: selectedInquiryId, inquiryState: null })
+              }
             />
           )}
         </div>
@@ -443,26 +454,25 @@ function InquiryList({
   onChat,
   onOrderForm,
   onSelect,
-  selectedState,
+  selectedInquiryId,
 }: {
   inquiries: SellerHomeInquiry[];
-  onChat: () => void;
+  onChat: (inquiryId: string) => void;
   onOrderForm: () => void;
-  onSelect: (state: string) => void;
-  selectedState: string | null;
+  onSelect: (inquiryId: string) => void;
+  selectedInquiryId: string | null;
 }) {
   return (
     <div className="flex w-full flex-col gap-2" data-qa="inquiry-list">
       {inquiries.map((inquiry) => {
-        const state = inquiry.hasOrderForm ? "with-order" : "without-order";
-        const selected = selectedState === state;
+        const selected = selectedInquiryId === inquiry.id;
         return (
           <InquiryRow
             inquiry={inquiry}
             key={inquiry.id}
-            onChat={onChat}
+            onChat={() => onChat(inquiry.id)}
             onOrderForm={onOrderForm}
-            onSelect={() => onSelect(state)}
+            onSelect={() => onSelect(inquiry.id)}
             selected={selected}
           />
         );
