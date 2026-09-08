@@ -1,8 +1,11 @@
+"use client";
+
 import Image from "next/image";
 import { X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { Button } from "@/components/common/button";
 import { IconButton } from "@/components/common/icon-button";
+import { useStoreManagementStatusQuery } from "@/features/store/model/store-queries";
 import { sellerSidebarNavigation } from "../config/seller-sidebar-navigation";
 import { SellerSidebarGroup } from "./seller-sidebar-group";
 
@@ -12,6 +15,16 @@ type SellerSidebarProps = {
 };
 
 export function SellerSidebar({ onOpenChange, open }: SellerSidebarProps) {
+  const managementStatusQuery = useStoreManagementStatusQuery();
+  const items = managementStatusQuery.data?.items;
+  const isStoreSetupComplete = Boolean(
+    items?.storeInfo &&
+      items.orderForm &&
+      items.notice &&
+      items.photoRegistration &&
+      items.settlementAccount,
+  );
+
   return (
     <Dialog.Root onOpenChange={onOpenChange} open={open}>
       <Dialog.Portal>
@@ -34,11 +47,22 @@ export function SellerSidebar({ onOpenChange, open }: SellerSidebarProps) {
             </div>
             <nav className="flex min-h-0 flex-1 flex-col gap-8 py-6">
               {sellerSidebarNavigation.map((group) => (
-                <SellerSidebarGroup key={group.title} {...group} />
+                <SellerSidebarGroup
+                  {...group}
+                  items={group.items.map((item) => ({
+                    ...item,
+                    disabled:
+                      item.requiresStoreSetupComplete && !isStoreSetupComplete,
+                  }))}
+                  key={group.title}
+                />
               ))}
             </nav>
             <div className="px-6">
-              <Button className="h-[52px] w-full rounded-seller-md text-[18px] leading-6 font-semibold tracking-[-0.54px]">
+              <Button
+                className="h-[52px] w-full rounded-seller-md text-[18px] leading-6 font-semibold tracking-[-0.54px]"
+                disabled={!isStoreSetupComplete}
+              >
                 내 스토어 보기
               </Button>
             </div>
