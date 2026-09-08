@@ -1,3 +1,5 @@
+import type { AssetVariant } from "@/features/assets/model/asset-types";
+
 export type InquiryStatus =
   "WAITING" | "IN_PROGRESS" | "PAID" | "PICKED_UP" | "TRASH";
 
@@ -100,12 +102,12 @@ export type InquiryReferenceAssetResponse = {
   sortOrder: number;
   status: string;
   deliveryUrl: string | null;
-  variants: {
-    type: string;
-    deliveryUrl: string;
-    width: number;
-    height: number;
-  }[];
+  variants: AssetVariant[];
+};
+
+export type InquiryReferenceAssetPreview = {
+  assetId: string;
+  deliveryUrl: string;
 };
 
 export type InquiryOrderFormSubmissionResponse = {
@@ -241,6 +243,7 @@ export type InquiryChatMessage =
 
 export type InquiryOrderOption = {
   amount: number | null;
+  assetPreviews?: InquiryReferenceAssetPreview[];
   id: string;
   label: string;
   value: string;

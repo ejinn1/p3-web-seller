@@ -4,6 +4,7 @@ import { formatInquiryPrice } from "@/features/inquiries/model/inquiry-order-con
 import type {
   InquiryOrderConfirmation,
   InquiryOrderOption,
+  InquiryReferenceAssetPreview,
 } from "@/features/inquiries/model/inquiry-types";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +30,7 @@ export function InquiryOrderCard({
 
   return (
     <article className="w-full rounded-seller-sm bg-surface-default px-4 py-8 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
+      <OrderReferenceImage imageUrl={order.imageUrl} />
       <div
         className={cn(
           "flex justify-between font-bold text-text-primary",
@@ -88,6 +90,7 @@ function OrderFormCard({
   return (
     <article className="min-h-[696px] w-full rounded-seller-sm bg-surface-default px-4 pt-6 pb-6 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
       <div className="space-y-12">
+        <OrderReferenceImage imageUrl={order.imageUrl} />
         <OrderFormSection
           price={order.pickupTime}
           title="픽업 일시"
@@ -97,6 +100,7 @@ function OrderFormCard({
           <OrderFormSection
             key={option.id}
             onClick={option.needsPrice ? onOpenPrice : undefined}
+            assetPreviews={option.assetPreviews}
             price={option.priceText || (option.needsPrice ? "문의 필요" : "")}
             required={option.required}
             title={option.label}
@@ -109,12 +113,14 @@ function OrderFormCard({
 }
 
 function OrderFormSection({
+  assetPreviews,
   onClick,
   price,
   required,
   title,
   value,
 }: {
+  assetPreviews?: InquiryReferenceAssetPreview[];
   onClick?: () => void;
   price: string;
   required?: boolean;
@@ -156,6 +162,7 @@ function OrderFormSection({
           </span>
         ) : null}
       </button>
+      <ReferenceAssetPreviewList assets={assetPreviews} />
     </section>
   );
 }
@@ -222,6 +229,52 @@ function ConfirmationOptionRow({
           가격을 입력해주세요
         </p>
       ) : null}
+      <ReferenceAssetPreviewList assets={option.assetPreviews} />
+    </div>
+  );
+}
+
+function OrderReferenceImage({ imageUrl }: { imageUrl: string | null }) {
+  if (!imageUrl) {
+    return null;
+  }
+
+  return (
+    <div className="mb-8 size-[96px] overflow-hidden rounded-seller-sm bg-surface-subtle shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        alt="주문 참조 이미지"
+        className="size-full object-cover"
+        src={imageUrl}
+      />
+    </div>
+  );
+}
+
+function ReferenceAssetPreviewList({
+  assets,
+}: {
+  assets?: InquiryReferenceAssetPreview[];
+}) {
+  if (!assets?.length) {
+    return null;
+  }
+
+  return (
+    <div className="flex gap-2 overflow-x-auto pb-1" data-qa="order-assets">
+      {assets.map((asset, index) => (
+        <div
+          className="size-16 shrink-0 overflow-hidden rounded-seller-sm bg-surface-subtle"
+          key={`${asset.assetId}-${index}`}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            alt="첨부 이미지 미리보기"
+            className="size-full object-cover"
+            src={asset.deliveryUrl}
+          />
+        </div>
+      ))}
     </div>
   );
 }

@@ -12,6 +12,8 @@ import { useMemo, useState } from "react";
 import { BottomSheet } from "@/components/common/bottom-sheet";
 import { SellerSidebar } from "@/components/widgets/seller-sidebar";
 import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
+import { useAssetQueries } from "@/features/assets/model/asset-queries";
+import type { Asset } from "@/features/assets/model/asset-types";
 import {
   useSellerOrderCalendarMonthQuery,
   useSellerOrderDetailQuery,
@@ -21,6 +23,10 @@ import type {
   OrderCalendarItem,
   SellerOrderDetailResponse,
 } from "@/features/orders/model/order-calendar-types";
+import {
+  getReferenceAssetIds,
+  getReferenceThumbnailUrl,
+} from "@/features/orders/model/order-reference-assets";
 import { cn } from "@/lib/utils";
 
 const defaultYear = 2026;
@@ -465,7 +471,20 @@ function SellerOrderListView({
   onMenu: () => void;
   onOpenDetail: (orderId: string) => void;
 }) {
-  const orders = day?.orders ?? [];
+  const orders = useMemo(() => day?.orders ?? [], [day?.orders]);
+  const referenceAssetIds = useMemo(
+    () =>
+      getReferenceAssetIds(
+        orders.flatMap((order) => order.startReferenceAssets ?? []),
+      ),
+    [orders],
+  );
+  const referenceAssetQueries = useAssetQueries(referenceAssetIds);
+  const referenceAssetById = new Map(
+    referenceAssetQueries.flatMap((assetQuery) =>
+      assetQuery.data ? [[assetQuery.data.id, assetQuery.data] as const] : [],
+    ),
+  );
 
   return (
     <SellerResponsiveFrame>
@@ -515,6 +534,7 @@ function SellerOrderListView({
                   key={order.orderId}
                   onClick={() => onOpenDetail(order.orderId)}
                   order={order}
+                  referenceAssetById={referenceAssetById}
                 />
               ))
             ) : (
@@ -533,11 +553,18 @@ function OrderListItem({
   highlighted,
   onClick,
   order,
+  referenceAssetById,
 }: {
   highlighted?: boolean;
   onClick: () => void;
   order: OrderCalendarItem;
+  referenceAssetById: Map<string, Asset>;
 }) {
+  const thumbnailUrl = getReferenceThumbnailUrl(
+    order.startReferenceAssets,
+    referenceAssetById,
+  );
+
   return (
     <button
       className={cn(
@@ -548,7 +575,16 @@ function OrderListItem({
       onClick={onClick}
       type="button"
     >
-      <div className="size-[70px] shrink-0 rounded-seller-sm bg-surface-subtle" />
+      <div className="size-[70px] shrink-0 overflow-hidden rounded-seller-sm bg-surface-subtle">
+        {thumbnailUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            alt=""
+            className="size-full object-cover"
+            src={thumbnailUrl}
+          />
+        ) : null}
+      </div>
       <div className="flex h-[70px] min-w-0 flex-1 flex-col items-start justify-between whitespace-nowrap">
         <p className="text-[18px] leading-6 font-semibold tracking-[-0.54px] text-text-primary">
           {formatPickupTime(order.pickupTime)}
@@ -576,6 +612,20 @@ function SellerOrderDetailView({
   onMenu: () => void;
 }) {
   const order = detail?.order;
+  const referenceAssetIds = useMemo(
+    () => getReferenceAssetIds(order?.startReferenceAssets ?? []),
+    [order?.startReferenceAssets],
+  );
+  const referenceAssetQueries = useAssetQueries(referenceAssetIds);
+  const referenceAssetById = new Map(
+    referenceAssetQueries.flatMap((assetQuery) =>
+      assetQuery.data ? [[assetQuery.data.id, assetQuery.data] as const] : [],
+    ),
+  );
+  const thumbnailUrl = getReferenceThumbnailUrl(
+    order?.startReferenceAssets,
+    referenceAssetById,
+  );
   const optionLines =
     detail && detail.optionRows.length > 0
       ? detail.optionRows.map((row) => ({
@@ -636,6 +686,16 @@ function SellerOrderDetailView({
                     {formatWon(order.paidAmount)}
                   </p>
                 </div>
+                {thumbnailUrl ? (
+                  <div className="size-[96px] overflow-hidden rounded-seller-sm bg-surface-subtle">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      alt="주문 참조 이미지"
+                      className="size-full object-cover"
+                      src={thumbnailUrl}
+                    />
+                  </div>
+                ) : null}
               </div>
               <div
                 className="h-px w-full bg-surface-subtle opacity-90"

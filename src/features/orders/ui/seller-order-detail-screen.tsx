@@ -1,15 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/common/button";
 import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
 import { SellerSidebar } from "@/components/widgets/seller-sidebar";
+import { useAssetQueries } from "@/features/assets/model/asset-queries";
+import type { Asset } from "@/features/assets/model/asset-types";
 import {
   useCompleteSellerOrderPickupMutation,
   useRefundSellerOrderMutation,
 } from "@/features/orders/model/order-mutations";
 import { useSellerOrderQuery } from "@/features/orders/model/order-queries";
+import {
+  getReferenceAssetIds,
+  getReferenceThumbnailUrl,
+} from "@/features/orders/model/order-reference-assets";
 import type {
   SellerOrderDetail,
   SellerOrderViewModel,
@@ -29,7 +35,17 @@ export function SellerOrderDetailScreen({ orderId }: { orderId: string }) {
   const query = useSellerOrderQuery(orderId);
   const pickupMutation = useCompleteSellerOrderPickupMutation(orderId);
   const refundMutation = useRefundSellerOrderMutation(orderId);
-  const view = query.data ? toDetailView(query.data) : null;
+  const referenceAssetIds = useMemo(
+    () => getReferenceAssetIds(query.data?.order.startReferenceAssets ?? []),
+    [query.data?.order.startReferenceAssets],
+  );
+  const referenceAssetQueries = useAssetQueries(referenceAssetIds);
+  const referenceAssetById = new Map(
+    referenceAssetQueries.flatMap((assetQuery) =>
+      assetQuery.data ? [[assetQuery.data.id, assetQuery.data] as const] : [],
+    ),
+  );
+  const view = query.data ? toDetailView(query.data, referenceAssetById) : null;
   const isLoading = query.isLoading;
   const isError = query.isError;
 
@@ -143,6 +159,16 @@ function OrderDetailCard({
             {formatPrice(view.order.paidAmount)}
           </p>
         </div>
+        {view.viewModel.thumbnailUrl ? (
+          <div className="size-[96px] overflow-hidden rounded-seller-sm bg-surface-subtle">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              alt="주문 참조 이미지"
+              className="size-full object-cover"
+              src={view.viewModel.thumbnailUrl}
+            />
+          </div>
+        ) : null}
       </div>
       <div className="h-px w-full bg-surface-subtle opacity-90" />
       <div className="flex flex-col gap-6">
@@ -205,7 +231,11 @@ type DetailView = {
   viewModel: SellerOrderViewModel;
 };
 
-function toDetailView(detail: SellerOrderDetail): DetailView {
+function toDetailView(
+  detail: SellerOrderDetail,
+  referenceAssetById: Map<string, Asset>,
+): DetailView {
+  const startReferenceAssets = detail.order.startReferenceAssets ?? [];
   const detailRows =
     detail.optionRows.length > 0
       ? detail.optionRows.map((row) => ({
@@ -220,11 +250,14 @@ function toDetailView(detail: SellerOrderDetail): DetailView {
     order: detail.order,
     viewModel: {
       ...detail.order,
-      startReferenceAssets: [],
+      startReferenceAssets,
       buyerName: "고객",
       detailRows,
       storeName: "스토어",
-      thumbnailUrl: null,
+      thumbnailUrl: getReferenceThumbnailUrl(
+        startReferenceAssets,
+        referenceAssetById,
+      ),
     },
   };
 }
