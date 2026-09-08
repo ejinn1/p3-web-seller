@@ -95,7 +95,11 @@ export function Header({
         ) : null}
         {showMenu ? (
           onMenu ? (
-            <IconButton className="size-12" label="메뉴" onClick={onMenu}>
+            <IconButton
+              className="size-12 rounded-none hover:bg-transparent"
+              label="메뉴"
+              onClick={onMenu}
+            >
               <Menu aria-hidden="true" className="size-6" strokeWidth={2} />
             </IconButton>
           ) : (

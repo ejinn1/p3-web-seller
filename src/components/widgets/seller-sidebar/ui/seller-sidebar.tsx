@@ -40,7 +40,10 @@ export function SellerSidebar({ onOpenChange, open }: SellerSidebarProps) {
                 width={87}
               />
               <Dialog.Close asChild>
-                <IconButton className="-mr-6 size-12" label="닫기">
+                <IconButton
+                  className="-mr-6 size-12 rounded-none hover:bg-transparent"
+                  label="닫기"
+                >
                   <X aria-hidden="true" className="size-5" />
                 </IconButton>
               </Dialog.Close>

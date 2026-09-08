@@ -5,7 +5,7 @@ import { roleOptions } from "@/features/auth/constants/roles";
 
 export function RoleSelectionScreen() {
   return (
-    <main className="flex min-h-dvh flex-col bg-surface-default text-text-primary">
+    <main className="mx-auto flex min-h-dvh w-full max-w-[768px] flex-col bg-surface-default text-text-primary">
       <Header
         backHref="/seller"
         backLabel="로그인 화면으로 돌아가기"
