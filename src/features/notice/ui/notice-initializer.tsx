@@ -30,7 +30,7 @@ export function NoticeInitializer({ children }: NoticeInitializerProps) {
 
   if (noticesQuery.isError) {
     return (
-      <main className="mx-auto flex min-h-dvh w-full max-w-[390px] flex-col items-center justify-center gap-4 bg-surface-default px-4 text-center text-text-primary">
+      <main className="mx-auto flex min-h-dvh w-full max-w-[768px] flex-col items-center justify-center gap-4 bg-surface-default px-4 text-center text-text-primary">
         <p className="text-seller-body-md text-text-secondary">
           {noticesQuery.error instanceof Error
             ? noticesQuery.error.message
@@ -45,7 +45,7 @@ export function NoticeInitializer({ children }: NoticeInitializerProps) {
 
   if (!isInitialized) {
     return (
-      <main className="mx-auto flex min-h-dvh w-full max-w-[390px] items-center justify-center bg-surface-default px-4 text-text-secondary">
+      <main className="mx-auto flex min-h-dvh w-full max-w-[768px] items-center justify-center bg-surface-default px-4 text-text-secondary">
         <p className="text-seller-body-md">공지사항을 불러오고 있어요.</p>
       </main>
     );

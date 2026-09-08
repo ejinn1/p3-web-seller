@@ -47,11 +47,11 @@ export function NoticeCategoryScreen({ category }: NoticeCategoryScreenProps) {
   };
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-[390px] flex-col bg-surface-subtle text-text-primary">
+    <main className="mx-auto flex min-h-dvh w-full max-w-[768px] flex-col bg-surface-subtle text-text-primary">
       <div className="bg-surface-default">
         <OrderFormHeader
           backHref="/seller/notice"
-          showMenu={false}
+
           title={category.label}
         />
       </div>

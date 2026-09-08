@@ -1,10 +1,15 @@
 import { Button } from "@/components/common/button";
-import { OnboardingHeader } from "@/features/onboarding/ui/onboarding-header";
+import { Header } from "@/components/common/header";
 
 export function OnboardingRejectedScreen() {
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-[390px] flex-col bg-surface-default text-text-primary">
-      <OnboardingHeader />
+    <main className="mx-auto flex min-h-dvh w-full max-w-[768px] flex-col bg-surface-default text-text-primary">
+      <Header
+        backHref="/seller"
+        backLabel="로그인 화면으로 돌아가기"
+        className="border-none"
+        title="입점 신청"
+      />
       <section className="flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
         <h2 className="text-seller-display-sm font-bold tracking-[-0.66px]">
           다시 한번 확인해 주세요

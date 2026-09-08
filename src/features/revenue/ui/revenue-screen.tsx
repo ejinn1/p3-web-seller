@@ -2,8 +2,10 @@
 
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
 import { ChevronLeft, ChevronRight, Menu, SlidersHorizontal, X } from "lucide-react";
-import { SellerScreenShell } from "@/features/seller-shell/ui/seller-screen-shell";
+import { SellerSidebar } from "@/components/widgets/seller-sidebar";
+import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
 import { revenueCancelHistory } from "@/features/revenue/model/revenue-fixtures";
 import { useSellerOrdersQuery } from "@/features/orders/model/order-queries";
 import type {
@@ -44,6 +46,7 @@ const detailTitles: Record<Exclude<RevenueView, "home">, string> = {
 export function RevenueScreen({ initialView }: RevenueScreenProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const activePeriod = parsePeriod(searchParams.get("period"));
   const range = rangeForPeriod(activePeriod);
   const { data: revenue } = useSellerRevenueQuery(range.startDate, range.endDate);
@@ -67,16 +70,16 @@ export function RevenueScreen({ initialView }: RevenueScreenProps) {
 
   if (view === "cancel-history") {
     return (
-      <SellerScreenShell className="bg-surface-subtle" data-revenue-frame="cancel-history">
+      <SellerResponsiveFrame className="bg-surface-subtle" data-revenue-frame="cancel-history">
         <RevenueHeader title={detailTitles[view]} onBack={() => goToView("cancellations")} />
         <CancelHistoryView history={revenueCancelHistory} />
-      </SellerScreenShell>
+      </SellerResponsiveFrame>
     );
   }
 
   if (view !== "home") {
     return (
-      <SellerScreenShell data-revenue-frame={view}>
+      <SellerResponsiveFrame data-revenue-frame={view}>
         <RevenueHeader title={detailTitles[view]} onBack={() => goToView("home")} />
         <RevenueDetailView
           lines={getLinesForView(view, orders)}
@@ -86,13 +89,17 @@ export function RevenueScreen({ initialView }: RevenueScreenProps) {
           }
           tone={view === "cancellations" ? "danger" : "default"}
         />
-      </SellerScreenShell>
+      </SellerResponsiveFrame>
     );
   }
 
   return (
-    <SellerScreenShell data-revenue-frame="home">
-      <RevenueHeader showMenu title="매출 분석" />
+    <SellerResponsiveFrame data-revenue-frame="home">
+      <RevenueHeader
+        onMenu={() => setSidebarOpen(true)}
+        showMenu
+        title="매출 분석"
+      />
       <section className="flex flex-col" data-node-id="1290:16176">
         <PeriodTabs
           activePeriod={activePeriod}
@@ -124,16 +131,19 @@ export function RevenueScreen({ initialView }: RevenueScreenProps) {
           API revenue range: {revenue.startDate} - {revenue.endDate}
         </span>
       ) : null}
-    </SellerScreenShell>
+      <SellerSidebar onOpenChange={setSidebarOpen} open={sidebarOpen} />
+    </SellerResponsiveFrame>
   );
 }
 
 function RevenueHeader({
   onBack,
+  onMenu,
   showMenu = false,
   title,
 }: {
   onBack?: () => void;
+  onMenu?: () => void;
   showMenu?: boolean;
   title: string;
 }) {
@@ -165,6 +175,7 @@ function RevenueHeader({
           <button
             aria-label="메뉴"
             className="flex size-11 items-center justify-center text-icon-default"
+            onClick={onMenu}
             type="button"
           >
             <Menu aria-hidden="true" className="size-5" strokeWidth={2} />

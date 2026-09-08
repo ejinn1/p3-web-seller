@@ -13,12 +13,12 @@ export function NoticePreviewScreen() {
   }));
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-[390px] flex-col bg-surface-subtle text-text-primary">
+    <main className="mx-auto flex min-h-dvh w-full max-w-[768px] flex-col bg-surface-subtle text-text-primary">
       <div className="bg-surface-default">
         <OrderFormHeader
           backHref="/seller/notice"
           backLabel="공지사항으로 돌아가기"
-          showMenu={false}
+
           title="미리보기"
         />
       </div>

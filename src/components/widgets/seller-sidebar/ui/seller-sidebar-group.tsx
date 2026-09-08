@@ -11,12 +11,21 @@ export function SellerSidebarGroup({ items, title }: SellerSidebarGroupProps) {
       </p>
       {items.map((item, index) => (
         <div key={item.href}>
-          <Link
-            className="flex h-6 items-center px-6 text-[18px] leading-6 font-semibold tracking-[-0.54px] text-text-primary"
-            href={item.href}
-          >
-            {item.label}
-          </Link>
+          {item.disabled ? (
+            <span
+              aria-disabled="true"
+              className="flex h-6 cursor-not-allowed items-center px-6 text-[18px] leading-6 font-semibold tracking-[-0.54px] text-text-disabled"
+            >
+              {item.label}
+            </span>
+          ) : (
+            <Link
+              className="flex h-6 items-center px-6 text-[18px] leading-6 font-semibold tracking-[-0.54px] text-text-primary"
+              href={item.href}
+            >
+              {item.label}
+            </Link>
+          )}
           {index < items.length - 1 ? (
             <div className="mx-6 mt-4 h-px bg-surface-subtle opacity-90" />
           ) : null}

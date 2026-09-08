@@ -3,8 +3,7 @@
 import { useState } from "react";
 
 import { Button } from "@/components/common/button";
-
-import { PickupLocationHeader } from "./pickup-location-header";
+import { SellerMenuHeader } from "@/components/widgets/seller-menu-header";
 
 type PickupLocationDetailScreenProps = {
   address: string;
@@ -28,18 +27,23 @@ export function PickupLocationDetailScreen({
   const canConfirm = Boolean(address.trim() && pickupAddress.length <= 255);
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-[390px] flex-col bg-surface-default text-text-primary">
-      <PickupLocationHeader onBack={onBack} />
+    <main className="mx-auto flex min-h-dvh w-full max-w-[768px] flex-col bg-surface-default text-text-primary">
+      <SellerMenuHeader
+        backLabel="이전 화면으로 돌아가기"
+        className="border-none"
+        onBack={onBack}
+        title="픽업 장소"
+      />
       <section className="flex flex-1 flex-col gap-6 px-4 pt-6">
         <div className="flex flex-col gap-2">
-          <p className="flex items-center text-seller-heading-md font-semibold tracking-[-0.54px]">
+          <p className="flex items-center gap-1 text-seller-heading-md font-semibold tracking-[-0.54px]">
+            픽업 장소
             <span
               aria-hidden="true"
-              className="w-[9px] pb-1 text-[15px] leading-5 text-text-error"
+              className="relative -top-1 text-[15px] leading-5 text-text-error"
             >
               *
             </span>
-            픽업 장소
           </p>
           <button
             className="h-11 w-full truncate rounded-seller-sm bg-surface-subtle px-4 text-left text-base leading-6 tracking-[-0.32px] text-text-primary"

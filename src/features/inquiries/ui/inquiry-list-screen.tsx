@@ -3,7 +3,7 @@
 import { ChevronLeft } from "lucide-react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { SellerScreenShell } from "@/features/seller-shell/ui/seller-screen-shell";
+import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
 import { useSellerInquiriesQuery } from "@/features/inquiries/model/inquiry-queries";
 import type {
   InquiryListItem,
@@ -32,7 +32,7 @@ export function InquiryListScreen() {
   const inquiries = inquiriesQuery.data ?? [];
 
   return (
-    <SellerScreenShell className="bg-surface-default">
+    <SellerResponsiveFrame className="bg-surface-default">
       <header className="flex h-14 shrink-0 items-center justify-between bg-surface-default">
         <button
           aria-label="뒤로 가기"
@@ -87,7 +87,7 @@ export function InquiryListScreen() {
           ))}
         </div>
       </section>
-    </SellerScreenShell>
+    </SellerResponsiveFrame>
   );
 }
 

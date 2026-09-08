@@ -4,6 +4,7 @@ import { ChevronDown, Plus } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/common/button";
+import { SellerMenuHeader } from "@/components/widgets/seller-menu-header";
 import { useUpdateStoreRefundPolicyMutation } from "@/features/store/model/store-mutations";
 import { useStoreRefundPolicyQuery } from "@/features/store/model/store-queries";
 import type {
@@ -12,8 +13,6 @@ import type {
   StoreRefundPolicyRule,
 } from "@/features/store/model/store-types";
 import { cn } from "@/lib/utils";
-
-import { PickupLocationHeader } from "./pickup-location-header";
 
 type StoreRefundPeriodScreenProps = {
   onBack: () => void;
@@ -216,12 +215,20 @@ function StoreRefundPeriodForm({
   };
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-[390px] flex-col bg-surface-default text-text-primary">
-      <PickupLocationHeader onBack={onBack} title="환불기간" />
+    <main className="mx-auto flex min-h-dvh w-full max-w-[768px] flex-col bg-surface-default text-text-primary">
+      <SellerMenuHeader
+        backLabel="이전 화면으로 돌아가기"
+        className="border-none"
+        onBack={onBack}
+        title="환불기간"
+      />
       <section className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 pt-6 pb-4">
         <p className="flex text-seller-heading-md font-semibold tracking-[-0.54px]">
           환불정책
-          <span aria-hidden="true" className="pb-1 text-[15px] text-text-error">
+          <span
+            aria-hidden="true"
+            className="relative -top-1 text-[15px] text-text-error"
+          >
             *
           </span>
         </p>
@@ -287,8 +294,13 @@ export function StoreRefundPeriodScreen({
 
   if (refundPolicyQuery.isPending) {
     return (
-      <main className="mx-auto flex min-h-dvh w-full max-w-[390px] flex-col bg-surface-default text-text-primary">
-        <PickupLocationHeader onBack={onBack} title="환불기간" />
+      <main className="mx-auto flex min-h-dvh w-full max-w-[768px] flex-col bg-surface-default text-text-primary">
+        <SellerMenuHeader
+          backLabel="이전 화면으로 돌아가기"
+          className="border-none"
+          onBack={onBack}
+          title="환불기간"
+        />
         <p className="px-4 pt-6 text-sm text-text-secondary">
           환불정책을 불러오고 있습니다.
         </p>
@@ -308,9 +320,7 @@ export function StoreRefundPeriodScreen({
       key={refundPolicyKey}
       onBack={onBack}
       onConfirm={onConfirm}
-      onSave={async (input) =>
-        updateRefundPolicyMutation.mutateAsync(input)
-      }
+      onSave={async (input) => updateRefundPolicyMutation.mutateAsync(input)}
       refundPolicy={refundPolicyQuery.data}
     />
   );

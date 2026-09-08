@@ -36,6 +36,14 @@ type Values = z.infer<typeof schema>;
 const fieldLabelClassName =
   "text-[18px] leading-6 font-semibold tracking-[-0.54px] [&>span]:text-[15px] [&>span]:leading-5 [&>span]:tracking-[-0.3px]";
 
+function formatPhoneNumber(value: string) {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, -4)}-${digits.slice(-4)}`;
+}
+
 export function OnboardingForm() {
   const router = useRouter();
   const createMutation = useCreateOnboardingMutation();
@@ -53,6 +61,10 @@ export function OnboardingForm() {
     control: form.control,
     name: ["storeName", "address", "name", "phoneNumber", "snsLink"],
   });
+  const hasRequiredValues = [storeName, address, name, phoneNumber].every(
+    (value) => value.trim().length > 0,
+  );
+  const phoneNumberField = form.register("phoneNumber");
 
   async function onSubmit(values: Values) {
     const input: SellerOnboardingInput = {
@@ -78,7 +90,6 @@ export function OnboardingForm() {
           label="스토어 이름"
           labelClassName={fieldLabelClassName}
           required
-          requiredPosition="before"
         >
           <OnboardingTextField
             {...form.register("storeName")}
@@ -94,7 +105,6 @@ export function OnboardingForm() {
           label="가게 주소"
           labelClassName={fieldLabelClassName}
           required
-          requiredPosition="before"
         >
           <OnboardingTextField
             {...form.register("address")}
@@ -110,7 +120,6 @@ export function OnboardingForm() {
           label="이름"
           labelClassName={fieldLabelClassName}
           required
-          requiredPosition="before"
         >
           <OnboardingTextField
             {...form.register("name")}
@@ -126,13 +135,18 @@ export function OnboardingForm() {
           label="전화번호"
           labelClassName={fieldLabelClassName}
           required
-          requiredPosition="before"
         >
           <OnboardingTextField
-            {...form.register("phoneNumber")}
+            {...phoneNumberField}
             error={Boolean(form.formState.errors.phoneNumber)}
             id="store-phone"
-            placeholder="ex: 02-0000-0000"
+            inputMode="numeric"
+            maxLength={13}
+            onChange={(event) => {
+              event.target.value = formatPhoneNumber(event.target.value);
+              phoneNumberField.onChange(event);
+            }}
+            placeholder="ex: 010-0000-0000"
             type="tel"
             value={phoneNumber}
           />
@@ -163,7 +177,7 @@ export function OnboardingForm() {
       <div className="mt-auto px-4 pt-4 pb-[max(2.125rem,env(safe-area-inset-bottom))]">
         <Button
           className="h-[52px] rounded-2xl text-[18px] leading-6 font-semibold tracking-[-0.54px]"
-          disabled={createMutation.isPending}
+          disabled={createMutation.isPending || !hasRequiredValues}
           fullWidth
           size="lg"
           type="submit"

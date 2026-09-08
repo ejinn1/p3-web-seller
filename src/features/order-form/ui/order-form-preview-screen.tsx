@@ -14,12 +14,12 @@ export function OrderFormPreviewScreen() {
   );
 
   return (
-    <main className="mx-auto min-h-dvh w-full max-w-[390px] bg-surface-subtle text-text-primary">
+    <main className="mx-auto min-h-dvh w-full max-w-[768px] bg-surface-subtle text-text-primary">
       <div className="bg-surface-default">
         <OrderFormHeader
           backHref="/seller/order-form"
           backLabel="주문서 양식으로 돌아가기"
-          showMenu={false}
+
           title="미리보기"
         />
       </div>

@@ -29,7 +29,7 @@ export function LoginScreen() {
 
   return (
     <main className="flex min-h-dvh bg-surface-default px-4 pt-[max(3rem,env(safe-area-inset-top))] pb-6 text-text-primary">
-      <div className="mx-auto flex w-full max-w-[390px] flex-1 flex-col">
+      <div className="mx-auto flex w-full max-w-[768px] flex-1 flex-col">
         <section className="flex flex-1 flex-col items-center justify-center gap-8 pt-12">
           <Image
             alt="wihada"
