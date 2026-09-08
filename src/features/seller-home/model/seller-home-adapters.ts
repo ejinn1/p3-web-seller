@@ -56,7 +56,7 @@ function toSellerHomeInquiry(inquiry: InquiryListItem): SellerHomeInquiry {
     id: inquiry.id,
     customerMaskedName: inquiry.buyerName,
     previewMessage: inquiry.lastMessage,
-    sentAt: formatTime(inquiry.lastMessageAt),
+    sentAt: inquiry.lastMessageTimeLabel,
     unreadCount: inquiry.unreadCount,
     hasOrderForm: inquiry.hasOrderFormSubmission,
   };

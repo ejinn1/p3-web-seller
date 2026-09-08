@@ -132,6 +132,7 @@ export type InquiryListItem = {
   hasOrderFormSubmission: boolean;
   lastMessage: string;
   lastMessageAt: string;
+  lastMessageTimeLabel: string;
   status: InquiryStatus;
   unreadCount: number;
   profileImageUrl: string | null;
