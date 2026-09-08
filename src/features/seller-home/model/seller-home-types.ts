@@ -88,6 +88,7 @@ export type SellerHomeDashboard = {
   dateLabel: string;
   weekDays: string[];
   dateCells: Array<{
+    date: string;
     label: string;
     disabled?: boolean;
     selected?: boolean;

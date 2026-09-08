@@ -96,6 +96,7 @@ function buildWeekDateCells(weekStartDate: string, today: string) {
     const isoDate = toIsoDate(date);
 
     return {
+      date: isoDate,
       label: String(date.getDate()),
       disabled: date.getTime() < todayDate.getTime(),
       selected: isoDate === today,

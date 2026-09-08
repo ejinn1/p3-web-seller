@@ -9,6 +9,11 @@ import { IconButton } from "@/components/common/icon-button";
 import { SellerSidebar } from "@/components/widgets/seller-sidebar";
 import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
 import { getInquiryDetailHref } from "@/features/inquiries/model/inquiry-detail-state";
+import { useSellerOrdersQuery } from "@/features/orders/model/order-queries";
+import type {
+  SellerOrderListItem,
+  SellerOrderStatus,
+} from "@/features/orders/model/order-types";
 import { useSellerHomeDashboardQuery } from "@/features/seller-home/model/seller-home-queries";
 import type {
   SellerHomeDashboard,
@@ -19,6 +24,14 @@ import type {
 import { cn } from "@/lib/utils";
 
 const formatWon = (value: number) => `${value.toLocaleString("ko-KR")}원`;
+const useFixtures =
+  process.env.NEXT_PUBLIC_P3_USE_MOCKS === "true" ||
+  !process.env.NEXT_PUBLIC_P3_API_BASE_URL;
+const pickupImageFallbacks = [
+  "/seller-home/cake-flower.png",
+  "/seller-home/cake-berries.png",
+  "/seller-home/cake-box.png",
+];
 
 type SellerHomeTab = "pickup" | "waiting";
 type SellerHomeView =
@@ -36,6 +49,18 @@ export function SellerHomeScreen() {
   const showSidebar = searchParams.get("sidebar") === "open";
   const showRevisionModal = searchParams.get("modal") === "revision";
   const dashboard = dashboardQuery.data;
+  const selectedDate = resolveSelectedDate(
+    searchParams.get("date"),
+    dashboard?.dateCells ?? [],
+  );
+  const selectedPickupOrdersQuery = useSellerOrdersQuery(
+    {
+      dateBasis: "PICKUP_AT",
+      endDate: selectedDate,
+      startDate: selectedDate,
+    },
+    Boolean(!useFixtures && selectedDate && tab === "pickup"),
+  );
 
   const setState = (next: Record<string, string | null>) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -76,6 +101,17 @@ export function SellerHomeScreen() {
       </SellerResponsiveFrame>
     );
   }
+
+  const selectedDateLabel = formatHomeDate(selectedDate);
+  const selectedPickups = useFixtures
+    ? dashboard.pickups.filter((pickup) => pickup.pickupDate === selectedDate)
+    : (selectedPickupOrdersQuery.data ?? []).map(toSellerHomePickup);
+  const selectedPickupCount = useFixtures
+    ? selectedPickups.length
+    : (selectedPickupOrdersQuery.data?.length ??
+      (isDefaultSelectedDate(selectedDate, dashboard.dateCells)
+        ? dashboard.todayPickupCount
+        : 0));
 
   if (view === "confirmation") {
     return (
@@ -137,7 +173,18 @@ export function SellerHomeScreen() {
     <SellerResponsiveFrame className="relative overflow-x-hidden">
       <HomeHeader onMenu={() => setState({ sidebar: "open" })} />
       <section className="flex flex-col items-center gap-12 overflow-hidden pt-4 pb-[calc(34px+env(safe-area-inset-bottom))]">
-        <DashboardOverview dashboard={dashboard} />
+        <DashboardOverview
+          dashboard={dashboard}
+          selectedDate={selectedDate}
+          selectedDateLabel={selectedDateLabel}
+          selectedPickupCount={selectedPickupCount}
+          onMoveDate={(date) =>
+            setState({ date, inquiryId: null, pickupId: null })
+          }
+          onSelectDate={(date) =>
+            setState({ date, inquiryId: null, pickupId: null })
+          }
+        />
         <div className="flex w-full flex-col gap-6">
           <div className="h-2 w-full bg-surface-subtle opacity-90" />
           <div
@@ -174,7 +221,9 @@ export function SellerHomeScreen() {
           {tab === "pickup" ? (
             <PickupList
               pickupId={pickupId}
-              pickups={dashboard.pickups}
+              pickups={selectedPickups}
+              isError={selectedPickupOrdersQuery.isError}
+              isLoading={selectedPickupOrdersQuery.isLoading}
               onChat={() => setState({ view: "chat" })}
               onConfirmation={() => setState({ view: "confirmation" })}
               onSelect={(id) => setState({ pickupId: id })}
@@ -249,20 +298,54 @@ function DetailHeader({
   );
 }
 
-function DashboardOverview({ dashboard }: { dashboard: SellerHomeDashboard }) {
+function DashboardOverview({
+  dashboard,
+  onMoveDate,
+  onSelectDate,
+  selectedDate,
+  selectedDateLabel,
+  selectedPickupCount,
+}: {
+  dashboard: SellerHomeDashboard;
+  onMoveDate: (date: string) => void;
+  onSelectDate: (date: string) => void;
+  selectedDate: string;
+  selectedDateLabel: string;
+  selectedPickupCount: number;
+}) {
+  const selectedDateIndex = dashboard.dateCells.findIndex(
+    (cell) => cell.date === selectedDate,
+  );
+  const previousDate =
+    selectedDateIndex > 0 ? dashboard.dateCells[selectedDateIndex - 1] : null;
+  const nextDate =
+    selectedDateIndex >= 0 && selectedDateIndex < dashboard.dateCells.length - 1
+      ? dashboard.dateCells[selectedDateIndex + 1]
+      : null;
+
   return (
     <div
       className="flex w-full flex-col items-center gap-8"
       data-qa="seller-home-overview"
     >
       <div className="flex h-6 w-full items-center justify-center gap-4 overflow-hidden">
-        <IconButton className="size-12 text-icon-muted" label="이전 날짜">
+        <IconButton
+          className="size-12 text-icon-muted"
+          disabled={!previousDate || previousDate.disabled}
+          label="이전 날짜"
+          onClick={() => previousDate && onMoveDate(previousDate.date)}
+        >
           <ChevronLeft aria-hidden="true" className="size-5" />
         </IconButton>
         <h2 className="text-[18px] leading-6 font-semibold tracking-[-0.54px] text-text-primary">
-          {dashboard.dateLabel}
+          {selectedDateLabel}
         </h2>
-        <IconButton className="size-12 text-icon-muted" label="다음 날짜">
+        <IconButton
+          className="size-12 text-icon-muted"
+          disabled={!nextDate || nextDate.disabled}
+          label="다음 날짜"
+          onClick={() => nextDate && onMoveDate(nextDate.date)}
+        >
           <ChevronRight aria-hidden="true" className="size-5" />
         </IconButton>
       </div>
@@ -282,22 +365,30 @@ function DashboardOverview({ dashboard }: { dashboard: SellerHomeDashboard }) {
         </div>
         <div className="grid grid-cols-7">
           {dashboard.dateCells.map((cell) => (
-            <div
+            <button
+              aria-pressed={cell.date === selectedDate}
               className={cn(
                 "flex aspect-square items-center justify-center rounded-seller-sm text-[15px] leading-[22px] font-semibold tracking-[-0.15px]",
-                cell.selected && "bg-surface-inverse text-text-inverse",
-                cell.disabled && !cell.selected && "text-text-unavailable",
-                !cell.disabled && !cell.selected && "text-text-primary",
+                cell.date === selectedDate && "bg-surface-inverse text-text-inverse",
+                cell.disabled &&
+                  cell.date !== selectedDate &&
+                  "text-text-unavailable",
+                !cell.disabled &&
+                  cell.date !== selectedDate &&
+                  "text-text-primary",
               )}
-              key={cell.label}
+              disabled={cell.disabled}
+              key={cell.date}
+              onClick={() => onSelectDate(cell.date)}
+              type="button"
             >
               {cell.label}
-            </div>
+            </button>
           ))}
         </div>
       </div>
       <div className="flex h-[86px] w-[calc(100%-32px)] items-center justify-center rounded-seller-sm bg-surface-subtle p-4 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
-        <SummaryCount label="오늘 픽업" value={dashboard.todayPickupCount} />
+        <SummaryCount label="오늘 픽업" value={selectedPickupCount} />
         <div className="mx-1 h-[54px] w-px bg-surface-default opacity-90" />
         <SummaryCount label="문의대기" value={dashboard.waitingInquiryCount} />
       </div>
@@ -349,18 +440,46 @@ function TabButton({
 }
 
 function PickupList({
+  isError,
+  isLoading,
   onChat,
   onConfirmation,
   onSelect,
   pickupId,
   pickups,
 }: {
+  isError: boolean;
+  isLoading: boolean;
   onChat: () => void;
   onConfirmation: () => void;
   onSelect: (id: string) => void;
   pickupId: string | null;
   pickups: SellerHomePickup[];
 }) {
+  if (isLoading) {
+    return (
+      <p className="px-4 py-8 text-center text-[15px] leading-[22px] font-semibold tracking-[-0.15px] text-text-secondary">
+        선택한 날짜의 픽업을 불러오는 중입니다.
+      </p>
+    );
+  }
+
+  if (isError) {
+    return (
+      <p className="px-4 py-8 text-center text-[15px] leading-[22px] font-semibold tracking-[-0.15px] text-text-error">
+        선택한 날짜의 픽업을 불러오지 못했습니다.
+      </p>
+    );
+  }
+
+  if (pickups.length === 0) {
+    return (
+      <p className="px-4 py-8 text-center text-[15px] leading-[22px] font-semibold tracking-[-0.15px] text-text-secondary">
+        선택한 날짜의 픽업이 없습니다.
+      </p>
+    );
+  }
+
   return (
     <div className="flex w-full flex-col gap-2" data-qa="pickup-list">
       {pickups.map((pickup) => {
@@ -379,6 +498,104 @@ function PickupList({
       })}
     </div>
   );
+}
+
+function resolveSelectedDate(
+  requestedDate: string | null,
+  dateCells: SellerHomeDashboard["dateCells"],
+) {
+  const requestedCell = dateCells.find(
+    (cell) => cell.date === requestedDate && !cell.disabled,
+  );
+
+  if (requestedCell) {
+    return requestedCell.date;
+  }
+
+  return (
+    dateCells.find((cell) => cell.selected && !cell.disabled)?.date ??
+    dateCells.find((cell) => !cell.disabled)?.date ??
+    dateCells[0]?.date ??
+    requestedDate ??
+    ""
+  );
+}
+
+function formatHomeDate(value: string) {
+  const [year, month, day] = value.split("-").map(Number);
+
+  if (!year || !month || !day) {
+    return value;
+  }
+
+  return `${year}년 ${month}월 ${day}일`;
+}
+
+function formatPickupDateLabel(value: string) {
+  const [year, month, day] = value.split("-").map(Number);
+
+  if (!year || !month || !day) {
+    return value;
+  }
+
+  return `${month}월 ${day}일`;
+}
+
+function isDefaultSelectedDate(
+  selectedDate: string,
+  dateCells: SellerHomeDashboard["dateCells"],
+) {
+  return dateCells.some((cell) => cell.selected && cell.date === selectedDate);
+}
+
+function toSellerHomePickup(
+  order: SellerOrderListItem,
+  index: number,
+): SellerHomePickup {
+  return {
+    id: order.id,
+    pickupDate: toKoreaIsoDate(order.pickupAt),
+    pickupTime: formatPickupTime(order.pickupAt),
+    customerName: "고객",
+    customerMaskedName: "고객 님",
+    totalPrice: order.paidAmount,
+    imageUrl: pickupImageFallbacks[index % pickupImageFallbacks.length],
+    status: toHomeOrderStatus(order.status),
+  };
+}
+
+function toHomeOrderStatus(
+  status: SellerOrderStatus | null,
+): SellerHomePickup["status"] {
+  if (status === "PAID") {
+    return "PICKUP_READY";
+  }
+
+  if (status === "PICKED_UP") {
+    return "PAYMENT_COMPLETE";
+  }
+
+  return "REVISION_REQUESTED";
+}
+
+function formatPickupTime(value: string) {
+  return new Intl.DateTimeFormat("ko-KR", {
+    hour: "numeric",
+    hour12: true,
+    minute: "2-digit",
+    timeZone: "Asia/Seoul",
+  }).format(new Date(value));
+}
+
+function toKoreaIsoDate(value: string) {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+  });
+
+  return formatter.format(new Date(value));
 }
 
 function PickupRow({
@@ -421,7 +638,7 @@ function PickupRow({
             {pickup.pickupTime}
           </p>
           <p className="w-full overflow-hidden text-[13px] leading-[18px] font-normal tracking-[-0.13px] text-ellipsis text-text-tertiary">
-            8월 19일 · {pickup.customerMaskedName}
+            {formatPickupDateLabel(pickup.pickupDate)} · {pickup.customerMaskedName}
           </p>
           <p className="text-[15px] leading-[22px] font-semibold tracking-[-0.15px] text-text-secondary">
             {formatWon(pickup.totalPrice)}
