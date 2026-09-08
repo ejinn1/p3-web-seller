@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-query";
 import {
   markSellerInquiryRead,
+  moveSellerInquiryToTrash,
   sendSellerOrderConfirmation,
 } from "@/features/inquiries/api/inquiries-api";
 import { inquiryKeys } from "@/features/inquiries/model/inquiry-keys";
@@ -106,4 +107,15 @@ function matchesSellerInquiryListParams(
   }
 
   return true;
+}
+
+export function useMoveSellerInquiryToTrashMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: moveSellerInquiryToTrash,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: inquiryKeys.all });
+    },
+  });
 }
