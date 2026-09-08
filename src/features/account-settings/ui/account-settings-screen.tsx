@@ -9,6 +9,7 @@ import {
   useStoreSettingsQuery,
   useStoreShareLinkQuery,
 } from "@/features/store/model/store-queries";
+import { getSellerBackHref } from "@/lib/navigation/seller-back-routes";
 import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
 
 export function AccountSettingsScreen() {
@@ -21,7 +22,7 @@ export function AccountSettingsScreen() {
   return (
     <SellerResponsiveFrame className="bg-surface-subtle">
       <Header
-        backHref="/seller/home"
+        backHref={getSellerBackHref("accountSettings")}
         backLabel="판매자 홈으로 돌아가기"
         onMenu={() => setSidebarOpen(true)}
         showMenu

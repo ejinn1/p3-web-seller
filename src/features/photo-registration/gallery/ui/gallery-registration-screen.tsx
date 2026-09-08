@@ -18,6 +18,7 @@ import { GalleryPhotoPreview } from "@/features/photo-registration/gallery/ui/ga
 import { GalleryPhotoUploadField } from "@/features/photo-registration/gallery/ui/gallery-photo-upload-field";
 import { useStoreManagementStatusQuery } from "@/features/store/model/store-queries";
 import { useSortableList } from "@/hooks/use-sortable-list";
+import { getSellerBackHref } from "@/lib/navigation/seller-back-routes";
 
 type PendingPhoto = {
   assetId: string;
@@ -248,7 +249,7 @@ export function GalleryRegistrationScreen() {
 
     setUploadedPhotos([]);
     setSortOrderById({});
-    router.push("/seller/store-management");
+    router.push(getSellerBackHref("photoRepresentative"));
   };
 
   const handleDelete = async () => {
@@ -304,7 +305,7 @@ export function GalleryRegistrationScreen() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-[768px] flex-col bg-surface-default text-text-primary">
       <OrderFormHeader
-        backHref="/seller/photo-registration/representative"
+        backHref={getSellerBackHref("photoGallery")}
         title=""
       />
       <section className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 pt-4">
@@ -358,7 +359,7 @@ export function GalleryRegistrationScreen() {
       <div className="flex gap-2 px-4 pt-4 pb-[34px]">
         <Button
           className="h-11 flex-1 rounded-seller-md text-[15px] font-semibold"
-          onClick={() => router.push("/seller/store-management")}
+          onClick={() => router.push(getSellerBackHref("photoRepresentative"))}
           size="md"
           variant="outline"
         >

@@ -12,6 +12,7 @@ import { useRepresentativeImagesQuery } from "@/features/photo-registration/repr
 import { RepresentativePhotoPreview } from "@/features/photo-registration/representative/ui/representative-photo-preview";
 import { RepresentativePhotoUploadField } from "@/features/photo-registration/representative/ui/representative-photo-upload-field";
 import { useStoreManagementStatusQuery } from "@/features/store/model/store-queries";
+import { getSellerBackHref } from "@/lib/navigation/seller-back-routes";
 
 const MIN_REPRESENTATIVE_PHOTO_COUNT = 3;
 const MAX_REPRESENTATIVE_PHOTO_COUNT = 10;
@@ -123,7 +124,7 @@ export function RepresentativePhotoHomeScreen() {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-[768px] flex-col bg-surface-default text-text-primary">
-      <OrderFormHeader backHref="/seller/store-management" title="" />
+      <OrderFormHeader backHref={getSellerBackHref("photoRepresentative")} title="" />
       <section className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 pt-4">
         <div className="space-y-2">
           <h1 className="text-seller-display-lg font-bold tracking-[-0.84px] whitespace-pre-line">

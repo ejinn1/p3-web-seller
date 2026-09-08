@@ -12,6 +12,7 @@ import {
 } from "@/features/order-form/model/order-form-request";
 import { OrderFormHeader } from "@/features/order-form/ui/order-form-header";
 import { useStoreManagementStatusQuery } from "@/features/store/model/store-queries";
+import { getSellerBackHref } from "@/lib/navigation/seller-back-routes";
 
 export function OrderFormScreen() {
   const router = useRouter();
@@ -41,7 +42,7 @@ export function OrderFormScreen() {
       {
         onSuccess: () => {
           resetDraft();
-          router.replace("/seller/store-management");
+          router.replace(getSellerBackHref("orderForm"));
         },
       },
     );
@@ -49,7 +50,7 @@ export function OrderFormScreen() {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-[768px] flex-col bg-surface-default text-text-primary">
-      <OrderFormHeader backHref="/seller/store-management" />
+      <OrderFormHeader backHref={getSellerBackHref("orderForm")} />
       <section className="flex flex-1 flex-col gap-8 overflow-y-auto px-4 pt-6 pb-4">
         <div className="space-y-2">
           <h2 className="text-seller-display-lg font-bold tracking-[-0.84px] whitespace-pre-line">

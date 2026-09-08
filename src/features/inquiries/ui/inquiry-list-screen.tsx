@@ -13,6 +13,7 @@ import type {
   InquiryListItem,
   InquiryStatus,
 } from "@/features/inquiries/model/inquiry-types";
+import { getSellerBackHref } from "@/lib/navigation/seller-back-routes";
 import { cn } from "@/lib/utils";
 
 const tabs: Array<{ label: string; status?: InquiryStatus }> = [
@@ -43,7 +44,7 @@ export function InquiryListScreen() {
   return (
     <SellerResponsiveFrame className="bg-surface-default">
       <Header
-        backHref="/seller/home"
+        backHref={getSellerBackHref("inquiries")}
         backLabel="판매자 홈으로 돌아가기"
         className="border-none"
         onMenu={() => setSidebarOpen(true)}

@@ -9,6 +9,7 @@ import {
 } from "@/features/store/model/store-mutations";
 import { useStoreQuery } from "@/features/store/model/store-queries";
 import type { Store, StoreInput } from "@/features/store/model/store-types";
+import { getSellerBackHref } from "@/lib/navigation/seller-back-routes";
 
 import { PickupLocationDetailScreen } from "./pickup-location-detail-screen";
 import { PickupLocationSearchScreen } from "./pickup-location-search-screen";
@@ -120,7 +121,7 @@ export function StoreInformationScreen() {
       }
       isDescriptionSaving={updateStoreDescriptionMutation.isPending}
       key={storeQuery.data?.id ?? "new"}
-      onDescriptionSaved={() => router.push("/seller/store-management")}
+      onDescriptionSaved={() => router.push(getSellerBackHref("storeInformation"))}
       onDescriptionSave={async (description) => {
         await updateStoreDescriptionMutation.mutateAsync({ description });
       }}

@@ -27,6 +27,7 @@ import {
   getReferenceAssetIds,
   getReferenceThumbnailUrl,
 } from "@/features/orders/model/order-reference-assets";
+import { getSellerBackHref } from "@/lib/navigation/seller-back-routes";
 import { cn } from "@/lib/utils";
 
 const defaultYear = 2026;
@@ -132,7 +133,7 @@ export function SellerOrderCalendarScreen() {
     <>
       <SellerResponsiveFrame>
         <CalendarHeader
-          onBack={() => router.push("/seller/orders")}
+          onBack={() => router.push(getSellerBackHref("orderCalendar"))}
           onMenu={() => setSidebarOpen(true)}
           title="주문 캘린더"
         />

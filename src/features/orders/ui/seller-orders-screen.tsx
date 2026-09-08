@@ -25,6 +25,7 @@ import type {
   SellerOrderStatus,
   SellerOrderViewModel,
 } from "@/features/orders/model/order-types";
+import { getSellerBackHref } from "@/lib/navigation/seller-back-routes";
 import { cn } from "@/lib/utils";
 
 type FilterPreset = "1개월" | "3개월" | "6개월" | "직접선택";
@@ -90,7 +91,7 @@ export function SellerOrdersScreen() {
   return (
     <SellerResponsiveFrame className="bg-surface-default">
       <OrdersHeader
-        backHref="/seller/home"
+        backHref={getSellerBackHref("orders")}
         onMenu={() => setSidebarOpen(true)}
         showMenu
         title="주문 내역"
