@@ -84,6 +84,22 @@ export type InquiryOrderOptionRow = {
   label: string;
   value: string;
   amount: number | null;
+  priceLabel?: string | null;
+  required?: boolean;
+};
+
+export type InquiryReferenceAssetResponse = {
+  assetId: string;
+  source: string;
+  sortOrder: number;
+  status: string;
+  deliveryUrl: string | null;
+  variants: {
+    type: string;
+    deliveryUrl: string;
+    width: number;
+    height: number;
+  }[];
 };
 
 export type InquiryOrderFormSubmissionResponse = {
@@ -94,7 +110,7 @@ export type InquiryOrderFormSubmissionResponse = {
   pickupDate: string;
   pickupTime: string;
   answers: string;
-  referenceAssets: string;
+  referenceAssets: InquiryReferenceAssetResponse[];
   optionRows: InquiryOrderOptionRow[];
   cancellationRefundAgreed: boolean;
   submittedAt: string;
@@ -119,6 +135,22 @@ export type InquiryOrderConfirmationResponse = {
   buyerViewedAt?: string | null;
   replacedByConfirmationId?: string | null;
   createdAt: string;
+};
+
+export type SendSellerOrderConfirmationAdditionalItem = {
+  label: string;
+  value: string;
+  amount: number;
+};
+
+export type SendSellerOrderConfirmationRequest = {
+  orderFormSubmissionId: string | null;
+  confirmationTitle: string;
+  summaryText: string;
+  amount: number;
+  pickupAt: string;
+  additionalItems: SendSellerOrderConfirmationAdditionalItem[];
+  sellerNote: string | null;
 };
 
 export type SellerInquiryListParams = {
@@ -185,10 +217,14 @@ export type InquiryOrderOption = {
 export type InquiryOrderConfirmation = {
   buyerName: string;
   buyerPhone: string;
+  confirmationTitle: string;
   imageUrl: string | null;
+  orderFormSubmissionId: string | null;
   options: InquiryOrderOption[];
+  pickupAt: string | null;
   pickupDate: string;
   pickupTime: string;
+  summaryText: string;
   totalPrice: number;
 };
 

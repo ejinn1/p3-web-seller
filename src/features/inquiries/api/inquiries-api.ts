@@ -16,6 +16,7 @@ import type {
   InquiryOrderFormSubmissionResponse,
   InquiryTimelinePageResponse,
   SellerInquiryListParams,
+  SendSellerOrderConfirmationRequest,
 } from "@/features/inquiries/model/inquiry-types";
 
 const useFixtures =
@@ -89,3 +90,16 @@ export const moveSellerInquiryToTrash = (inquiryId: string) =>
 
 export const restoreSellerInquiryFromTrash = (inquiryId: string) =>
   sendJson<void>(`/seller/inquiries/${inquiryId}/restore`, "PATCH");
+
+export const sendSellerOrderConfirmation = ({
+  inquiryId,
+  request,
+}: {
+  inquiryId: string;
+  request: SendSellerOrderConfirmationRequest;
+}) =>
+  sendJson<InquiryOrderConfirmationResponse>(
+    `/seller/inquiries/${inquiryId}/confirmations`,
+    "POST",
+    request,
+  );
