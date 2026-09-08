@@ -134,6 +134,7 @@ function toChatMessage(
       id: item.eventId,
       kind: "order-request" as const,
       owner: "buyer" as const,
+      receivedNoticeText: formatOrderReceivedNotice(item.createdAt),
       sentAt,
     };
   }
@@ -506,6 +507,30 @@ function formatShortTime(value: string) {
     minute: "2-digit",
     timeZone: "Asia/Seoul",
   }).format(new Date(value));
+}
+
+function formatOrderReceivedNotice(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "주문이 접수되었습니다.";
+  }
+
+  const parts = new Intl.DateTimeFormat("ko-KR", {
+    day: "numeric",
+    hour: "2-digit",
+    hourCycle: "h23",
+    minute: "2-digit",
+    month: "numeric",
+    timeZone: "Asia/Seoul",
+  }).formatToParts(date);
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((item) => item.type === type)?.value ?? "";
+  const month = Number(part("month"));
+  const day = Number(part("day"));
+  const hour = Number(part("hour"));
+  const minute = part("minute");
+
+  return `${month}월 ${day}일 ${hour}:${minute}분 주문이 접수되었습니다.`;
 }
 
 function formatFullDate(value: string) {
