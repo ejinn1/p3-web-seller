@@ -6,6 +6,7 @@ import type {
   InquiryListApiItem,
   InquiryListItem,
   InquiryOrderConfirmation,
+  InquiryOrderConfirmationPreviewResponse,
   InquiryOrderConfirmationResponse,
   InquiryOrderFormSubmissionResponse,
   InquiryOrderOption,
@@ -40,12 +41,14 @@ export function toInquiryListItem(item: InquiryListApiItem): InquiryListItem {
 export function toInquiryDetail({
   confirmations,
   detail,
+  preview,
   submissions,
   status = "WAITING",
   timeline,
 }: {
   confirmations: InquiryOrderConfirmationResponse[];
   detail: InquiryChatDetailResponse;
+  preview: InquiryOrderConfirmationPreviewResponse | null;
   submissions: InquiryOrderFormSubmissionResponse[];
   status?: InquiryStatus;
   timeline: InquiryTimelineItemResponse[];
@@ -77,6 +80,7 @@ export function toInquiryDetail({
       detail,
       latestSubmission,
       latestConfirmation,
+      preview,
     ),
     participantUserId: detail.participant.userId,
     profileImageUrl: detail.participant.profileImageDeliveryUrl,
@@ -170,7 +174,9 @@ function toInquiryOrderConfirmation(
   detail: InquiryChatDetailResponse,
   submission: InquiryOrderFormSubmissionResponse | null,
   confirmation: InquiryOrderConfirmationResponse | null,
+  preview: InquiryOrderConfirmationPreviewResponse | null,
 ): InquiryOrderConfirmation {
+  const draftPreview = confirmation ? null : preview;
   const rows = getOptionRows(
     confirmation?.optionRows,
     confirmation?.summaryText,
@@ -190,19 +196,54 @@ function toInquiryOrderConfirmation(
       : "";
   const basePrice =
     confirmation?.amount ??
+    draftPreview?.baseAmount ??
     rows.reduce((sum, row) => sum + (row.amount ?? 0), 0);
+  const unconfirmedOptions = new Map(
+    (draftPreview?.unconfirmedOptions ?? []).map((option) => [
+      `${option.optionGroupId}:${option.optionValue}`,
+      option,
+    ]),
+  );
+  const options = rows.map((row, index) =>
+    toInquiryOrderOption(row, index, unconfirmedOptions),
+  );
+  const existingOptionIds = new Set(options.map((option) => option.id));
+
+  for (const option of draftPreview?.unconfirmedOptions ?? []) {
+    const id = `${option.optionGroupId}:${option.optionValue}`;
+
+    if (!existingOptionIds.has(id)) {
+      options.push({
+        amount: null,
+        id,
+        label: option.label,
+        needsPrice: true,
+        optionGroupId: option.optionGroupId,
+        optionValue: option.optionValue,
+        priceText: option.priceLabel,
+        value: option.displayValue,
+      });
+    }
+  }
 
   return {
     basePrice,
     buyerName: detail.participant.name,
     buyerPhone: "",
-    confirmationTitle: confirmation?.confirmationTitle ?? "주문확인서",
+    confirmationTitle:
+      confirmation?.confirmationTitle ??
+      draftPreview?.confirmationTitle ??
+      "주문확인서",
     imageUrl: detail.startReferenceAsset?.deliveryUrl ?? null,
     orderFormSubmissionId:
-      confirmation?.orderFormSubmissionId ?? submission?.id ?? null,
-    options: rows.map(toInquiryOrderOption),
+      confirmation?.orderFormSubmissionId ??
+      draftPreview?.orderFormSubmissionId ??
+      submission?.id ??
+      null,
+    options,
     pickupAt:
       confirmation?.pickupAt ??
+      draftPreview?.pickupAt ??
       (submission
         ? toPickupInstant(submission.pickupDate, submission.pickupTime)
         : null),
@@ -210,6 +251,7 @@ function toInquiryOrderConfirmation(
     pickupTime,
     summaryText:
       confirmation?.summaryText ??
+      draftPreview?.fixedOrderSummary ??
       rows.map((row) => `${row.label}: ${row.value}`).join("\n") ??
       "주문확인서",
     totalPrice: confirmation?.amount ?? basePrice,
@@ -287,6 +329,7 @@ function rowsFromAnswers(answers: unknown[]): InquiryOrderOptionRow[] {
     }
 
     const label = normalizeText(answer.label) || `옵션 ${index + 1}`;
+    const optionGroupId = stringOrNull(answer.optionGroupId);
     const selectedOptions = Array.isArray(answer.selectedOptions)
       ? answer.selectedOptions
       : Array.isArray(answer.value)
@@ -301,6 +344,8 @@ function rowsFromAnswers(answers: unknown[]): InquiryOrderOptionRow[] {
                 amount:
                   numberOrNull(option.price) ?? numberOrNull(option.amount),
                 label,
+                optionGroupId,
+                optionValue: stringOrNull(option.value ?? option.optionValue),
                 priceLabel: stringOrNull(option.priceLabel),
                 required: booleanOrUndefined(answer.required),
                 value: formatOptionValue(option),
@@ -343,14 +388,30 @@ function normalizeParsedRow(
 function toInquiryOrderOption(
   row: InquiryOrderOptionRow,
   index: number,
+  unconfirmedOptions: Map<
+    string,
+    InquiryOrderConfirmationPreviewResponse["unconfirmedOptions"][number]
+  >,
 ): InquiryOrderOption {
-  const priceLabel = row.priceLabel?.trim();
+  const optionGroupId = row.optionGroupId ?? null;
+  const optionValue = row.optionValue ?? null;
+  const unconfirmedOption =
+    optionGroupId && optionValue
+      ? unconfirmedOptions.get(`${optionGroupId}:${optionValue}`)
+      : undefined;
+  const priceLabel =
+    unconfirmedOption?.priceLabel.trim() || row.priceLabel?.trim();
 
   return {
     amount: row.amount,
-    id: `${toOptionId(row.label)}-${index}`,
+    id:
+      optionGroupId && optionValue
+        ? `${optionGroupId}:${optionValue}`
+        : `${toOptionId(row.label)}-${index}`,
     label: row.label,
     needsPrice: Boolean(priceLabel && row.amount === null),
+    optionGroupId,
+    optionValue,
     priceText:
       row.amount === null
         ? (priceLabel ?? "")

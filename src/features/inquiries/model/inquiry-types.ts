@@ -88,6 +88,8 @@ export type InquiryOrderOptionRow = {
   label: string;
   value: string;
   amount: number | null;
+  optionGroupId?: string | null;
+  optionValue?: string | null;
   priceLabel?: string | null;
   required?: boolean;
 };
@@ -130,6 +132,7 @@ export type InquiryOrderConfirmationResponse = {
   pickupAt: string;
   storeNameSnapshot: string;
   orderSummary: string;
+  confirmedOptionPrices?: string | null;
   additionalItems: string;
   optionRows: InquiryOrderOptionRow[];
   sellerNote: string | null;
@@ -141,9 +144,34 @@ export type InquiryOrderConfirmationResponse = {
   createdAt: string;
 };
 
+export type InquiryOrderConfirmationPreviewResponse = {
+  orderFormSubmissionId: string;
+  confirmationTitle: string;
+  pickupAt: string;
+  fixedOrderSummary: string;
+  baseAmount: number;
+  inquiryRequired: boolean;
+  requiresManualAmount: boolean;
+  unconfirmedOptions: InquiryUnconfirmedOption[];
+};
+
+export type InquiryUnconfirmedOption = {
+  optionGroupId: string;
+  optionValue: string;
+  label: string;
+  displayValue: string;
+  priceLabel: string;
+};
+
 export type SendSellerOrderConfirmationAdditionalItem = {
   label: string;
   value: string;
+  amount: number;
+};
+
+export type SendSellerOrderConfirmationConfirmedOptionPrice = {
+  optionGroupId: string;
+  optionValue: string;
   amount: number;
 };
 
@@ -153,6 +181,7 @@ export type SendSellerOrderConfirmationRequest = {
   summaryText: string;
   amount: number;
   pickupAt: string;
+  confirmedOptionPrices: SendSellerOrderConfirmationConfirmedOptionPrice[];
   additionalItems: SendSellerOrderConfirmationAdditionalItem[];
   sellerNote: string | null;
 };
@@ -218,6 +247,8 @@ export type InquiryOrderOption = {
   priceText: string;
   required?: boolean;
   needsPrice?: boolean;
+  optionGroupId: string | null;
+  optionValue: string | null;
 };
 
 export type InquiryOrderConfirmation = {
