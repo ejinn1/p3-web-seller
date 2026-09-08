@@ -11,6 +11,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { BottomSheet } from "@/components/common/bottom-sheet";
 import { Header } from "@/components/common/header";
 import { SellerScreenShell } from "@/features/seller-shell/ui/seller-screen-shell";
 import {
@@ -161,57 +162,55 @@ export function SellerOrdersScreen() {
         ) : null}
       </section>
 
-      {filterOpen ? (
-        <DateFilterSheet
-          onClose={() => setFilterOpen(false)}
-          onCustom={() => {
-            setFilterOpen(false);
-            setCustomDateSelected(false);
-            setCustomStep("start");
-          }}
-          onSelect={(preset) => {
-            setSelectedPreset(preset);
-            setSelectedRange(rangeForPreset(preset));
-          }}
-          selectedPreset={selectedPreset}
-          selectedRange={selectedRange}
-        />
-      ) : null}
+      <DateFilterSheet
+        onClose={() => setFilterOpen(false)}
+        onCustom={() => {
+          setFilterOpen(false);
+          setCustomDateSelected(false);
+          setCustomStep("start");
+        }}
+        onSelect={(preset) => {
+          setSelectedPreset(preset);
+          setSelectedRange(rangeForPreset(preset));
+        }}
+        open={filterOpen}
+        selectedPreset={selectedPreset}
+        selectedRange={selectedRange}
+      />
 
-      {customStep ? (
-        <CustomDateSheet
-          onBack={() => {
-            if (customStep === "start") {
-              setCustomStep(null);
-              setFilterOpen(true);
-              return;
-            }
-
-            setCustomStep(customStep === "end" ? "start" : "end");
-          }}
-          onClose={() => setCustomStep(null)}
-          onNext={() => {
-            if (customStep === "start") {
-              setSelectedRange((range) => ({ ...range, start: "2026.08.18" }));
-              setCustomDateSelected(false);
-              setCustomStep("end");
-              return;
-            }
-
-            if (customStep === "end") {
-              setSelectedRange((range) => ({ ...range, end: "2026.08.18" }));
-              setCustomStep("done");
-              return;
-            }
-
-            setSelectedPreset("직접선택");
+      <CustomDateSheet
+        onBack={() => {
+          if (customStep === "start") {
             setCustomStep(null);
-          }}
-          onSelectDate={() => setCustomDateSelected(true)}
-          selected={customDateSelected}
-          step={customStep}
-        />
-      ) : null}
+            setFilterOpen(true);
+            return;
+          }
+
+          setCustomStep(customStep === "end" ? "start" : "end");
+        }}
+        onClose={() => setCustomStep(null)}
+        onNext={() => {
+          if (customStep === "start") {
+            setSelectedRange((range) => ({ ...range, start: "2026.08.18" }));
+            setCustomDateSelected(false);
+            setCustomStep("end");
+            return;
+          }
+
+          if (customStep === "end") {
+            setSelectedRange((range) => ({ ...range, end: "2026.08.18" }));
+            setCustomStep("done");
+            return;
+          }
+
+          setSelectedPreset("직접선택");
+          setCustomStep(null);
+        }}
+        onSelectDate={() => setCustomDateSelected(true)}
+        open={customStep !== null}
+        selected={customDateSelected}
+        step={customStep ?? "start"}
+      />
     </SellerScreenShell>
   );
 }
@@ -289,12 +288,14 @@ function DateFilterSheet({
   onClose,
   onCustom,
   onSelect,
+  open,
   selectedPreset,
   selectedRange,
 }: {
   onClose: () => void;
   onCustom: () => void;
   onSelect: (preset: FilterPreset) => void;
+  open: boolean;
   selectedPreset: FilterPreset | null;
   selectedRange: { end: string; start: string };
 }) {
@@ -302,9 +303,9 @@ function DateFilterSheet({
   const disabled = !selectedPreset;
 
   return (
-    <SheetOverlay>
+    <BottomSheet onOpenChange={(nextOpen) => !nextOpen && onClose()} open={open}>
       <div
-        className="flex w-full flex-col items-center gap-8 rounded-t-seller-lg bg-surface-default px-4 pt-8 pb-[34px]"
+        className="flex w-full flex-col items-center gap-8"
         data-qa="orders-filter-sheet"
       >
         <div className="flex w-full flex-col gap-2">
@@ -357,7 +358,7 @@ function DateFilterSheet({
           확인
         </button>
       </div>
-    </SheetOverlay>
+    </BottomSheet>
   );
 }
 
@@ -366,6 +367,7 @@ function CustomDateSheet({
   onClose,
   onNext,
   onSelectDate,
+  open,
   selected,
   step,
 }: {
@@ -373,6 +375,7 @@ function CustomDateSheet({
   onClose: () => void;
   onNext: () => void;
   onSelectDate: () => void;
+  open: boolean;
   selected: boolean;
   step: CustomDateStep;
 }) {
@@ -382,15 +385,19 @@ function CustomDateSheet({
   const nextDisabled = step !== "done" && !selected;
 
   return (
-    <SheetOverlay>
+    <BottomSheet
+      className="bg-surface-elevated shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
+      onOpenChange={(nextOpen) => !nextOpen && onClose()}
+      open={open}
+    >
       <div
-        className="flex w-full flex-col gap-4 rounded-t-seller-lg bg-surface-elevated pt-8 shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
+        className="flex w-full flex-col gap-4"
         data-qa="orders-custom-date-sheet"
       >
-        <div className="px-4">
+        <div>
           <SheetTitle onClose={onClose}>{title}</SheetTitle>
         </div>
-        <div className="flex flex-col gap-4 px-4">
+        <div className="flex flex-col gap-4">
           <div className="flex h-6 items-center justify-center gap-4 overflow-hidden">
             <ChevronLeft
               aria-hidden="true"
@@ -409,7 +416,7 @@ function CustomDateSheet({
             selectedDay={selected || step === "done" ? 18 : null}
           />
         </div>
-        <div className="flex gap-2 px-4 pt-4 pb-[34px]">
+        <div className="flex gap-2 pt-4">
           <button
             className="flex h-11 flex-1 items-center justify-center rounded-seller-md border border-border-default bg-surface-default px-6 text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-primary"
             data-qa="orders-custom-date-back"
@@ -429,15 +436,7 @@ function CustomDateSheet({
           </button>
         </div>
       </div>
-    </SheetOverlay>
-  );
-}
-
-function SheetOverlay({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-surface-scrim">
-      <div className="w-full lg:max-w-[390px]">{children}</div>
-    </div>
+    </BottomSheet>
   );
 }
 

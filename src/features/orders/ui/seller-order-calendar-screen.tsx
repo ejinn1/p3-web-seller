@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, SlidersHorizontal, X } from "lucide-react";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
+import { BottomSheet } from "@/components/common/bottom-sheet";
 import { SellerScreenShell } from "@/features/seller-shell/ui/seller-screen-shell";
 import {
   orderCalendarDayRevenue,
@@ -676,22 +677,15 @@ function MonthSelectSheet({
   const [year, setYear] = useState(initialYear);
   const [month, setMonth] = useState(initialMonth);
 
-  if (!open) {
-    return null;
-  }
-
   const years = [year - 1, year - 1, year, year - 1, year - 1];
   const months = [month - 2, month - 1, month, month + 1, month + 2].map(
     normalizeMonth,
   );
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-surface-scrim"
-      data-testid="calendar-month-overlay"
-    >
+    <BottomSheet onOpenChange={(nextOpen) => !nextOpen && onClose()} open={open}>
       <div
-        className="flex w-full flex-col items-center gap-8 rounded-t-seller-lg bg-surface-default px-4 pt-8 pb-[calc(34px+env(safe-area-inset-bottom))] lg:max-w-[390px]"
+        className="flex w-full flex-col items-center gap-8"
         data-testid="calendar-month-sheet"
       >
         <div className="flex h-12 w-full items-start justify-between">
@@ -743,7 +737,7 @@ function MonthSelectSheet({
           확인
         </button>
       </div>
-    </div>
+    </BottomSheet>
   );
 }
 
