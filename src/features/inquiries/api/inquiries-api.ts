@@ -44,29 +44,44 @@ export async function getSellerInquiries(
 export async function getSellerInquiry(
   inquiryId: string,
 ): Promise<InquiryDetail> {
-  const [detail, timeline, submissions, confirmations] = await Promise.all([
-    getJson<InquiryChatDetailResponse>(`/seller/inquiries/${inquiryId}`),
-    getJson<InquiryTimelinePageResponse>(
-      `/seller/inquiries/${inquiryId}/events?size=50`,
-    ),
-    getJson<InquiryOrderFormSubmissionResponse[]>(
-      `/seller/inquiries/${inquiryId}/order-form-submissions`,
-    ),
-    getJson<InquiryOrderConfirmationResponse[]>(
-      `/seller/inquiries/${inquiryId}/confirmations`,
-    ),
-  ]);
+  const [detail, timeline, submissions, confirmations, listItems, trashItems] =
+    await Promise.all([
+      getJson<InquiryChatDetailResponse>(`/seller/inquiries/${inquiryId}`),
+      getJson<InquiryTimelinePageResponse>(
+        `/seller/inquiries/${inquiryId}/events?size=50`,
+      ),
+      getJson<InquiryOrderFormSubmissionResponse[]>(
+        `/seller/inquiries/${inquiryId}/order-form-submissions`,
+      ),
+      getJson<InquiryOrderConfirmationResponse[]>(
+        `/seller/inquiries/${inquiryId}/confirmations`,
+      ),
+      getJson<InquiryListApiItem[]>("/seller/inquiries"),
+      getJson<InquiryListApiItem[]>("/seller/inquiries?status=TRASH"),
+    ]);
+  const status = [...listItems, ...trashItems].find(
+    (item) => item.inquiryId === inquiryId,
+  )?.status;
 
   return toInquiryDetail({
     confirmations,
     detail,
     submissions,
+    status,
     timeline: timeline.items,
   });
 }
 
 export const markSellerInquiryRead = (inquiryId: string) =>
   sendJson<void>(`/seller/inquiries/${inquiryId}/read`, "PATCH");
+
+export const getSellerOrderFormSubmission = (
+  inquiryId: string,
+  submissionId: string,
+) =>
+  getJson<InquiryOrderFormSubmissionResponse>(
+    `/seller/inquiries/${inquiryId}/order-form-submissions/${submissionId}`,
+  );
 
 export const moveSellerInquiryToTrash = (inquiryId: string) =>
   sendJson<void>(`/seller/inquiries/${inquiryId}/trash`, "PATCH");

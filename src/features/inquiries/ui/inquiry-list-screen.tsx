@@ -6,6 +6,8 @@ import { useState } from "react";
 import { Header } from "@/components/common/header";
 import { SellerSidebar } from "@/components/widgets/seller-sidebar";
 import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
+import { useCurrentUserQuery } from "@/features/auth/model/auth-queries";
+import { useSellerInquiryListStomp } from "@/features/inquiries/model/inquiry-list-stomp";
 import { useSellerInquiriesQuery } from "@/features/inquiries/model/inquiry-queries";
 import type {
   InquiryListItem,
@@ -15,7 +17,7 @@ import { cn } from "@/lib/utils";
 
 const tabs: Array<{ label: string; status?: InquiryStatus }> = [
   { label: "전체" },
-  { label: "접수됨", status: "WAITING" },
+  { label: "접수대기", status: "WAITING" },
   { label: "상담중", status: "IN_PROGRESS" },
   { label: "결제완료", status: "PAID" },
   { label: "픽업완료", status: "PICKED_UP" },
@@ -32,6 +34,10 @@ export function InquiryListScreen() {
     status: activeStatus,
     unreadOnly,
   });
+  const currentUserQuery = useCurrentUserQuery(
+    Boolean(process.env.NEXT_PUBLIC_P3_API_BASE_URL),
+  );
+  useSellerInquiryListStomp(currentUserQuery.data?.userId);
   const inquiries = inquiriesQuery.data ?? [];
 
   return (
@@ -45,7 +51,7 @@ export function InquiryListScreen() {
         title="문의 목록"
       />
       <section className="min-h-0 flex-1 overflow-y-auto bg-surface-default py-2">
-        <div className="flex h-[68px] gap-2 overflow-x-auto px-4 pt-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex h-[68px] [scrollbar-width:none] gap-2 overflow-x-auto px-4 pt-4 pb-2 [&::-webkit-scrollbar]:hidden">
           {tabs.map((tab) => (
             <button
               className={cn(
@@ -65,7 +71,9 @@ export function InquiryListScreen() {
                 }
 
                 const query = nextParams.toString();
-                router.push(query ? `/seller/inquiries?${query}` : "/seller/inquiries");
+                router.push(
+                  query ? `/seller/inquiries?${query}` : "/seller/inquiries",
+                );
               }}
               type="button"
             >

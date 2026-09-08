@@ -1,13 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
+import { getSellerOrderFormSubmission } from "@/features/inquiries/api/inquiries-api";
+import { useCurrentUserQuery } from "@/features/auth/model/auth-queries";
 import {
   getInquiryDetailHref,
   isInquiryDocumentState,
   parseInquiryScreenState,
 } from "@/features/inquiries/model/inquiry-detail-state";
+import { useSellerInquiryListStomp } from "@/features/inquiries/model/inquiry-list-stomp";
 import { useSendSellerOrderConfirmationMutation } from "@/features/inquiries/model/inquiry-mutations";
 import {
   applyPriceDrafts,
@@ -28,10 +31,16 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
   const searchParams = useSearchParams();
   const inquiryQuery = useSellerInquiryQuery(inquiryId);
   const inquiry = inquiryQuery.data;
+  const refetchInquiry = inquiryQuery.refetch;
+  const currentUserQuery = useCurrentUserQuery(
+    Boolean(process.env.NEXT_PUBLIC_P3_API_BASE_URL),
+  );
   const state = parseInquiryScreenState(searchParams.get("state"));
   const sheet = searchParams.get("sheet");
   const modal = searchParams.get("modal");
+  const reviewedSubmissionRef = useRef<string | null>(null);
   const stomp = useSellerInquiryStomp(inquiryId, Boolean(inquiry));
+  useSellerInquiryListStomp(currentUserQuery.data?.userId, Boolean(inquiry));
   const sendConfirmationMutation =
     useSendSellerOrderConfirmationMutation(inquiryId);
   const [priceDraftState, setPriceDraftState] = useState<{
@@ -76,6 +85,31 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
     nextState: Parameters<typeof getInquiryDetailHref>[1],
     overlay?: Parameters<typeof getInquiryDetailHref>[2],
   ) => router.push(getInquiryDetailHref(inquiryId, nextState, overlay));
+
+  useEffect(() => {
+    const submissionId = documentOrder?.orderFormSubmissionId;
+    const shouldMarkReviewed =
+      state === "order-form" ||
+      state === "confirmation-draft" ||
+      state === "confirmation-priced";
+
+    if (
+      !shouldMarkReviewed ||
+      !submissionId ||
+      reviewedSubmissionRef.current === submissionId
+    ) {
+      return;
+    }
+
+    reviewedSubmissionRef.current = submissionId;
+    getSellerOrderFormSubmission(inquiryId, submissionId)
+      .then(() => {
+        void refetchInquiry();
+      })
+      .catch(() => {
+        reviewedSubmissionRef.current = null;
+      });
+  }, [documentOrder?.orderFormSubmissionId, inquiryId, refetchInquiry, state]);
 
   if (inquiryQuery.isError) {
     return <InquiryDetailState message="상담을 불러오지 못했습니다." />;

@@ -10,6 +10,7 @@ import type {
   InquiryOrderFormSubmissionResponse,
   InquiryOrderOption,
   InquiryOrderOptionRow,
+  InquiryStatus,
   InquiryTimelineItemResponse,
 } from "@/features/inquiries/model/inquiry-types";
 
@@ -40,11 +41,13 @@ export function toInquiryDetail({
   confirmations,
   detail,
   submissions,
+  status = "WAITING",
   timeline,
 }: {
   confirmations: InquiryOrderConfirmationResponse[];
   detail: InquiryChatDetailResponse;
   submissions: InquiryOrderFormSubmissionResponse[];
+  status?: InquiryStatus;
   timeline: InquiryTimelineItemResponse[];
 }): InquiryDetail {
   const latestSubmission = newestBy(submissions, "submittedAt");
@@ -77,8 +80,8 @@ export function toInquiryDetail({
     ),
     participantUserId: detail.participant.userId,
     profileImageUrl: detail.participant.profileImageDeliveryUrl,
-    status: "IN_PROGRESS",
-    statusLabel: "상담중",
+    status,
+    statusLabel: toInquiryStatusLabel(status),
   };
 }
 
@@ -93,6 +96,18 @@ export function appendTimelineItem(
       toChatMessage(item, inquiry.participantUserId, inquiry.order.totalPrice),
     ],
   };
+}
+
+export function toInquiryStatusLabel(status: InquiryStatus) {
+  const labels: Record<InquiryStatus, string> = {
+    IN_PROGRESS: "상담중",
+    PAID: "결제완료",
+    PICKED_UP: "픽업완료",
+    TRASH: "휴지통",
+    WAITING: "접수대기",
+  };
+
+  return labels[status];
 }
 
 function toChatMessage(
