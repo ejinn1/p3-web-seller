@@ -27,6 +27,7 @@ import {
   getReferenceAssetIds,
   getReferenceThumbnailUrl,
 } from "@/features/orders/model/order-reference-assets";
+import { useStoreQuery } from "@/features/store/model/store-queries";
 import { getSellerBackHref } from "@/lib/navigation/seller-back-routes";
 import { cn } from "@/lib/utils";
 
@@ -58,7 +59,11 @@ export function SellerOrderCalendarScreen() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const calendarQuery = useSellerOrderCalendarMonthQuery({ month, year });
+  const storeQuery = useStoreQuery();
   const calendar = calendarQuery.data;
+  const storeOpenedDate = getStoreOpenedDate(storeQuery.data?.createdAt);
+  const previousCalendarMonth = getRelativeMonth(year, month, -1);
+  const nextCalendarMonth = getRelativeMonth(year, month, 1);
   const selectedDay = calendar?.days.find((day) => day.date === activeDate);
   const selectedOrderId =
     searchParams.get("orderId") ?? selectedDay?.orders[0]?.orderId ?? null;
@@ -146,13 +151,24 @@ export function SellerOrderCalendarScreen() {
             data-testid="calendar-summary-card"
           >
             <MonthPickerButton
+              isPreviousDisabled={isMonthBeforeStoreOpened(
+                previousCalendarMonth.year,
+                previousCalendarMonth.month,
+                storeOpenedDate,
+              )}
               month={month}
               onNext={() =>
-                updateParams({ month: String(month === 12 ? 1 : month + 1) })
+                updateParams({
+                  month: String(nextCalendarMonth.month),
+                  year: String(nextCalendarMonth.year),
+                })
               }
               onOpen={() => updateParams({ monthPicker: "1" })}
               onPrevious={() =>
-                updateParams({ month: String(month === 1 ? 12 : month - 1) })
+                updateParams({
+                  month: String(previousCalendarMonth.month),
+                  year: String(previousCalendarMonth.year),
+                })
               }
               year={year}
             />
@@ -161,6 +177,7 @@ export function SellerOrderCalendarScreen() {
         </section>
         <OrderCalendarGrid
           days={calendar.days}
+          minimumDate={storeOpenedDate}
           month={month}
           onSelectDate={(date, hasOrders) => {
             if (selectedDate === date && hasOrders) {
@@ -177,6 +194,7 @@ export function SellerOrderCalendarScreen() {
       <MonthSelectSheet
         initialMonth={month}
         initialYear={year}
+        minimumDate={storeOpenedDate}
         onClose={() => updateParams({ monthPicker: null })}
         onConfirm={(nextYear, nextMonth) =>
           updateParams({
@@ -243,12 +261,14 @@ function CalendarHeader({
 }
 
 function MonthPickerButton({
+  isPreviousDisabled,
   month,
   onNext,
   onOpen,
   onPrevious,
   year,
 }: {
+  isPreviousDisabled: boolean;
   month: number;
   onNext: () => void;
   onOpen: () => void;
@@ -262,7 +282,11 @@ function MonthPickerButton({
     >
       <button
         aria-label="이전 달"
-        className="flex size-12 items-center justify-center text-icon-disabled"
+        className={cn(
+          "flex size-12 items-center justify-center",
+          isPreviousDisabled ? "text-icon-disabled" : "text-icon-default",
+        )}
+        disabled={isPreviousDisabled}
         onClick={onPrevious}
         type="button"
       >
@@ -350,12 +374,14 @@ function SummaryMetric({
 
 function OrderCalendarGrid({
   days,
+  minimumDate,
   month,
   onSelectDate,
   selectedDate,
   year,
 }: {
   days: OrderCalendarDay[];
+  minimumDate: string | null;
   month: number;
   onSelectDate: (date: string, hasOrders: boolean) => void;
   selectedDate: string | null;
@@ -366,8 +392,8 @@ function OrderCalendarGrid({
     [days],
   );
   const gridDates = useMemo(
-    () => buildCalendarGrid(year, month),
-    [year, month],
+    () => buildCalendarGrid(year, month, minimumDate),
+    [minimumDate, year, month],
   );
 
   return (
@@ -401,7 +427,9 @@ function OrderCalendarGrid({
           {gridDates.map((gridDate, index) => {
             const day = dayByDate.get(gridDate.date);
             const isSelected =
-              !gridDate.isOutsideMonth && selectedDate === gridDate.date;
+              !gridDate.isOutsideMonth &&
+              !gridDate.isDisabled &&
+              selectedDate === gridDate.date;
             const hasOrders = Boolean(day?.orders.length);
             const revenue = day?.orders.reduce(
               (sum, order) => sum + order.paidAmount,
@@ -819,12 +847,14 @@ function DetailInfoRow({
 function MonthSelectSheet({
   initialMonth,
   initialYear,
+  minimumDate,
   onClose,
   onConfirm,
   open,
 }: {
   initialMonth: number;
   initialYear: number;
+  minimumDate: string | null;
   onClose: () => void;
   onConfirm: (year: number, month: number) => void;
   open: boolean;
@@ -835,6 +865,11 @@ function MonthSelectSheet({
   const years = [year - 1, year - 1, year, year - 1, year - 1];
   const months = [month - 2, month - 1, month, month + 1, month + 2].map(
     normalizeMonth,
+  );
+  const isConfirmDisabled = isMonthBeforeStoreOpened(
+    year,
+    month,
+    minimumDate,
   );
 
   return (
@@ -870,7 +905,10 @@ function MonthSelectSheet({
               items={years.map((itemYear, index) => ({
                 label: `${itemYear}년`,
                 selected: index === 2,
-                disabled: index === 0 || index > 2,
+                disabled:
+                  index === 0 ||
+                  index > 2 ||
+                  isYearBeforeStoreOpened(itemYear, minimumDate),
                 onClick: () => setYear(itemYear),
               }))}
             />
@@ -879,7 +917,10 @@ function MonthSelectSheet({
               items={months.map((itemMonth, index) => ({
                 label: `${itemMonth}월`,
                 selected: index === 2,
-                disabled: index === 0 || index === 4,
+                disabled:
+                  index === 0 ||
+                  index === 4 ||
+                  isMonthBeforeStoreOpened(year, itemMonth, minimumDate),
                 onClick: () => setMonth(itemMonth),
               }))}
             />
@@ -887,8 +928,14 @@ function MonthSelectSheet({
           <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,#ffffff_4%,rgba(255,255,255,0)_50%,#ffffff_96%)]" />
         </div>
         <button
-          className="flex h-[52px] w-full items-center justify-center rounded-seller-md bg-brand-primary px-6 text-[18px] leading-6 font-semibold tracking-[-0.54px] text-text-inverse"
+          className={cn(
+            "flex h-[52px] w-full items-center justify-center rounded-seller-md px-6 text-[18px] leading-6 font-semibold tracking-[-0.54px]",
+            isConfirmDisabled
+              ? "bg-brand-disabled text-text-unavailable"
+              : "bg-brand-primary text-text-inverse",
+          )}
           data-testid="calendar-month-confirm"
+          disabled={isConfirmDisabled}
           onClick={() => onConfirm(year, month)}
           type="button"
         >
@@ -923,12 +970,16 @@ function WheelColumn({
           className={cn(
             "flex min-h-0 flex-1 items-center justify-center text-center text-[22px] leading-[30px] font-bold tracking-[-0.66px]",
             item.selected &&
-              "w-full rounded-seller-sm bg-surface-subtle text-text-primary",
+              cn(
+                "w-full rounded-seller-sm bg-surface-subtle",
+                item.disabled ? "text-text-disabled" : "text-text-primary",
+              ),
             !item.selected && item.disabled && "text-text-disabled",
             !item.selected && !item.disabled && "text-text-tertiary",
             hideOuterRows && index === 0 && "text-transparent",
             hideOuterRows && index > 2 && "text-transparent",
           )}
+          disabled={item.disabled}
           key={`${item.label}-${index}`}
           onClick={item.onClick}
           type="button"
@@ -940,7 +991,11 @@ function WheelColumn({
   );
 }
 
-function buildCalendarGrid(year: number, month: number): CalendarGridDate[] {
+function buildCalendarGrid(
+  year: number,
+  month: number,
+  minimumDate: string | null = null,
+): CalendarGridDate[] {
   const monthIndex = month - 1;
   const daysInMonth = new Date(year, month, 0).getDate();
   const firstWeekDay = new Date(year, monthIndex, 1).getDay();
@@ -963,7 +1018,7 @@ function buildCalendarGrid(year: number, month: number): CalendarGridDate[] {
     cells.push({
       date,
       day,
-      isDisabled: weekDay === 1,
+      isDisabled: weekDay === 1 || isDateBeforeMinimum(date, minimumDate),
       isOutsideMonth: false,
       weekDay,
     });
@@ -1032,6 +1087,57 @@ function formatDetailPickupDate(instant: string) {
 function splitDate(date: string) {
   const [year, month, day] = date.split("-").map(Number);
   return { day, month, year };
+}
+
+function getStoreOpenedDate(createdAt?: string) {
+  if (!createdAt) {
+    return null;
+  }
+
+  const date = new Date(createdAt);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function isDateBeforeMinimum(date: string, minimumDate: string | null) {
+  return Boolean(minimumDate && date < minimumDate);
+}
+
+function isYearBeforeStoreOpened(year: number, minimumDate: string | null) {
+  if (!minimumDate) {
+    return false;
+  }
+
+  return year < splitDate(minimumDate).year;
+}
+
+function isMonthBeforeStoreOpened(
+  year: number,
+  month: number,
+  minimumDate: string | null,
+) {
+  if (!minimumDate) {
+    return false;
+  }
+
+  const minimum = splitDate(minimumDate);
+
+  return (
+    year < minimum.year || (year === minimum.year && month < minimum.month)
+  );
+}
+
+function getRelativeMonth(year: number, month: number, offset: number) {
+  const date = new Date(year, month - 1 + offset, 1);
+
+  return {
+    month: date.getMonth() + 1,
+    year: date.getFullYear(),
+  };
 }
 
 function normalizeMonth(month: number) {
