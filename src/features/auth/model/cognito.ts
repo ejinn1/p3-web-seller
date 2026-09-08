@@ -28,6 +28,8 @@ type CognitoConfiguration = {
   redirectUri: string;
 };
 
+let refreshSessionPromise: Promise<CognitoSession> | null = null;
+
 export class CognitoError extends Error {
   constructor(message: string) {
     super(message);
@@ -149,8 +151,18 @@ async function getApiToken() {
     return null;
   }
 
-  const refreshedSession = await refreshSession(session.refreshToken);
+  const refreshedSession = await refreshSessionOnce(session.refreshToken);
   return refreshedSession.idToken;
+}
+
+function refreshSessionOnce(refreshToken: string) {
+  if (!refreshSessionPromise) {
+    refreshSessionPromise = refreshSession(refreshToken).finally(() => {
+      refreshSessionPromise = null;
+    });
+  }
+
+  return refreshSessionPromise;
 }
 
 async function refreshSession(refreshToken: string) {

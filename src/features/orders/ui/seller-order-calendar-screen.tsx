@@ -1,10 +1,17 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, SlidersHorizontal, X } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Menu,
+  SlidersHorizontal,
+  X,
+} from "lucide-react";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { BottomSheet } from "@/components/common/bottom-sheet";
+import { SellerSidebar } from "@/components/widgets/seller-sidebar";
 import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
 import {
   orderCalendarDayRevenue,
@@ -48,6 +55,7 @@ export function SellerOrderCalendarScreen() {
   const selectedDate = searchParams.get("date");
   const activeDate = selectedDate ?? defaultListDate;
   const isMonthPickerOpen = searchParams.get("monthPicker") === "1";
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const calendarQuery = useSellerOrderCalendarMonthQuery({ month, year });
   const calendar = calendarQuery.data;
@@ -85,38 +93,50 @@ export function SellerOrderCalendarScreen() {
 
   if (view === "detail") {
     return (
-      <SellerOrderDetailView
-        detail={detailQuery.data}
-        isLoading={detailQuery.isLoading}
-        onBack={() =>
-          updateParams({
-            orderId: null,
-            view: "list",
-            date: activeDate,
-          })
-        }
-      />
+      <>
+        <SellerOrderDetailView
+          detail={detailQuery.data}
+          isLoading={detailQuery.isLoading}
+          onBack={() =>
+            updateParams({
+              orderId: null,
+              view: "list",
+              date: activeDate,
+            })
+          }
+          onMenu={() => setSidebarOpen(true)}
+        />
+        <SellerSidebar onOpenChange={setSidebarOpen} open={sidebarOpen} />
+      </>
     );
   }
 
   if (view === "list") {
     return (
-      <SellerOrderListView
-        date={activeDate}
-        day={selectedDay}
-        onBack={() => updateParams({ orderId: null, view: null })}
-        onClearDate={() => updateParams({ date: null, view: null })}
-        onOpenDetail={(orderId) =>
-          updateParams({ orderId, view: "detail", date: activeDate })
-        }
-      />
+      <>
+        <SellerOrderListView
+          date={activeDate}
+          day={selectedDay}
+          onBack={() => updateParams({ orderId: null, view: null })}
+          onClearDate={() => updateParams({ date: null, view: null })}
+          onMenu={() => setSidebarOpen(true)}
+          onOpenDetail={(orderId) =>
+            updateParams({ orderId, view: "detail", date: activeDate })
+          }
+        />
+        <SellerSidebar onOpenChange={setSidebarOpen} open={sidebarOpen} />
+      </>
     );
   }
 
   return (
     <>
       <SellerResponsiveFrame>
-        <CalendarHeader onBack={() => router.back()} title="주문 캘린더" />
+        <CalendarHeader
+          onBack={() => router.push("/seller/orders")}
+          onMenu={() => setSidebarOpen(true)}
+          title="주문 캘린더"
+        />
         <section
           className="bg-surface-subtle px-4 pt-4 pb-6"
           data-testid="calendar-summary-section"
@@ -170,6 +190,7 @@ export function SellerOrderCalendarScreen() {
         }
         open={isMonthPickerOpen}
       />
+      <SellerSidebar onOpenChange={setSidebarOpen} open={sidebarOpen} />
     </>
   );
 }
@@ -177,10 +198,12 @@ export function SellerOrderCalendarScreen() {
 function CalendarHeader({
   className,
   onBack,
+  onMenu,
   title,
 }: {
   className?: string;
   onBack: () => void;
+  onMenu?: () => void;
   title: string;
 }) {
   return (
@@ -203,7 +226,18 @@ function CalendarHeader({
       <h1 className="shrink-0 text-[22px] leading-[30px] font-bold tracking-[-0.66px] text-text-primary">
         {title}
       </h1>
-      <div className="h-12 min-w-0 flex-1" />
+      <div className="flex min-w-0 flex-1 justify-end">
+        {onMenu ? (
+          <button
+            aria-label="메뉴"
+            className="flex size-12 items-center justify-center text-icon-default"
+            onClick={onMenu}
+            type="button"
+          >
+            <Menu aria-hidden="true" className="size-6" strokeWidth={2} />
+          </button>
+        ) : null}
+      </div>
     </header>
   );
 }
@@ -415,19 +449,21 @@ function SellerOrderListView({
   day,
   onBack,
   onClearDate,
+  onMenu,
   onOpenDetail,
 }: {
   date: string;
   day?: OrderCalendarDay;
   onBack: () => void;
   onClearDate: () => void;
+  onMenu: () => void;
   onOpenDetail: (orderId: string) => void;
 }) {
   const orders = day?.orders ?? [];
 
   return (
     <SellerResponsiveFrame>
-      <CalendarHeader onBack={onBack} title="주문 내역" />
+      <CalendarHeader onBack={onBack} onMenu={onMenu} title="주문 내역" />
       <section className="flex min-h-0 flex-1 flex-col gap-1">
         <div
           className="flex h-[60px] w-full shrink-0 items-center gap-2 px-4 pt-4 pb-2"
@@ -534,10 +570,12 @@ function SellerOrderDetailView({
   detail,
   isLoading,
   onBack,
+  onMenu,
 }: {
   detail?: SellerOrderDetailResponse;
   isLoading: boolean;
   onBack: () => void;
+  onMenu: () => void;
 }) {
   const order = detail?.order;
   const optionLines =
@@ -554,6 +592,7 @@ function SellerOrderDetailView({
       <CalendarHeader
         className="bg-surface-default"
         onBack={onBack}
+        onMenu={onMenu}
         title="주문 내역"
       />
       <section className="flex min-h-0 flex-1 flex-col gap-8 px-4 pt-4 pb-[calc(34px+env(safe-area-inset-bottom))]">

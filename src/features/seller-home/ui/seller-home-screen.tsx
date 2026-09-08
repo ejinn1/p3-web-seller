@@ -78,10 +78,17 @@ export function SellerHomeScreen() {
 
   if (view === "confirmation") {
     return (
-      <ConfirmationView
-        dashboard={dashboard}
-        onBack={() => setState({ view: null })}
-      />
+      <>
+        <ConfirmationView
+          dashboard={dashboard}
+          onBack={() => setState({ view: null })}
+          onMenu={() => setState({ sidebar: "open" })}
+        />
+        <SellerSidebar
+          onOpenChange={(open) => setState({ sidebar: open ? "open" : null })}
+          open={showSidebar}
+        />
+      </>
     );
   }
 
@@ -106,6 +113,7 @@ export function SellerHomeScreen() {
     return (
       <>
         <OrderFormView
+          onMenu={() => setState({ sidebar: "open" })}
           orderForm={dashboard.orderForm}
           onBack={() => setState({ view: null })}
           onRevision={() => setState({ modal: "revision" })}
@@ -116,6 +124,10 @@ export function SellerHomeScreen() {
             onContinue={() => setState({ modal: null, view: "revision-chat" })}
           />
         ) : null}
+        <SellerSidebar
+          onOpenChange={(open) => setState({ sidebar: open ? "open" : null })}
+          open={showSidebar}
+        />
       </>
     );
   }
@@ -208,13 +220,21 @@ function HomeHeader({ onMenu }: { onMenu: () => void }) {
 
 function DetailHeader({
   onBack,
+  onMenu,
   title,
 }: {
   onBack: () => void;
+  onMenu: () => void;
   title: string;
 }) {
   return (
-    <Header className="w-full border-none" onBack={onBack} title={title} />
+    <Header
+      className="w-full border-none"
+      onBack={onBack}
+      onMenu={onMenu}
+      showMenu
+      title={title}
+    />
   );
 }
 
@@ -541,13 +561,15 @@ function StoreAvatar({ className }: { className?: string }) {
 function ConfirmationView({
   dashboard,
   onBack,
+  onMenu,
 }: {
   dashboard: SellerHomeDashboard;
   onBack: () => void;
+  onMenu: () => void;
 }) {
   return (
     <SellerResponsiveFrame className="bg-surface-subtle">
-      <DetailHeader onBack={onBack} title="주문확인서" />
+      <DetailHeader onBack={onBack} onMenu={onMenu} title="주문확인서" />
       <section className="flex w-full flex-col items-center gap-4 overflow-hidden px-4 pt-6 pb-4">
         <div className="flex w-full flex-col gap-8 rounded-seller-sm bg-surface-default px-4 py-8 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
           <div className="flex w-full items-start justify-between text-[22px] leading-[30px] font-bold tracking-[-0.66px] text-text-primary">
@@ -639,16 +661,18 @@ function ConfirmationLine({
 
 function OrderFormView({
   onBack,
+  onMenu,
   onRevision,
   orderForm,
 }: {
   onBack: () => void;
+  onMenu: () => void;
   onRevision: () => void;
   orderForm: SellerHomeOrderForm;
 }) {
   return (
     <SellerResponsiveFrame className="bg-surface-subtle">
-      <DetailHeader onBack={onBack} title="주문서" />
+      <DetailHeader onBack={onBack} onMenu={onMenu} title="주문서" />
       <section className="flex flex-1 flex-col gap-4 overflow-hidden px-4 pt-4 pb-[calc(94px+env(safe-area-inset-bottom))]">
         <div className="flex w-full flex-col gap-12 rounded-seller-sm bg-surface-default px-4 py-6 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
           <OrderFormSection
