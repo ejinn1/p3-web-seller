@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { PHOTO_UPLOAD_ACCEPT } from "@/features/photo-registration/model/photo-upload";
 
 type RepresentativePhotoUploadFieldProps = {
   disabled?: boolean;
@@ -12,10 +13,10 @@ export function RepresentativePhotoUploadField({
   return (
     <label
       aria-label="대표사진 업로드 영역"
-      className="flex size-[177px] cursor-pointer items-center justify-center overflow-hidden rounded-seller-sm bg-surface-subtle has-disabled:cursor-not-allowed has-disabled:opacity-40"
+      className="flex aspect-square w-full cursor-pointer items-center justify-center overflow-hidden rounded-seller-sm bg-surface-subtle has-disabled:cursor-not-allowed has-disabled:opacity-40"
     >
       <input
-        accept="image/jpeg,image/png,image/webp"
+        accept={PHOTO_UPLOAD_ACCEPT}
         className="sr-only"
         disabled={disabled}
         onChange={(event) => {
