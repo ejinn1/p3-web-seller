@@ -49,6 +49,11 @@ export function OrderFormConfiguredOptionCard({
           <p className="shrink-0">{formatPrice(price)}</p>
         </div>
       ) : null}
+      {type === "SELECT" && description ? (
+        <p className="text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-tertiary">
+          * {description}
+        </p>
+      ) : null}
       {type === "SELECT_WITH_TEXT" ? (
         <>
           <div className="flex h-11 w-full items-center rounded-seller-sm bg-surface-subtle px-4 text-base leading-6 tracking-[-0.32px] text-text-unavailable">

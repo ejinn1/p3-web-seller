@@ -361,6 +361,23 @@ export function OrderFormOptionSheet({
                     </span>
                   </span>
                 </label>
+                <label className="flex flex-col gap-2">
+                  <span className="text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-tertiary">
+                    서브 설명
+                  </span>
+                  <span className="flex flex-col items-end gap-1">
+                    <Input
+                      className="border-0 bg-surface-subtle px-4 placeholder:text-text-unavailable"
+                      maxLength={100}
+                      onChange={(event) => setDescription(event.target.value)}
+                      placeholder="2-3인 추천"
+                      value={description}
+                    />
+                    <span className="text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-unavailable">
+                      {description.length}/100
+                    </span>
+                  </span>
+                </label>
               </>
             )}
           </div>
