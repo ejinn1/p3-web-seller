@@ -31,7 +31,9 @@ export function InquiryOrderCard({
 
   return (
     <article className="w-full rounded-seller-sm bg-surface-default px-4 py-8 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
-      <OrderReferenceImage imageUrl={order.imageUrl} />
+      {!isConfirmationEditor ? (
+        <OrderReferenceImage imageUrl={order.imageUrl} />
+      ) : null}
       <div
         className={cn(
           "flex justify-between font-bold text-text-primary",
@@ -47,7 +49,9 @@ export function InquiryOrderCard({
         <InfoLine label="주문자" value={order.buyerName} />
         <InfoLine label="연락처" value={order.buyerPhone || "정보 없음"} />
       </div>
-      <div className="mt-8 h-px bg-surface-subtle opacity-90" />
+      {!isConfirmationEditor ? (
+        <div className="mt-8 h-px bg-surface-subtle opacity-90" />
+      ) : null}
       <div className="mt-8 space-y-6">
         {order.options.map((option) => (
           <ConfirmationOptionRow
@@ -196,8 +200,9 @@ function ConfirmationOptionRow({
   onOpenPrice?: () => void;
   option: InquiryOrderOption;
 }) {
-  const needsPrice = mode === "confirmation-draft" && option.needsPrice;
   const showPrice = !option.needsPrice || mode !== "confirmation-draft";
+  const isConfirmationEditor =
+    mode === "confirmation-draft" || mode === "confirmation-priced";
 
   return (
     <div className="space-y-2">
@@ -210,14 +215,7 @@ function ConfirmationOptionRow({
         onClick={onOpenPrice}
         type="button"
       >
-        <span
-          className={cn(
-            "font-semibold text-text-primary",
-            mode === "confirmation-draft" || mode === "confirmation-priced"
-              ? "text-[15px] leading-5 tracking-[-0.3px]"
-              : "text-[18px] leading-6 tracking-[-0.54px]",
-          )}
-        >
+        <span className="text-[18px] leading-6 font-semibold tracking-[-0.54px] text-text-primary">
           {option.value}
         </span>
         {showPrice ? (
@@ -225,18 +223,18 @@ function ConfirmationOptionRow({
             {option.priceText}
           </span>
         ) : (
-          <ChevronRight
-            aria-hidden="true"
-            className="size-6 text-text-secondary"
-          />
+          <span className="-my-3 flex size-12 shrink-0 items-center justify-center">
+            <ChevronRight
+              aria-hidden="true"
+              className="size-6 text-text-secondary"
+            />
+          </span>
         )}
       </button>
-      {needsPrice ? (
-        <p className="text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-error">
-          가격을 입력해주세요
-        </p>
-      ) : null}
-      <ReferenceAssetPreviewList assets={option.assetPreviews} />
+      <ReferenceAssetPreviewList
+        assets={option.assetPreviews}
+        size={isConfirmationEditor ? "lg" : "sm"}
+      />
     </div>
   );
 }
@@ -260,18 +258,29 @@ function OrderReferenceImage({ imageUrl }: { imageUrl: string | null }) {
 
 function ReferenceAssetPreviewList({
   assets,
+  size = "sm",
 }: {
   assets?: InquiryReferenceAssetPreview[];
+  size?: "sm" | "lg";
 }) {
   if (!assets?.length) {
     return null;
   }
 
   return (
-    <div className="flex gap-2 overflow-x-auto pb-1" data-qa="order-assets">
+    <div
+      className={cn(
+        "flex gap-2 overflow-x-auto pb-1",
+        size === "lg" && "mt-4",
+      )}
+      data-qa="order-assets"
+    >
       {assets.map((asset, index) => (
         <div
-          className="size-16 shrink-0 overflow-hidden rounded-seller-sm bg-surface-subtle"
+          className={cn(
+            "shrink-0 overflow-hidden rounded-seller-sm bg-surface-subtle",
+            size === "lg" ? "size-[100px]" : "size-16",
+          )}
           key={`${asset.assetId}-${index}`}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
