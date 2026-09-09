@@ -54,8 +54,10 @@ export function SellerHomeScreen() {
   const showSidebar = searchParams.get("sidebar") === "open";
   const showRevisionModal = searchParams.get("modal") === "revision";
   const dashboard = dashboardQuery.data;
+  const todayDate = resolveTodayDate(dashboard?.dateCells ?? [], "");
   const selectedDate = resolveSelectedDate(
     searchParams.get("date"),
+    todayDate,
     dashboard?.dateCells ?? [],
   );
   const selectedPickupOrdersQuery = useSellerOrdersQuery(
@@ -64,7 +66,7 @@ export function SellerHomeScreen() {
       endDate: selectedDate,
       startDate: selectedDate,
     },
-    Boolean(!useFixtures && selectedDate && isPickupListTab),
+    Boolean(!useFixtures && dashboard && selectedDate && isPickupListTab),
   );
 
   const setState = (next: Record<string, string | null>) => {
@@ -108,7 +110,12 @@ export function SellerHomeScreen() {
   }
 
   const selectedDateLabel = formatHomeDate(selectedDate);
-  const todayDate = resolveTodayDate(dashboard.dateCells, selectedDate);
+  const maxSelectableDate = addYearsIsoDate(todayDate, 1);
+  const calendarDateCells = buildCalendarDateCells(
+    selectedDate,
+    todayDate,
+    maxSelectableDate,
+  );
   const selectedPickups = useFixtures
     ? dashboard.pickups.filter((pickup) => pickup.pickupDate === selectedDate)
     : (selectedPickupOrdersQuery.data ?? []).map(toSellerHomePickup);
@@ -180,10 +187,14 @@ export function SellerHomeScreen() {
       <HomeHeader onMenu={() => setState({ sidebar: "open" })} />
       <section className="flex flex-col items-center gap-12 overflow-hidden pt-4 pb-[calc(34px+env(safe-area-inset-bottom))]">
         <DashboardOverview
-          dashboard={dashboard}
+          dateCells={calendarDateCells}
+          maxSelectableDate={maxSelectableDate}
           selectedDate={selectedDate}
           selectedDateLabel={selectedDateLabel}
           selectedPickupCount={selectedPickupCount}
+          todayDate={todayDate}
+          waitingInquiryCount={dashboard.waitingInquiryCount}
+          weekDays={dashboard.weekDays}
           onMoveDate={(date) =>
             setState({
               date,
@@ -331,29 +342,30 @@ function DetailHeader({
 }
 
 function DashboardOverview({
-  dashboard,
+  dateCells,
+  maxSelectableDate,
   onMoveDate,
   onSelectDate,
   selectedDate,
   selectedDateLabel,
   selectedPickupCount,
+  todayDate,
+  waitingInquiryCount,
+  weekDays,
 }: {
-  dashboard: SellerHomeDashboard;
+  dateCells: SellerHomeDashboard["dateCells"];
+  maxSelectableDate: string;
   onMoveDate: (date: string) => void;
   onSelectDate: (date: string) => void;
   selectedDate: string;
   selectedDateLabel: string;
   selectedPickupCount: number;
+  todayDate: string;
+  waitingInquiryCount: number;
+  weekDays: string[];
 }) {
-  const selectedDateIndex = dashboard.dateCells.findIndex(
-    (cell) => cell.date === selectedDate,
-  );
-  const previousDate =
-    selectedDateIndex > 0 ? dashboard.dateCells[selectedDateIndex - 1] : null;
-  const nextDate =
-    selectedDateIndex >= 0 && selectedDateIndex < dashboard.dateCells.length - 1
-      ? dashboard.dateCells[selectedDateIndex + 1]
-      : null;
+  const previousDate = getPreviousWeekDate(selectedDate, todayDate);
+  const nextDate = getNextWeekDate(selectedDate, maxSelectableDate);
 
   return (
     <div
@@ -363,9 +375,9 @@ function DashboardOverview({
       <div className="flex h-6 w-full items-center justify-center gap-4 overflow-hidden">
         <IconButton
           className="size-12 text-icon-muted"
-          disabled={!previousDate || previousDate.disabled}
-          label="이전 날짜"
-          onClick={() => previousDate && onMoveDate(previousDate.date)}
+          disabled={!previousDate}
+          label="이전 주"
+          onClick={() => previousDate && onMoveDate(previousDate)}
         >
           <ChevronLeft aria-hidden="true" className="size-5" />
         </IconButton>
@@ -374,16 +386,16 @@ function DashboardOverview({
         </h2>
         <IconButton
           className="size-12 text-icon-muted"
-          disabled={!nextDate || nextDate.disabled}
-          label="다음 날짜"
-          onClick={() => nextDate && onMoveDate(nextDate.date)}
+          disabled={!nextDate}
+          label="다음 주"
+          onClick={() => nextDate && onMoveDate(nextDate)}
         >
           <ChevronRight aria-hidden="true" className="size-5" />
         </IconButton>
       </div>
       <div className="flex h-[79.14px] w-full flex-col gap-1 px-4">
         <div className="grid h-6 grid-cols-7 gap-2">
-          {dashboard.weekDays.map((day, index) => (
+          {weekDays.map((day, index) => (
             <div
               className={cn(
                 "flex items-center justify-center rounded-full text-[13px] leading-4 font-medium tracking-[-0.13px]",
@@ -396,7 +408,7 @@ function DashboardOverview({
           ))}
         </div>
         <div className="grid grid-cols-7">
-          {dashboard.dateCells.map((cell) => (
+          {dateCells.map((cell) => (
             <button
               aria-pressed={cell.date === selectedDate}
               className={cn(
@@ -422,7 +434,7 @@ function DashboardOverview({
       <div className="flex h-[86px] w-[calc(100%-32px)] items-center justify-center rounded-seller-sm bg-surface-subtle p-4 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
         <SummaryCount label="오늘 픽업" value={selectedPickupCount} />
         <div className="mx-1 h-[54px] w-px bg-surface-default opacity-90" />
-        <SummaryCount label="문의대기" value={dashboard.waitingInquiryCount} />
+        <SummaryCount label="문의대기" value={waitingInquiryCount} />
       </div>
     </div>
   );
@@ -542,23 +554,27 @@ function parseSellerHomeTab(value: string | null): SellerHomeTab {
 
 function resolveSelectedDate(
   requestedDate: string | null,
+  todayDate: string,
   dateCells: SellerHomeDashboard["dateCells"],
 ) {
-  const requestedCell = dateCells.find(
-    (cell) => cell.date === requestedDate && !cell.disabled,
-  );
+  const fallbackDate =
+    todayDate ||
+    dateCells.find((cell) => cell.selected && !cell.disabled)?.date ||
+    dateCells.find((cell) => !cell.disabled)?.date ||
+    dateCells[0]?.date ||
+    "";
+  const maxSelectableDate = fallbackDate
+    ? addYearsIsoDate(fallbackDate, 1)
+    : "";
 
-  if (requestedCell) {
-    return requestedCell.date;
+  if (
+    requestedDate &&
+    isIsoDateInRange(requestedDate, fallbackDate, maxSelectableDate)
+  ) {
+    return requestedDate;
   }
 
-  return (
-    dateCells.find((cell) => cell.selected && !cell.disabled)?.date ??
-    dateCells.find((cell) => !cell.disabled)?.date ??
-    dateCells[0]?.date ??
-    requestedDate ??
-    ""
-  );
+  return fallbackDate;
 }
 
 function resolveTodayDate(
@@ -569,6 +585,113 @@ function resolveTodayDate(
     dateCells.find((cell) => cell.selected && !cell.disabled)?.date ??
     fallbackDate
   );
+}
+
+function buildCalendarDateCells(
+  selectedDate: string,
+  todayDate: string,
+  maxSelectableDate: string,
+): SellerHomeDashboard["dateCells"] {
+  const selected = parseIsoDate(selectedDate);
+  const today = parseIsoDate(todayDate);
+  const max = parseIsoDate(maxSelectableDate);
+
+  if (!selected || !today || !max) {
+    return [];
+  }
+
+  const weekStart = addDays(selected, -selected.getDay());
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = addDays(weekStart, index);
+    const isoDate = toIsoDate(date);
+
+    return {
+      date: isoDate,
+      label: String(date.getDate()),
+      disabled:
+        date.getTime() < today.getTime() || date.getTime() > max.getTime(),
+      selected: isoDate === selectedDate,
+    };
+  });
+}
+
+function getPreviousWeekDate(selectedDate: string, todayDate: string) {
+  const selected = parseIsoDate(selectedDate);
+  const today = parseIsoDate(todayDate);
+
+  if (!selected || !today || selected.getTime() <= today.getTime()) {
+    return null;
+  }
+
+  const previous = addDays(selected, -7);
+  return toIsoDate(previous.getTime() < today.getTime() ? today : previous);
+}
+
+function getNextWeekDate(selectedDate: string, maxSelectableDate: string) {
+  const selected = parseIsoDate(selectedDate);
+  const max = parseIsoDate(maxSelectableDate);
+
+  if (!selected || !max || selected.getTime() >= max.getTime()) {
+    return null;
+  }
+
+  const next = addDays(selected, 7);
+  return toIsoDate(next.getTime() > max.getTime() ? max : next);
+}
+
+function isIsoDateInRange(value: string, minValue: string, maxValue: string) {
+  const date = parseIsoDate(value);
+  const min = parseIsoDate(minValue);
+  const max = parseIsoDate(maxValue);
+
+  if (!date || !min || !max) {
+    return false;
+  }
+
+  return date.getTime() >= min.getTime() && date.getTime() <= max.getTime();
+}
+
+function parseIsoDate(value: string | null | undefined) {
+  if (!value) {
+    return null;
+  }
+
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) {
+    return null;
+  }
+
+  const [, year, month, day] = match;
+  const date = new Date(Number(year), Number(month) - 1, Number(day));
+
+  return toIsoDate(date) === value ? date : null;
+}
+
+function addDays(date: Date, days: number) {
+  const next = new Date(date);
+  next.setDate(date.getDate() + days);
+  return next;
+}
+
+function addYearsIsoDate(value: string, years: number) {
+  const date = parseIsoDate(value);
+
+  if (!date) {
+    return "";
+  }
+
+  const next = new Date(date);
+  next.setFullYear(date.getFullYear() + years);
+  return toIsoDate(next);
+}
+
+function toIsoDate(date: Date) {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
 }
 
 function formatHomeDate(value: string) {
