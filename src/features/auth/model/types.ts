@@ -1,5 +1,6 @@
 export type UserRole = "BUYER" | "SELLER" | "OPERATOR";
 export type UserStatus = "ACTIVE" | "WITHDRAWN" | "BANNED";
+export type SignupProvider = "GOOGLE" | "KAKAO";
 
 export type UserSync = {
   registered: boolean;
@@ -12,6 +13,8 @@ export type UserSync = {
 export type UserProfile = {
   userId: string;
   email: string;
+  phoneNumber: string | null;
+  signupProvider: SignupProvider | null;
   name: string;
   role: UserRole;
   status: UserStatus;
