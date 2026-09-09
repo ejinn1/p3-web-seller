@@ -2,8 +2,12 @@
 
 import { Button } from "@/components/common/button";
 import { useRouter } from "next/navigation";
-import { useCompleteAccountRegistrationMutation } from "@/features/store/model/store-mutations";
+import {
+  useCompleteAccountRegistrationMutation,
+  useUpdateStoreStatusMutation,
+} from "@/features/store/model/store-mutations";
 import { useStoreManagementStatusQuery } from "@/features/store/model/store-queries";
+import { getStoreActivationErrorMessage } from "@/features/store/model/store-activation-error";
 import { StoreManagementHeader } from "@/features/store/ui/store-management-header";
 import { SettingRow } from "@/components/widgets/setting-row";
 import {
@@ -16,6 +20,7 @@ export function StoreManagementScreen() {
   const statusQuery = useStoreManagementStatusQuery();
   const completeAccountRegistrationMutation =
     useCompleteAccountRegistrationMutation();
+  const updateStoreStatusMutation = useUpdateStoreStatusMutation();
   const managementStatus = statusQuery.data;
   const items = managementStatus?.items;
   const settings = [
@@ -51,13 +56,16 @@ export function StoreManagementScreen() {
   const completedCount = managementStatus?.completedCount ?? 0;
   const totalCount = managementStatus?.totalCount ?? settings.length;
   const storeName = managementStatus?.storeName ?? "스토어";
-  const canEnterSellerHome = Boolean(
-    items?.storeInfo &&
-    items.orderForm &&
-    items.notice &&
-    items.photoRegistration &&
-    items.settlementAccount,
+  const canEnterSellerHome = managementStatus?.canActivate ?? false;
+  const activationErrorMessage = getStoreActivationErrorMessage(
+    updateStoreStatusMutation.error,
   );
+
+  const activateStore = () => {
+    updateStoreStatusMutation.mutate("ACTIVE", {
+      onSuccess: () => router.push(getSellerBackHref("storeManagement")),
+    });
+  };
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-[768px] flex-col bg-surface-default text-text-primary">
@@ -87,14 +95,26 @@ export function StoreManagementScreen() {
         ) : null}
       </section>
       <div className="px-4 pt-4 pb-[34px]">
+        {activationErrorMessage ? (
+          <p
+            aria-live="polite"
+            className="mb-3 text-center text-sm text-text-error"
+          >
+            {activationErrorMessage}
+          </p>
+        ) : null}
         <Button
           className="h-11 rounded-seller-md text-[15px] font-semibold"
-          disabled={!canEnterSellerHome}
+          disabled={
+            statusQuery.isLoading ||
+            !canEnterSellerHome ||
+            updateStoreStatusMutation.isPending
+          }
           fullWidth
-          onClick={() => router.push(getSellerBackHref("storeManagement"))}
+          onClick={activateStore}
           size="md"
         >
-          저장
+          {updateStoreStatusMutation.isPending ? "저장 중" : "저장"}
         </Button>
       </div>
     </main>
