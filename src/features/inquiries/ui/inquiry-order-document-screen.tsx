@@ -38,6 +38,7 @@ export function InquiryOrderDocumentScreen({
         mode={mode}
         onBack={onBack}
         onMenu={() => setSidebarOpen(true)}
+        showMenu={!isOrderForm}
       />
       <section
         className="min-h-0 flex-1 overflow-y-auto bg-surface-subtle px-4 pt-4 pb-[calc(34px+env(safe-area-inset-bottom))]"
@@ -62,10 +63,12 @@ function DocumentHeader({
   mode,
   onBack,
   onMenu,
+  showMenu,
 }: {
   mode: InquiryDocumentMode;
   onBack: () => void;
   onMenu: () => void;
+  showMenu: boolean;
 }) {
   const title =
     mode === "order-form"
@@ -75,26 +78,32 @@ function DocumentHeader({
         : "주문 확인서";
 
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between bg-surface-default">
-      <button
-        aria-label="뒤로 가기"
-        className="flex size-11 items-center justify-center text-text-secondary"
-        onClick={onBack}
-        type="button"
-      >
-        <ChevronLeft aria-hidden="true" className="size-5" />
-      </button>
+    <header className="grid h-14 shrink-0 grid-cols-[1fr_auto_1fr] items-center bg-surface-default">
+      <div className="flex min-w-0 items-center">
+        <button
+          aria-label="뒤로 가기"
+          className="flex size-11 items-center justify-center text-text-secondary"
+          onClick={onBack}
+          type="button"
+        >
+          <ChevronLeft aria-hidden="true" className="size-5" />
+        </button>
+      </div>
       <h1 className="text-[22px] leading-[30px] font-bold tracking-[-0.66px] text-text-primary">
         {title}
       </h1>
-      <button
-        aria-label="메뉴"
-        className="flex size-11 items-center justify-center text-text-secondary"
-        onClick={onMenu}
-        type="button"
-      >
-        <Menu aria-hidden="true" className="size-5" />
-      </button>
+      <div className="flex min-w-0 justify-end">
+        {showMenu ? (
+          <button
+            aria-label="메뉴"
+            className="flex size-11 items-center justify-center text-text-secondary"
+            onClick={onMenu}
+            type="button"
+          >
+            <Menu aria-hidden="true" className="size-5" />
+          </button>
+        ) : null}
+      </div>
     </header>
   );
 }
@@ -118,14 +127,20 @@ function DocumentActions({
       )}
     >
       <button
-        className="h-11 flex-1 rounded-seller-md border border-border-default bg-surface-default text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-primary"
+        className={cn(
+          "h-11 rounded-seller-md border bg-surface-default text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-primary",
+          isOrderForm
+            ? "w-[175px] shrink-0 border-border-strong"
+            : "flex-1 border-border-default",
+        )}
         type="button"
       >
         수정 요청
       </button>
       <button
         className={cn(
-          "h-11 flex-1 rounded-seller-md text-[15px] leading-5 font-semibold tracking-[-0.3px]",
+          "h-11 rounded-seller-md text-[15px] leading-5 font-semibold tracking-[-0.3px]",
+          isOrderForm ? "w-[173px] shrink-0" : "flex-1",
           isPrimaryDisabled
             ? "bg-brand-disabled text-text-disabled"
             : "bg-brand-primary text-text-inverse",

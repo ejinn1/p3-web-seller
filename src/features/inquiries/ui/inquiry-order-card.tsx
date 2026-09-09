@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { ChevronRight } from "lucide-react";
 import type { InquiryDocumentMode } from "@/features/inquiries/model/inquiry-detail-state";
 import { formatInquiryPrice } from "@/features/inquiries/model/inquiry-order-confirmation";
@@ -90,7 +91,6 @@ function OrderFormCard({
   return (
     <article className="min-h-[696px] w-full rounded-seller-sm bg-surface-default px-4 pt-6 pb-6 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
       <div className="space-y-12">
-        <OrderReferenceImage imageUrl={order.imageUrl} />
         <OrderFormSection
           price={order.pickupTime}
           title="픽업 일시"
@@ -100,7 +100,6 @@ function OrderFormCard({
           <OrderFormSection
             key={option.id}
             onClick={option.needsPrice ? onOpenPrice : undefined}
-            assetPreviews={option.assetPreviews}
             price={option.priceText || (option.needsPrice ? "문의 필요" : "")}
             required={option.required}
             title={option.label}
@@ -113,20 +112,20 @@ function OrderFormCard({
 }
 
 function OrderFormSection({
-  assetPreviews,
   onClick,
   price,
   required,
   title,
   value,
 }: {
-  assetPreviews?: InquiryReferenceAssetPreview[];
   onClick?: () => void;
   price: string;
   required?: boolean;
   title: string;
   value: string;
 }) {
+  const showRadio = price !== "문의 필요";
+
   return (
     <section className="space-y-4">
       <h2 className="flex items-center gap-1 text-[20px] leading-7 font-bold tracking-[-0.6px] text-text-primary">
@@ -138,31 +137,39 @@ function OrderFormSection({
         ) : null}
       </h2>
       <button
-        className="flex h-6 w-full items-center gap-4 text-left"
+        className="flex h-6 w-full items-center justify-between overflow-visible text-left"
         disabled={!onClick}
         onClick={onClick}
         type="button"
       >
-        <span className="relative size-4 shrink-0 rounded-full border-2 border-border-default">
-          <span className="absolute top-1/2 left-1/2 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-border-default" />
-        </span>
-        <span className="min-w-0 flex-1 truncate text-[16px] leading-6 font-normal tracking-[-0.32px] text-text-primary">
-          {value}
+        <span className="flex h-11 min-w-0 shrink items-center justify-end">
+          {showRadio ? (
+            <Image
+              alt=""
+              aria-hidden="true"
+              className="size-8 shrink-0"
+              height={32}
+              src="/order-form/radio-unchecked.svg"
+              width={32}
+            />
+          ) : null}
+          <span className="min-w-0 truncate text-[16px] leading-6 font-normal tracking-[-0.32px] text-text-primary">
+            {value}
+          </span>
         </span>
         {price ? (
           <span
             className={cn(
-              "shrink-0 text-right text-[15px] leading-[22px] font-semibold tracking-[-0.15px]",
+              "min-w-px flex-1 shrink-0 text-right text-[15px] font-semibold",
               title === "픽업 일시"
-                ? "text-text-secondary"
-                : "text-text-primary",
+                ? "leading-5 tracking-[-0.3px] text-text-secondary"
+                : "leading-[22px] tracking-[-0.15px] text-text-primary",
             )}
           >
             {price}
           </span>
         ) : null}
       </button>
-      <ReferenceAssetPreviewList assets={assetPreviews} />
     </section>
   );
 }
