@@ -18,3 +18,8 @@ export type CreateRepresentativeImageInput = Pick<
   RepresentativeImage,
   "assetId" | "sortOrder"
 >;
+
+export type UpdateRepresentativeImageInput = Pick<
+  RepresentativeImage,
+  "sortOrder" | "status"
+>;
