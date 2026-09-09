@@ -1,7 +1,7 @@
 "use client";
 
 import { Search, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { SellerMenuHeader } from "@/components/widgets/seller-menu-header";
 import { useStoreLocationSearchQuery } from "@/features/store/model/store-queries";
@@ -16,9 +16,19 @@ export function PickupLocationSearchScreen({
   onSelect,
 }: PickupLocationSearchScreenProps) {
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const normalizedQuery = query.trim();
-  const searchQuery = useStoreLocationSearchQuery(query);
+  const normalizedDebouncedQuery = debouncedQuery.trim();
+  const searchQuery = useStoreLocationSearchQuery(debouncedQuery);
   const canSearch = normalizedQuery.length >= 2;
+  const isWaitingForSearch =
+    canSearch && normalizedQuery !== normalizedDebouncedQuery;
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => setDebouncedQuery(query), 400);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [query]);
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-[768px] flex-col bg-surface-default text-text-primary">
@@ -39,6 +49,7 @@ export function PickupLocationSearchScreen({
             aria-label="픽업 장소 검색"
             autoFocus
             className="min-w-0 flex-1 bg-transparent text-base leading-6 tracking-[-0.32px] outline-none placeholder:text-text-unavailable"
+            maxLength={100}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="도로명, 지번, 건물명으로 검색"
             value={query}
@@ -59,17 +70,20 @@ export function PickupLocationSearchScreen({
             검색어를 2자 이상 입력해 주세요.
           </p>
         ) : null}
-        {canSearch && searchQuery.isPending ? (
+        {canSearch && (isWaitingForSearch || searchQuery.isPending) ? (
           <p className="mt-6 text-sm text-text-secondary">
             주소를 검색하고 있습니다.
           </p>
         ) : null}
-        {canSearch && searchQuery.isError ? (
+        {canSearch && !isWaitingForSearch && searchQuery.isError ? (
           <p aria-live="polite" className="mt-6 text-sm text-text-error">
             주소를 검색하지 못했습니다. 잠시 후 다시 시도해 주세요.
           </p>
         ) : null}
-        {canSearch && !searchQuery.isPending && !searchQuery.isError ? (
+        {canSearch &&
+        !isWaitingForSearch &&
+        !searchQuery.isPending &&
+        !searchQuery.isError ? (
           <div className="mt-6">
             <p className="mb-2 text-sm font-medium text-text-secondary">
               검색 결과

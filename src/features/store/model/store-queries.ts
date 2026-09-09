@@ -61,5 +61,6 @@ export function useStoreLocationSearchQuery(query: string) {
     queryKey: storeKeys.locationSearch(normalizedQuery),
     queryFn: () => searchStoreLocations(normalizedQuery),
     enabled: normalizedQuery.length >= 2,
+    retry: false,
   });
 }
