@@ -94,6 +94,14 @@ export function useSortableList<T>({
         pointerStartRef.current = { x: event.clientX, y: event.clientY };
         didDragRef.current = false;
         clearHoldTimer();
+
+        if (event.pointerType === "mouse") {
+          activeIdRef.current = id;
+          currentTarget.setPointerCapture(pointerId);
+          setActiveId(id);
+          return;
+        }
+
         holdTimerRef.current = setTimeout(() => {
           activeIdRef.current = id;
           didDragRef.current = true;
@@ -113,6 +121,15 @@ export function useSortableList<T>({
         }
 
         if (activeIdRef.current !== id) return;
+
+        if (!didDragRef.current && pointerStart) {
+          const movedDistance = Math.hypot(
+            event.clientX - pointerStart.x,
+            event.clientY - pointerStart.y,
+          );
+          if (movedDistance <= MOVE_THRESHOLD) return;
+          didDragRef.current = true;
+        }
 
         const targetElement = document
           .elementFromPoint(event.clientX, event.clientY)
