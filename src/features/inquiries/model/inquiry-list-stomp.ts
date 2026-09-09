@@ -10,6 +10,7 @@ import type {
   InquiryListRealtimePayload,
   SellerInquiryListParams,
 } from "@/features/inquiries/model/inquiry-types";
+import { sellerHomeKeys } from "@/features/seller-home/model/seller-home-keys";
 import { connectStomp, type StompConnection } from "@/lib/stomp/client";
 
 export function useSellerInquiryListStomp(userId?: string, enabled = true) {
@@ -25,6 +26,11 @@ export function useSellerInquiryListStomp(userId?: string, enabled = true) {
     let mounted = true;
 
     connectStomp<InquiryListRealtimePayload>({
+      onConnect: () => {
+        if (mounted) {
+          setError(null);
+        }
+      },
       onError: (nextError) => {
         if (mounted) {
           setError(nextError);
@@ -75,6 +81,9 @@ export function useSellerInquiryListStomp(userId?: string, enabled = true) {
                   : current,
             );
             void queryClient.invalidateQueries({ queryKey: inquiryKeys.all });
+            void queryClient.invalidateQueries({
+              queryKey: sellerHomeKeys.dashboard(),
+            });
           },
         },
       ],

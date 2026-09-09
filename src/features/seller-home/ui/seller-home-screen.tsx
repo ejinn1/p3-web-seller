@@ -8,7 +8,9 @@ import { Header } from "@/components/common/header";
 import { IconButton } from "@/components/common/icon-button";
 import { SellerSidebar } from "@/components/widgets/seller-sidebar";
 import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
+import { useCurrentUserQuery } from "@/features/auth/model/auth-queries";
 import { getInquiryDetailHref } from "@/features/inquiries/model/inquiry-detail-state";
+import { useSellerInquiryListStomp } from "@/features/inquiries/model/inquiry-list-stomp";
 import { useSellerOrdersQuery } from "@/features/orders/model/order-queries";
 import type {
   SellerOrderListItem,
@@ -41,6 +43,8 @@ export function SellerHomeScreen() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const dashboardQuery = useSellerHomeDashboardQuery();
+  const currentUserQuery = useCurrentUserQuery(!useFixtures);
+  useSellerInquiryListStomp(currentUserQuery.data?.userId, !useFixtures);
 
   const view = (searchParams.get("view") ?? "home") as SellerHomeView;
   const tab = (searchParams.get("tab") ?? "pickup") as SellerHomeTab;
