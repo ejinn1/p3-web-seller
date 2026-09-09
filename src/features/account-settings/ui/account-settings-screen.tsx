@@ -1,135 +1,104 @@
 "use client";
 
-import { useState } from "react";
 import { Header } from "@/components/common/header";
-import { SellerSidebar } from "@/components/widgets/seller-sidebar";
-import { useCurrentUserQuery } from "@/features/auth/model/auth-queries";
-import {
-  useStoreQuery,
-  useStoreSettingsQuery,
-  useStoreShareLinkQuery,
-} from "@/features/store/model/store-queries";
-import { getSellerBackHref } from "@/lib/navigation/seller-back-routes";
 import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
+import { AccountSettingsInfoCard } from "@/features/account-settings/ui/account-settings-info-card";
+import { AccountSettingsMenuSection } from "@/features/account-settings/ui/account-settings-menu-section";
+import { useCurrentUserQuery } from "@/features/auth/model/auth-queries";
+import { clearCognitoSession } from "@/features/auth/model/cognito";
+import type { SignupProvider } from "@/features/auth/model/types";
+import { getSellerBackHref } from "@/lib/navigation/seller-back-routes";
 
 export function AccountSettingsScreen() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const userQuery = useCurrentUserQuery();
-  const storeQuery = useStoreQuery();
-  const settingsQuery = useStoreSettingsQuery();
-  const shareLinkQuery = useStoreShareLinkQuery();
+  const user = userQuery.data;
+  const profileState = userQuery.isLoading
+    ? "불러오는 중"
+    : userQuery.isError
+      ? "불러오기 실패"
+      : null;
+
+  const handleLogout = () => {
+    clearCognitoSession();
+    window.location.replace("/seller");
+  };
 
   return (
-    <SellerResponsiveFrame className="bg-surface-subtle">
+    <SellerResponsiveFrame>
       <Header
         backHref={getSellerBackHref("accountSettings")}
         backLabel="판매자 홈으로 돌아가기"
-        onMenu={() => setSidebarOpen(true)}
-        showMenu
-        title="계정 설정"
+        className="border-b-0"
+        title="마이페이지"
+        titleClassName="text-[20px] leading-7 font-bold tracking-[-0.6px] text-text-primary"
       />
-      <section className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pt-4 pb-[calc(34px+env(safe-area-inset-bottom))]">
-        <SettingsCard
-          rows={[
-            ["이름", userQuery.data?.name],
-            ["이메일", userQuery.data?.email],
-            ["권한", userQuery.data?.role],
-          ]}
-          state={stateLabel(userQuery)}
-          title="계정 정보"
-        />
-        <SettingsCard
-          rows={[
-            ["스토어명", storeQuery.data?.name],
-            ["상태", storeQuery.data?.status],
-            ["주소", storeQuery.data?.address],
-            ["연락처", storeQuery.data?.contact],
-          ]}
-          state={stateLabel(storeQuery)}
-          title="스토어 정보"
-        />
-        <SettingsCard
-          rows={[
-            [
-              "주문 리드타임",
-              formatMinutes(settingsQuery.data?.leadTimeMinutes),
-            ],
-            [
-              "취소 마감",
-              formatDays(settingsQuery.data?.cancellationCutoffDays),
-            ],
-            ["휴무일", settingsQuery.data?.holidays.join(", ")],
-          ]}
-          state={stateLabel(settingsQuery)}
-          title="운영 설정"
-        />
-        <SettingsCard
-          rows={[
-            ["슬러그", shareLinkQuery.data?.slug],
-            ["공유 링크", shareLinkQuery.data?.url],
-          ]}
-          state={stateLabel(shareLinkQuery)}
-          title="공유 링크"
-        />
-      </section>
-      <SellerSidebar onOpenChange={setSidebarOpen} open={sidebarOpen} />
+      <div className="flex flex-1 overflow-y-auto px-4 py-4 pb-[calc(34px+env(safe-area-inset-bottom))]">
+        <div className="my-auto w-full space-y-4">
+          <AccountSettingsInfoCard
+            rowGroups={[
+              [
+                { label: "이름", value: profileState ?? user?.name },
+                { label: "생년월일", value: undefined },
+                {
+                  label: "전화번호",
+                  value: profileState ?? formatPhoneNumber(user?.phoneNumber),
+                },
+              ],
+              [
+                { label: "가입일", value: undefined },
+                {
+                  label: "소셜연동",
+                  value:
+                    profileState ?? formatSignupProvider(user?.signupProvider),
+                },
+              ],
+            ]}
+            title="개인 정보"
+          />
+          <AccountSettingsMenuSection
+            items={[{ disabled: true, label: "알림 설정", showChevron: true }]}
+            title="알림"
+          />
+          <AccountSettingsMenuSection
+            items={[
+              { disabled: true, label: "약관 및 정책" },
+              { disabled: true, label: "문의하기" },
+            ]}
+            title="계정"
+          />
+          <div className="flex items-center justify-center gap-4 text-[13px] leading-4 font-normal tracking-[-0.13px] text-text-disabled">
+            <button disabled type="button">
+              회원탈퇴
+            </button>
+            <span aria-hidden="true" className="h-3 w-px bg-border-default" />
+            <button onClick={handleLogout} type="button">
+              로그아웃
+            </button>
+          </div>
+        </div>
+      </div>
     </SellerResponsiveFrame>
   );
 }
 
-function SettingsCard({
-  rows,
-  state,
-  title,
-}: {
-  rows: Array<[string, string | null | undefined]>;
-  state: string | null;
-  title: string;
-}) {
-  return (
-    <article className="flex flex-col gap-4 rounded-seller-sm bg-surface-default p-4">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-[18px] leading-6 font-semibold tracking-[-0.54px] text-text-primary">
-          {title}
-        </h2>
-        {state ? (
-          <span className="text-[13px] leading-4 font-medium tracking-[-0.13px] text-text-tertiary">
-            {state}
-          </span>
-        ) : null}
-      </div>
-      <div className="flex flex-col gap-3">
-        {rows.map(([label, value]) => (
-          <div className="flex items-start justify-between gap-4" key={label}>
-            <p className="shrink-0 text-[13px] leading-4 font-medium tracking-[-0.13px] text-text-tertiary">
-              {label}
-            </p>
-            <p className="min-w-0 text-right text-[15px] leading-5 font-semibold tracking-[-0.3px] break-words text-text-primary">
-              {value || "-"}
-            </p>
-          </div>
-        ))}
-      </div>
-    </article>
-  );
-}
+function formatPhoneNumber(value: string | null | undefined) {
+  const digits = value?.replace(/\D/g, "") ?? "";
 
-function stateLabel(query: { isError: boolean; isLoading: boolean }) {
-  if (query.isLoading) {
-    return "불러오는 중";
+  if (digits.length !== 11) {
+    return value || undefined;
   }
 
-  if (query.isError) {
-    return "불러오기 실패";
+  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+}
+
+function formatSignupProvider(provider: SignupProvider | null | undefined) {
+  if (provider === "KAKAO") {
+    return "카카오";
   }
 
-  return null;
-}
+  if (provider === "GOOGLE") {
+    return "구글";
+  }
 
-function formatMinutes(value: number | undefined) {
-  return typeof value === "number" ? `${value}분` : undefined;
-}
-
-function formatDays(value: number | undefined) {
-  return typeof value === "number" ? `${value}일 전` : undefined;
+  return undefined;
 }
