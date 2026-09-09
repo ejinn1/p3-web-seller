@@ -1,14 +1,22 @@
 type RepresentativePhotoPreviewProps = {
   isProcessing: boolean;
+  onClick?: () => void;
   src?: string;
 };
 
 export function RepresentativePhotoPreview({
   isProcessing,
+  onClick,
   src,
 }: RepresentativePhotoPreviewProps) {
   return (
-    <div className="relative aspect-square min-w-0 overflow-hidden rounded-seller-sm bg-surface-subtle shadow-[0_1px_3px_0_rgb(0_0_0_/_0.06),0_1px_2px_0_rgb(0_0_0_/_0.04)]">
+    <button
+      aria-label="대표사진 상세 보기"
+      className="relative aspect-square min-w-0 overflow-hidden rounded-seller-sm bg-surface-subtle shadow-[0_1px_3px_0_rgb(0_0_0_/_0.06),0_1px_2px_0_rgb(0_0_0_/_0.04)] disabled:cursor-default"
+      disabled={!onClick}
+      onClick={onClick}
+      type="button"
+    >
       {src ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -22,6 +30,6 @@ export function RepresentativePhotoPreview({
           처리 중
         </span>
       ) : null}
-    </div>
+    </button>
   );
 }

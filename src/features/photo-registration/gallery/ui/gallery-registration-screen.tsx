@@ -7,6 +7,7 @@ import { getAssetDeliveryUrl } from "@/features/assets/model/asset-delivery";
 import { useAssetQueries } from "@/features/assets/model/asset-queries";
 import { useUploadAssetMutation } from "@/features/assets/model/asset-mutations";
 import { OrderFormHeader } from "@/features/order-form/ui/order-form-header";
+import { getPhotoUploadError } from "@/features/photo-registration/model/photo-upload";
 import {
   useCreateGalleryItemMutation,
   useDeleteGalleryItemMutation,
@@ -52,6 +53,7 @@ export function GalleryRegistrationScreen() {
   const [uploadedPhotos, setUploadedPhotos] = useState<PendingPhoto[]>([]);
   const [selectedPhoto, setSelectedPhoto] = useState<PreviewPhoto | null>(null);
   const [isPhotoDetailSheetOpen, setIsPhotoDetailSheetOpen] = useState(false);
+  const [fileError, setFileError] = useState<string | null>(null);
   const [sortOrderById, setSortOrderById] = useState<Record<string, number>>(
     {},
   );
@@ -171,6 +173,13 @@ export function GalleryRegistrationScreen() {
   };
 
   const uploadPhoto = (file: File, replacement?: PendingPhoto) => {
+    const validationError = getPhotoUploadError(file);
+    if (validationError) {
+      setFileError(validationError);
+      return;
+    }
+
+    setFileError(null);
     const localPreviewUrl = URL.createObjectURL(file);
     localPreviewUrls.current.add(localPreviewUrl);
 
@@ -281,6 +290,14 @@ export function GalleryRegistrationScreen() {
     if (pendingPhoto) {
       uploadPhoto(file, pendingPhoto);
     } else if (selectedPhoto.galleryItemId) {
+      const validationError = getPhotoUploadError(file);
+      if (validationError) {
+        setFileError(validationError);
+        setIsPhotoDetailSheetOpen(false);
+        return;
+      }
+
+      setFileError(null);
       const localPreviewUrl = URL.createObjectURL(file);
       localPreviewUrls.current.add(localPreviewUrl);
       uploadAssetMutation.mutate(file, {
@@ -304,10 +321,7 @@ export function GalleryRegistrationScreen() {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-[768px] flex-col bg-surface-default text-text-primary">
-      <OrderFormHeader
-        backHref={getSellerBackHref("photoGallery")}
-        title=""
-      />
+      <OrderFormHeader backHref={getSellerBackHref("photoGallery")} title="" />
       <section className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 pt-4">
         <div className="space-y-2">
           <h1 className="text-seller-display-lg font-bold tracking-[-0.84px] whitespace-pre-line">
@@ -353,6 +367,11 @@ export function GalleryRegistrationScreen() {
         {hasFailedPhoto ? (
           <p className="text-sm text-text-error">
             이미지 처리를 완료하지 못했습니다. 사진을 다시 올려주세요.
+          </p>
+        ) : null}
+        {fileError ? (
+          <p aria-live="polite" className="text-sm text-text-error">
+            {fileError}
           </p>
         ) : null}
       </section>
