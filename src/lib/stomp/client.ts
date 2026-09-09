@@ -12,6 +12,9 @@ type ConnectStompOptions<T> = {
   subscriptions: StompSubscription<T>[];
 };
 
+const INITIAL_RECONNECT_DELAY_MS = 1_000;
+const MAX_RECONNECT_DELAY_MS = 10_000;
+
 type StompFrame = {
   body: string;
   command: string;
@@ -29,80 +32,137 @@ export async function connectStomp<T>({
   onError,
   subscriptions,
 }: ConnectStompOptions<T>): Promise<StompConnection> {
-  const socket = new WebSocket(toStompUrl());
-  const token = await getAccessToken();
+  let socket: WebSocket | null = null;
   let connected = false;
+  let disconnectRequested = false;
+  let reconnectAttempt = 0;
+  let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
-  socket.addEventListener("open", () => {
-    socket.send(
-      writeFrame("CONNECT", {
-        "accept-version": "1.2",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        "heart-beat": "10000,10000",
-      }),
-    );
-  });
-
-  socket.addEventListener("message", (event) => {
-    const frames = parseFrames(String(event.data));
-
-    for (const frame of frames) {
-      if (frame.command === "CONNECTED") {
-        connected = true;
-        subscriptions.forEach((subscription, index) => {
-          socket.send(
-            writeFrame("SUBSCRIBE", {
-              destination: subscription.destination,
-              id: `sub-${index}`,
-            }),
-          );
-        });
-        onConnect?.();
-        continue;
-      }
-
-      if (frame.command === "MESSAGE") {
-        const subscription = subscriptions.find(
-          (item) => item.destination === frame.headers.destination,
-        );
-
-        if (!subscription) {
-          continue;
-        }
-
-        try {
-          subscription.onMessage(JSON.parse(frame.body) as T);
-        } catch (error) {
-          onError?.(toError(error));
-        }
-      }
-
-      if (frame.command === "ERROR") {
-        connected = false;
-        onError?.(new Error(frame.body || "STOMP connection failed."));
-      }
+  const scheduleReconnect = () => {
+    if (disconnectRequested || reconnectTimer) {
+      return;
     }
-  });
 
-  socket.addEventListener("error", () => {
-    connected = false;
-    onError?.(new Error("STOMP socket error."));
-  });
+    const delay = Math.min(
+      INITIAL_RECONNECT_DELAY_MS * 2 ** reconnectAttempt,
+      MAX_RECONNECT_DELAY_MS,
+    );
+    reconnectAttempt += 1;
+    reconnectTimer = setTimeout(() => {
+      reconnectTimer = null;
+      void openSocket();
+    }, delay);
+  };
 
-  socket.addEventListener("close", () => {
-    connected = false;
-    onDisconnect?.();
-  });
+  const openSocket = async () => {
+    try {
+      const token = await getAccessToken();
+      if (disconnectRequested) {
+        return;
+      }
+
+      const nextSocket = new WebSocket(toStompUrl());
+      socket = nextSocket;
+
+      nextSocket.addEventListener("open", () => {
+        nextSocket.send(
+          writeFrame("CONNECT", {
+            "accept-version": "1.2",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            "heart-beat": "10000,10000",
+          }),
+        );
+      });
+
+      nextSocket.addEventListener("message", (event) => {
+        const frames = parseFrames(String(event.data));
+
+        for (const frame of frames) {
+          if (frame.command === "CONNECTED") {
+            connected = true;
+            reconnectAttempt = 0;
+            subscriptions.forEach((subscription, index) => {
+              nextSocket.send(
+                writeFrame("SUBSCRIBE", {
+                  destination: subscription.destination,
+                  id: `sub-${index}`,
+                }),
+              );
+            });
+            onConnect?.();
+            continue;
+          }
+
+          if (frame.command === "MESSAGE") {
+            const subscription = subscriptions.find(
+              (item) => item.destination === frame.headers.destination,
+            );
+
+            if (!subscription) {
+              continue;
+            }
+
+            try {
+              subscription.onMessage(JSON.parse(frame.body) as T);
+            } catch (error) {
+              onError?.(toError(error));
+            }
+          }
+
+          if (frame.command === "ERROR") {
+            connected = false;
+            onError?.(new Error(frame.body || "STOMP connection failed."));
+            nextSocket.close();
+          }
+        }
+      });
+
+      nextSocket.addEventListener("error", () => {
+        connected = false;
+        onError?.(new Error("STOMP socket error."));
+        nextSocket.close();
+      });
+
+      nextSocket.addEventListener("close", () => {
+        if (socket !== nextSocket) {
+          return;
+        }
+
+        socket = null;
+        connected = false;
+        onDisconnect?.();
+        scheduleReconnect();
+      });
+    } catch (error) {
+      if (disconnectRequested) {
+        return;
+      }
+
+      onError?.(toError(error));
+      scheduleReconnect();
+    }
+  };
+
+  await openSocket();
 
   return {
     disconnect: () => {
-      if (socket.readyState === WebSocket.OPEN) {
-        socket.send(writeFrame("DISCONNECT", {}));
+      disconnectRequested = true;
+      connected = false;
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
       }
-      socket.close();
+
+      const currentSocket = socket;
+      socket = null;
+      if (currentSocket?.readyState === WebSocket.OPEN) {
+        currentSocket.send(writeFrame("DISCONNECT", {}));
+      }
+      currentSocket?.close();
     },
     sendJson: (destination, body) => {
-      if (socket.readyState !== WebSocket.OPEN || !connected) {
+      if (socket?.readyState !== WebSocket.OPEN || !connected) {
         throw new Error("STOMP socket is not connected.");
       }
 
