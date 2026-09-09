@@ -29,6 +29,7 @@ export function useSellerInquiryStomp(inquiryId: string, enabled = true) {
     connectStomp<InquiryTimelineItemResponse>({
       onConnect: () => {
         if (mounted) {
+          setError(null);
           setIsConnected(true);
         }
       },
