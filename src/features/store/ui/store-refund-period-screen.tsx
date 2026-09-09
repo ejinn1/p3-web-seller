@@ -36,7 +36,12 @@ type RefundRule = {
 };
 
 const refundPercentages = [100, 80, 70, 50, 30];
-const refundDays = Array.from({ length: 8 }, (_, index) => index);
+const refundDays = [0, 2, 3, 4, 5, 6, 7];
+const selectableRefundDays = new Set(refundDays);
+
+function isSelectableRefundDay(day: number | null): day is number {
+  return day !== null && selectableRefundDays.has(day);
+}
 
 function formatRefundPolicy(rules: StoreRefundPolicyRule[]) {
   return rules
@@ -144,7 +149,9 @@ function StoreRefundPeriodForm({
   const [rules, setRules] = useState<RefundRule[]>(() =>
     refundPolicy?.rules.length
       ? refundPolicy.rules.map((rule, index) => ({
-          daysBefore: rule.daysBeforePickup,
+          daysBefore: isSelectableRefundDay(rule.daysBeforePickup)
+            ? rule.daysBeforePickup
+            : null,
           id: index + 1,
           percentage: rule.refundRate,
         }))
@@ -167,7 +174,7 @@ function StoreRefundPeriodForm({
   });
   const canSave =
     !isLoadError &&
-    rules.every((rule) => rule.daysBefore !== null) &&
+    rules.every((rule) => isSelectableRefundDay(rule.daysBefore)) &&
     isOrdered;
   const nextPercentage = refundPercentages.find(
     (percentage) => percentage < rules.at(-1)!.percentage,
