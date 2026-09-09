@@ -1,4 +1,5 @@
 import { getAssetDeliveryUrl } from "@/features/assets/model/asset-delivery";
+import type { AssetVariantType } from "@/features/assets/model/asset-types";
 import type {
   InquiryChatDetailResponse,
   InquiryChatMessage,
@@ -68,6 +69,9 @@ export function toInquiryDetail({
       confirmation.amount,
     ]),
   );
+  const submissionsById = new Map(
+    submissions.map((submission) => [submission.id, submission]),
+  );
 
   return {
     createdAt: detail.createdAt,
@@ -81,6 +85,8 @@ export function toInquiryDetail({
         confirmationAmounts.get(item.referenceId ?? "") ??
           latestConfirmation?.amount ??
           0,
+        submissionsById.get(item.referenceId ?? "") ?? null,
+        detail.startReferenceAsset?.deliveryUrl ?? null,
       ),
     ),
     order: toInquiryOrderConfirmation(
@@ -125,6 +131,8 @@ function toChatMessage(
   item: InquiryTimelineItemResponse,
   buyerUserId: string | null,
   confirmationAmount: number,
+  submission: InquiryOrderFormSubmissionResponse | null = null,
+  startReferenceImageUrl: string | null = null,
 ): InquiryChatMessage {
   const owner: "buyer" | "seller" =
     buyerUserId && item.senderUserId === buyerUserId ? "buyer" : "seller";
@@ -141,12 +149,17 @@ function toChatMessage(
   }
 
   if (item.type === "ORDER_FORM_SUBMISSION") {
+    const card = toOrderRequestCard(submission, startReferenceImageUrl);
+
     return {
       id: item.eventId,
+      imageUrl: card.imageUrl,
       kind: "order-request" as const,
       owner: "buyer" as const,
       receivedNoticeText: formatOrderReceivedNotice(item.createdAt),
       sentAt,
+      summary: card.summary,
+      title: card.title,
     };
   }
 
@@ -240,7 +253,7 @@ function toInquiryOrderConfirmation(
   return {
     basePrice,
     buyerName: detail.participant.name,
-    buyerPhone: "",
+    buyerPhone: detail.participant.phoneNumber ?? "",
     confirmationTitle:
       confirmation?.confirmationTitle ??
       draftPreview?.confirmationTitle ??
@@ -376,7 +389,7 @@ function rowsFromAnswers(
                 amount:
                   numberOrNull(option.price) ?? numberOrNull(option.amount),
                 assetPreviews: getOptionAssetPreviews(
-                  option.assetIds,
+                  option,
                   referenceAssetsById,
                 ),
                 label,
@@ -415,7 +428,7 @@ function normalizeParsedRow(
   return [
     {
       amount: numberOrNull(item.amount) ?? numberOrNull(item.price) ?? null,
-      assetPreviews: getOptionAssetPreviews(item.assetIds, referenceAssetsById),
+      assetPreviews: getOptionAssetPreviews(item, referenceAssetsById),
       label: normalizeText(item.label ?? item.name) || `옵션 ${index + 1}`,
       priceLabel: stringOrNull(item.priceLabel),
       required: booleanOrUndefined(item.required),
@@ -478,10 +491,7 @@ function rowsFromUnknownValue(
     return [
       {
         amount: numberOrNull(value.price) ?? numberOrNull(value.amount),
-        assetPreviews: getOptionAssetPreviews(
-          value.assetIds,
-          referenceAssetsById,
-        ),
+        assetPreviews: getOptionAssetPreviews(value, referenceAssetsById),
         label,
         priceLabel: stringOrNull(value.priceLabel),
         value: formatOptionValue(value, true),
@@ -521,14 +531,38 @@ function applyAnswerAssetPreviews(
 }
 
 function getOptionAssetPreviews(
-  value: unknown,
+  option: unknown,
   referenceAssetsById: Map<string, InquiryReferenceAssetResponse>,
 ): InquiryReferenceAssetPreview[] | undefined {
-  if (!Array.isArray(value)) {
+  if (!isRecord(option)) {
     return undefined;
   }
 
-  const previews = value.flatMap((assetId) => {
+  const embeddedPreviews = Array.isArray(option.assets)
+    ? option.assets.flatMap((value, index) => {
+        if (!isRecord(value)) {
+          return [];
+        }
+
+        return [
+          {
+            assetId: normalizeText(value.assetId) || `asset-${index}`,
+            deliveryUrl: getEmbeddedAssetDeliveryUrl(value),
+            status: normalizeText(value.status) || "MISSING",
+          },
+        ];
+      })
+    : [];
+
+  if (embeddedPreviews.length) {
+    return embeddedPreviews;
+  }
+
+  if (!Array.isArray(option.assetIds)) {
+    return undefined;
+  }
+
+  const previews = option.assetIds.flatMap((assetId) => {
     if (typeof assetId !== "string") {
       return [];
     }
@@ -542,7 +576,13 @@ function getOptionAssetPreviews(
         ])
       : undefined;
 
-    return deliveryUrl ? [{ assetId, deliveryUrl }] : [];
+    return [
+      {
+        assetId,
+        deliveryUrl: deliveryUrl ?? null,
+        status: asset?.status ?? "MISSING",
+      },
+    ];
   });
 
   return previews.length ? previews : undefined;
@@ -563,11 +603,96 @@ function getFirstReferenceAssetPreview(
     ]);
 
     if (deliveryUrl) {
-      return { assetId: asset.assetId, deliveryUrl };
+      return { assetId: asset.assetId, deliveryUrl, status: asset.status };
     }
   }
 
   return undefined;
+}
+
+function getEmbeddedAssetDeliveryUrl(asset: Record<string, unknown>) {
+  const variants = Array.isArray(asset.variants)
+    ? asset.variants.flatMap((variant) => {
+        if (!isRecord(variant)) {
+          return [];
+        }
+
+        const deliveryUrl = normalizeText(variant.deliveryUrl);
+        const type = normalizeText(variant.type);
+
+        return deliveryUrl && isAssetVariantType(type)
+          ? [
+              {
+                deliveryUrl,
+                height: numberOrNull(variant.height) ?? 0,
+                type,
+                width: numberOrNull(variant.width) ?? 0,
+              },
+            ]
+          : [];
+      })
+    : [];
+
+  return (
+    getAssetDeliveryUrl(normalizeText(asset.deliveryUrl) || null, variants, [
+      "THUMBNAIL",
+      "MEDIUM",
+      "LARGE",
+    ]) ?? null
+  );
+}
+
+function isAssetVariantType(value: string): value is AssetVariantType {
+  return ["THUMBNAIL", "MEDIUM", "LARGE"].includes(value);
+}
+
+function toOrderRequestCard(
+  submission: InquiryOrderFormSubmissionResponse | null,
+  startReferenceImageUrl: string | null,
+) {
+  if (!submission) {
+    return {
+      imageUrl: startReferenceImageUrl,
+      summary: "주문서를 확인하고 주문확인서를 작성해주세요.",
+      title: "주문서가 도착했어요",
+    };
+  }
+
+  const referenceAssetsById = new Map(
+    submission.referenceAssets.map((asset) => [asset.assetId, asset]),
+  );
+  const rows = getOptionRows(
+    undefined,
+    undefined,
+    submission.optionRows,
+    submission.answers,
+    undefined,
+    referenceAssetsById,
+  );
+  const sizeRow = rows.find((row) => row.label.includes("사이즈"));
+  const titleRow = sizeRow ?? rows[0];
+  const summaryRows = rows
+    .filter((row) => row !== titleRow && !row.assetPreviews?.length)
+    .slice(0, 2);
+  const optionImageUrl = rows
+    .flatMap((row) => row.assetPreviews ?? [])
+    .find((asset) => asset.deliveryUrl)?.deliveryUrl;
+  const referenceImageUrl = getFirstReferenceAssetPreview(
+    submission.referenceAssets,
+  )?.deliveryUrl;
+
+  return {
+    imageUrl:
+      startReferenceImageUrl ?? referenceImageUrl ?? optionImageUrl ?? null,
+    summary:
+      summaryRows.map((row) => row.value).join(" / ") ||
+      "주문서를 확인하고 주문확인서를 작성해주세요.",
+    title: titleRow
+      ? `${titleRow.value}${
+          sizeRow && !titleRow.value.includes("사이즈") ? " 사이즈" : ""
+        }`
+      : "주문서가 도착했어요",
+  };
 }
 
 function formatOptionValue(
