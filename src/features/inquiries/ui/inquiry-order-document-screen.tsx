@@ -48,6 +48,7 @@ export function InquiryOrderDocumentScreen({
       </section>
       {!isReadOnly ? (
         <DocumentActions
+          mode={mode}
           isOrderForm={isOrderForm}
           isPrimaryDisabled={isPrimaryDisabled}
           isPrimaryPending={paymentRequestPending}
@@ -109,16 +110,23 @@ function DocumentHeader({
 }
 
 function DocumentActions({
+  mode,
   isOrderForm,
   isPrimaryDisabled,
   isPrimaryPending,
   onPrimary,
 }: {
+  mode: InquiryDocumentMode;
   isOrderForm: boolean;
   isPrimaryDisabled: boolean;
   isPrimaryPending: boolean;
   onPrimary?: () => void;
 }) {
+  const useDocumentCtaWidth =
+    isOrderForm ||
+    mode === "confirmation-draft" ||
+    mode === "confirmation-priced";
+
   return (
     <div
       className={cn(
@@ -129,7 +137,7 @@ function DocumentActions({
       <button
         className={cn(
           "h-11 rounded-seller-md border bg-surface-default text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-primary",
-          isOrderForm
+          useDocumentCtaWidth
             ? "w-[175px] shrink-0 border-border-strong"
             : "flex-1 border-border-default",
         )}
@@ -140,7 +148,7 @@ function DocumentActions({
       <button
         className={cn(
           "h-11 rounded-seller-md text-[15px] leading-5 font-semibold tracking-[-0.3px]",
-          isOrderForm ? "w-[173px] shrink-0" : "flex-1",
+          useDocumentCtaWidth ? "w-[173px] shrink-0" : "flex-1",
           isPrimaryDisabled
             ? "bg-brand-disabled text-text-disabled"
             : "bg-brand-primary text-text-inverse",
