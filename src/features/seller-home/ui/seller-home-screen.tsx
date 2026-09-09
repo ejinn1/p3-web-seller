@@ -35,7 +35,7 @@ const pickupImageFallbacks = [
   "/seller-home/cake-box.png",
 ];
 
-type SellerHomeTab = "pickup" | "waiting";
+type SellerHomeTab = "pickup" | "selected-pickup" | "waiting";
 type SellerHomeView =
   "home" | "confirmation" | "chat" | "order-form" | "revision-chat";
 
@@ -47,7 +47,8 @@ export function SellerHomeScreen() {
   useSellerInquiryListStomp(currentUserQuery.data?.userId, !useFixtures);
 
   const view = (searchParams.get("view") ?? "home") as SellerHomeView;
-  const tab = (searchParams.get("tab") ?? "pickup") as SellerHomeTab;
+  const tab = parseSellerHomeTab(searchParams.get("tab"));
+  const isPickupListTab = tab === "pickup" || tab === "selected-pickup";
   const pickupId = searchParams.get("pickupId");
   const inquiryId = searchParams.get("inquiryId");
   const showSidebar = searchParams.get("sidebar") === "open";
@@ -63,7 +64,7 @@ export function SellerHomeScreen() {
       endDate: selectedDate,
       startDate: selectedDate,
     },
-    Boolean(!useFixtures && selectedDate && tab === "pickup"),
+    Boolean(!useFixtures && selectedDate && isPickupListTab),
   );
 
   const setState = (next: Record<string, string | null>) => {
@@ -107,6 +108,7 @@ export function SellerHomeScreen() {
   }
 
   const selectedDateLabel = formatHomeDate(selectedDate);
+  const todayDate = resolveTodayDate(dashboard.dateCells, selectedDate);
   const selectedPickups = useFixtures
     ? dashboard.pickups.filter((pickup) => pickup.pickupDate === selectedDate)
     : (selectedPickupOrdersQuery.data ?? []).map(toSellerHomePickup);
@@ -183,10 +185,22 @@ export function SellerHomeScreen() {
           selectedDateLabel={selectedDateLabel}
           selectedPickupCount={selectedPickupCount}
           onMoveDate={(date) =>
-            setState({ date, inquiryId: null, pickupId: null })
+            setState({
+              date,
+              tab: "selected-pickup",
+              inquiryId: null,
+              pickupId: null,
+              inquiryState: null,
+            })
           }
           onSelectDate={(date) =>
-            setState({ date, inquiryId: null, pickupId: null })
+            setState({
+              date,
+              tab: "selected-pickup",
+              inquiryId: null,
+              pickupId: null,
+              inquiryState: null,
+            })
           }
         />
         <div className="flex w-full flex-col gap-6">
@@ -199,6 +213,7 @@ export function SellerHomeScreen() {
               active={tab === "pickup"}
               onClick={() =>
                 setState({
+                  date: todayDate,
                   tab: "pickup",
                   pickupId: null,
                   inquiryId: null,
@@ -207,6 +222,19 @@ export function SellerHomeScreen() {
               }
             >
               오늘 픽업
+            </TabButton>
+            <TabButton
+              active={tab === "selected-pickup"}
+              onClick={() =>
+                setState({
+                  tab: "selected-pickup",
+                  pickupId: null,
+                  inquiryId: null,
+                  inquiryState: null,
+                })
+              }
+            >
+              선택 일 픽업
             </TabButton>
             <TabButton
               active={tab === "waiting"}
@@ -219,10 +247,10 @@ export function SellerHomeScreen() {
                 })
               }
             >
-              문의대기
+              문의 대기
             </TabButton>
           </div>
-          {tab === "pickup" ? (
+          {isPickupListTab ? (
             <PickupList
               pickupId={pickupId}
               pickups={selectedPickups}
@@ -430,7 +458,7 @@ function TabButton({
   return (
     <button
       className={cn(
-        "flex h-11 w-[87px] items-center justify-center rounded-seller-sm px-4 py-2 text-[15px] leading-5 font-semibold tracking-[-0.3px]",
+        "flex h-11 min-w-0 flex-1 items-center justify-center whitespace-nowrap rounded-seller-sm px-3 py-2 text-[15px] leading-5 font-semibold tracking-[-0.3px]",
         active
           ? "bg-surface-inverse text-text-inverse"
           : "bg-surface-subtle text-text-secondary",
@@ -504,6 +532,14 @@ function PickupList({
   );
 }
 
+function parseSellerHomeTab(value: string | null): SellerHomeTab {
+  if (value === "selected-pickup" || value === "waiting") {
+    return value;
+  }
+
+  return "pickup";
+}
+
 function resolveSelectedDate(
   requestedDate: string | null,
   dateCells: SellerHomeDashboard["dateCells"],
@@ -522,6 +558,16 @@ function resolveSelectedDate(
     dateCells[0]?.date ??
     requestedDate ??
     ""
+  );
+}
+
+function resolveTodayDate(
+  dateCells: SellerHomeDashboard["dateCells"],
+  fallbackDate: string,
+) {
+  return (
+    dateCells.find((cell) => cell.selected && !cell.disabled)?.date ??
+    fallbackDate
   );
 }
 
