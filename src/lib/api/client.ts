@@ -1,9 +1,6 @@
 import { ApiError, type ApiErrorBody, type ApiResponse } from "@/lib/api/types";
 
-type AccessTokenOptions = { forceRefresh?: boolean };
-type AccessTokenProvider = (
-  options?: AccessTokenOptions,
-) => string | null | Promise<string | null>;
+type AccessTokenProvider = () => string | null | Promise<string | null>;
 
 type ApiRequestOptions = Omit<RequestInit, "body" | "headers"> & {
   body?: BodyInit | null;
@@ -17,36 +14,29 @@ export function setAccessTokenProvider(provider?: AccessTokenProvider) {
   accessTokenProvider = provider;
 }
 
-export async function getAccessToken(options?: AccessTokenOptions) {
-  return accessTokenProvider?.(options) ?? null;
+export async function getAccessToken() {
+  return accessTokenProvider?.() ?? null;
 }
 
 export async function apiRequest<T>(
   path: string,
   { body, headers, requiresAuth = true, ...init }: ApiRequestOptions = {},
 ): Promise<T> {
-  const request = async (forceRefresh = false) => {
-    const requestHeaders = new Headers(headers);
+  const requestHeaders = new Headers(headers);
 
-    if (requiresAuth) {
-      const accessToken = await getAccessToken({ forceRefresh });
+  if (requiresAuth) {
+    const accessToken = await getAccessToken();
 
-      if (accessToken) {
-        requestHeaders.set("Authorization", `Bearer ${accessToken}`);
-      }
+    if (accessToken) {
+      requestHeaders.set("Authorization", `Bearer ${accessToken}`);
     }
-
-    return fetch(toApiUrl(path), {
-      ...init,
-      body,
-      headers: requestHeaders,
-    });
-  };
-
-  let response = await request();
-  if (requiresAuth && response.status === 401) {
-    response = await request(true);
   }
+
+  const response = await fetch(toApiUrl(path), {
+    ...init,
+    body,
+    headers: requestHeaders,
+  });
 
   const payload = (await response
     .json()
