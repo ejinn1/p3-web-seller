@@ -135,14 +135,16 @@ export function hasCognitoSession() {
   return readSession() !== null;
 }
 
-async function getApiToken() {
+async function getApiToken({
+  forceRefresh = false,
+}: { forceRefresh?: boolean } = {}) {
   const session = readSession();
 
   if (!session) {
     return null;
   }
 
-  if (session.expiresAt > Date.now() + 30_000) {
+  if (!forceRefresh && session.expiresAt > Date.now() + 30_000) {
     return session.idToken;
   }
 
