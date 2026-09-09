@@ -3,11 +3,15 @@
 import Image from "next/image";
 import { X } from "lucide-react";
 import { Dialog } from "radix-ui";
-import { Button } from "@/components/common/button";
 import { IconButton } from "@/components/common/icon-button";
-import { useStoreManagementStatusQuery } from "@/features/store/model/store-queries";
+import {
+  useStoreManagementStatusQuery,
+  useStoreQuery,
+  useStoreShareLinkQuery,
+} from "@/features/store/model/store-queries";
 import { sellerSidebarNavigation } from "../config/seller-sidebar-navigation";
 import { SellerSidebarGroup } from "./seller-sidebar-group";
+import { SellerSidebarStoreActions } from "./seller-sidebar-store-actions";
 
 type SellerSidebarProps = {
   onOpenChange: (open: boolean) => void;
@@ -16,14 +20,11 @@ type SellerSidebarProps = {
 
 export function SellerSidebar({ onOpenChange, open }: SellerSidebarProps) {
   const managementStatusQuery = useStoreManagementStatusQuery();
-  const items = managementStatusQuery.data?.items;
-  const isStoreSetupComplete = Boolean(
-    items?.storeInfo &&
-      items.orderForm &&
-      items.notice &&
-      items.photoRegistration &&
-      items.settlementAccount,
-  );
+  const storeQuery = useStoreQuery();
+  const isStoreSetupComplete = managementStatusQuery.data?.canActivate ?? false;
+  const isStorePublic =
+    isStoreSetupComplete && storeQuery.data?.status === "ACTIVE";
+  const shareLinkQuery = useStoreShareLinkQuery(open && isStorePublic);
 
   return (
     <Dialog.Root onOpenChange={onOpenChange} open={open}>
@@ -48,7 +49,7 @@ export function SellerSidebar({ onOpenChange, open }: SellerSidebarProps) {
                 </IconButton>
               </Dialog.Close>
             </div>
-            <nav className="flex min-h-0 flex-1 flex-col gap-8 py-6">
+            <nav className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto py-6">
               {sellerSidebarNavigation.map((group) => (
                 <SellerSidebarGroup
                   {...group}
@@ -61,14 +62,12 @@ export function SellerSidebar({ onOpenChange, open }: SellerSidebarProps) {
                 />
               ))}
             </nav>
-            <div className="px-6">
-              <Button
-                className="h-[52px] w-full rounded-seller-md text-[18px] leading-6 font-semibold tracking-[-0.54px]"
-                disabled={!isStoreSetupComplete}
-              >
-                내 스토어 보기
-              </Button>
-            </div>
+            <SellerSidebarStoreActions
+              enabled={isStorePublic}
+              isLoading={shareLinkQuery.isLoading}
+              storeName={managementStatusQuery.data?.storeName ?? "스토어"}
+              url={shareLinkQuery.data?.url}
+            />
           </aside>
         </Dialog.Content>
       </Dialog.Portal>
