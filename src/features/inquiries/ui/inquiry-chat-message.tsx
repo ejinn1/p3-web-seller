@@ -31,16 +31,26 @@ export function InquiryChatMessage({
           owner="buyer"
           sentAt={message.sentAt}
         >
-          <div className="flex w-60 shrink-0 flex-col gap-4 rounded-seller-lg bg-surface-default p-4">
-            <div className="space-y-1">
-              <p className="text-[18px] leading-6 font-semibold tracking-[-0.54px] text-text-primary">
-                주문서가 도착했어요
+          <div className="flex w-60 shrink-0 flex-col gap-4 rounded-seller-lg bg-surface-default p-3">
+            {message.imageUrl ? (
+              <div className="aspect-square w-full overflow-hidden rounded-seller-lg bg-surface-subtle">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  alt="주문 이미지"
+                  className="size-full object-cover"
+                  src={message.imageUrl}
+                />
+              </div>
+            ) : null}
+            <div className="space-y-1 px-1">
+              <p className="text-[16px] leading-6 font-semibold tracking-[-0.32px] text-text-primary">
+                {message.title}
               </p>
               <p className="text-[13px] leading-4 font-medium tracking-[-0.13px] text-[#8a8b8d]">
-                주문서를 확인하고 주문확인서를 작성해주세요.
+                {message.summary}
               </p>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 px-1 pb-1">
               <ActionButton onClick={onOpenOrderForm} variant="outline">
                 주문서 보기
               </ActionButton>
