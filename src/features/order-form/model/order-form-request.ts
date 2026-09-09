@@ -16,19 +16,20 @@ type OptionsByCategory = Partial<
 function serializeSettings(option: OrderFormDraftOption) {
   const settings: Record<string, number | string> = {};
 
+  if (option.description) {
+    settings.helperText = option.description;
+  }
+
   if (option.type === "SELECT_WITH_TEXT") {
     if (option.example) settings.placeholder = option.example;
-    if (option.description) settings.helperText = option.description;
   }
 
   if (option.type === "IMAGE") {
     settings.maxCount = option.imageCount;
-    if (option.description) settings.helperText = option.description;
   }
 
   if (option.type === "TEXTAREA") {
     if (option.example) settings.placeholder = option.example;
-    if (option.description) settings.helperText = option.description;
     settings.maxLength = 500;
   }
 
