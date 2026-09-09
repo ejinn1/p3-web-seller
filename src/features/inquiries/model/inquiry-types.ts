@@ -13,6 +13,7 @@ export type InquiryTimelineItemType =
 export type InquiryParticipant = {
   userId: string;
   name: string;
+  phoneNumber?: string | null;
   profileImageDeliveryUrl: string | null;
 };
 
@@ -107,7 +108,8 @@ export type InquiryReferenceAssetResponse = {
 
 export type InquiryReferenceAssetPreview = {
   assetId: string;
-  deliveryUrl: string;
+  deliveryUrl: string | null;
+  status: string;
 };
 
 export type InquiryOrderFormSubmissionResponse = {
@@ -211,8 +213,11 @@ export type InquiryChatMessage =
       id: string;
       kind: "order-request";
       owner: "buyer";
+      imageUrl: string | null;
       receivedNoticeText: string;
       sentAt: string;
+      summary: string;
+      title: string;
     }
   | {
       id: string;

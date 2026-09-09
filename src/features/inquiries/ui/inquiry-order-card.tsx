@@ -153,7 +153,7 @@ function OrderFormSection({
               aria-hidden="true"
               className="size-8 shrink-0"
               height={32}
-              src="/order-form/radio-unchecked.svg"
+              src="/order-form/radio-checked.svg"
               width={32}
             />
           ) : null}
@@ -269,10 +269,7 @@ function ReferenceAssetPreviewList({
 
   return (
     <div
-      className={cn(
-        "flex gap-2 overflow-x-auto pb-1",
-        size === "lg" && "mt-4",
-      )}
+      className={cn("flex gap-2 overflow-x-auto pb-1", size === "lg" && "mt-4")}
       data-qa="order-assets"
     >
       {assets.map((asset, index) => (
@@ -283,12 +280,20 @@ function ReferenceAssetPreviewList({
           )}
           key={`${asset.assetId}-${index}`}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            alt="첨부 이미지 미리보기"
-            className="size-full object-cover"
-            src={asset.deliveryUrl}
-          />
+          {asset.deliveryUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              alt="첨부 이미지 미리보기"
+              className="size-full object-cover"
+              src={asset.deliveryUrl}
+            />
+          ) : (
+            <span className="flex size-full items-center justify-center px-2 text-center text-[11px] leading-4 text-text-tertiary">
+              {["PROCESSING", "UPLOADED"].includes(asset.status)
+                ? "이미지 처리 중"
+                : "이미지를 불러올 수 없어요"}
+            </span>
+          )}
         </div>
       ))}
     </div>
