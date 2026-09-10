@@ -20,7 +20,7 @@ import type {
   InquiryTimelineItemResponse,
 } from "@/features/inquiries/model/inquiry-types";
 
-type InquiryOrderOptionViewRow = InquiryOrderOptionRow & {
+export type InquiryOrderOptionViewRow = InquiryOrderOptionRow & {
   assetPreviews?: InquiryReferenceAssetPreview[];
 };
 
@@ -251,7 +251,7 @@ function toInquiryOrderConfirmation(
   const referenceAssetsById = new Map(
     (submission?.referenceAssets ?? []).map((asset) => [asset.assetId, asset]),
   );
-  const rows = getOptionRows(
+  const rows = getInquiryOrderOptionRows(
     confirmation?.optionRows,
     confirmation?.summaryText,
     submission?.optionRows,
@@ -336,7 +336,7 @@ function toInquiryOrderConfirmation(
   };
 }
 
-function getOptionRows(
+export function getInquiryOrderOptionRows(
   optionRows: InquiryOrderOptionRow[] | undefined,
   optionSummary: string | undefined,
   submissionRows: InquiryOrderOptionRow[] | undefined,
@@ -712,7 +712,7 @@ function toOrderRequestCard(
   const referenceAssetsById = new Map(
     submission.referenceAssets.map((asset) => [asset.assetId, asset]),
   );
-  const rows = getOptionRows(
+  const rows = getInquiryOrderOptionRows(
     undefined,
     undefined,
     submission.optionRows,

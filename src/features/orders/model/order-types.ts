@@ -1,3 +1,5 @@
+import type { AssetVariant } from "@/features/assets/model/asset-types";
+
 export type SellerOrderStatus =
   | "PAID"
   | "PICKED_UP"
@@ -18,6 +20,15 @@ export type RefundStatus = "REQUESTED" | "PROCESSING" | "COMPLETED" | "FAILED";
 
 export type OrderListDateBasis = "PAID_AT" | "PICKUP_AT" | "CREATED_AT";
 
+export type OrderReferenceAsset = {
+  assetId: string;
+  source: string | null;
+  sortOrder: number;
+  status: string;
+  deliveryUrl: string | null;
+  variants: AssetVariant[];
+};
+
 export type SellerOrderListParams = {
   dateBasis?: OrderListDateBasis;
   endDate?: string;
@@ -35,6 +46,7 @@ export type SellerOrderListItem = {
   menuName: string;
   optionSummary: string;
   startReferenceAssets: string[];
+  referenceAssets?: OrderReferenceAsset[];
   paidAmount: number;
   pickupAt: string;
   status: SellerOrderStatus | null;
@@ -87,6 +99,10 @@ export type SellerOrderDetail = {
 };
 
 export type SellerOrderOption = {
+  assetPreviews?: Array<{
+    assetId: string;
+    deliveryUrl: string;
+  }>;
   label: string;
   price: number | null;
   priceText?: string;

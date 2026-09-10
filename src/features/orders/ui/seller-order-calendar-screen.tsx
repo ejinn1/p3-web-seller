@@ -14,6 +14,8 @@ import { SellerSidebar } from "@/components/widgets/seller-sidebar";
 import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
 import { useAssetQueries } from "@/features/assets/model/asset-queries";
 import type { Asset } from "@/features/assets/model/asset-types";
+import { useSellerInquiriesQuery } from "@/features/inquiries/model/inquiry-queries";
+import type { InquiryListItem } from "@/features/inquiries/model/inquiry-types";
 import {
   useSellerOrderCalendarMonthQuery,
   useSellerOrderDetailQuery,
@@ -69,7 +71,15 @@ export function SellerOrderCalendarScreen() {
 
   const calendarQuery = useSellerOrderCalendarMonthQuery({ month, year });
   const storeQuery = useStoreQuery();
+  const inquiriesQuery = useSellerInquiriesQuery();
   const calendar = calendarQuery.data;
+  const inquiryById = useMemo(
+    () =>
+      new Map(
+        (inquiriesQuery.data ?? []).map((inquiry) => [inquiry.id, inquiry]),
+      ),
+    [inquiriesQuery.data],
+  );
   const storeOpenedDate = getStoreOpenedDate(storeQuery.data?.createdAt);
   const previousCalendarMonth = shiftCalendarMonth(year, month, -1);
   const selectedDay = calendar?.days.find((day) => day.date === activeDate);
@@ -162,6 +172,7 @@ export function SellerOrderCalendarScreen() {
         <SellerOrderListView
           date={activeDate}
           day={selectedDay}
+          inquiryById={inquiryById}
           onBack={() => {
             suppressListRedirectForDateRef.current = activeDate;
             updateParams({ orderId: null, view: null });
@@ -169,7 +180,7 @@ export function SellerOrderCalendarScreen() {
           onClearDate={() => updateParams({ date: null, view: null })}
           onMenu={() => setSidebarOpen(true)}
           onOpenDetail={(orderId) =>
-            updateParams({ orderId, view: "detail", date: activeDate })
+            router.push(`/seller/orders/${orderId}?view=selected`)
           }
         />
         <SellerSidebar onOpenChange={setSidebarOpen} open={sidebarOpen} />
@@ -528,6 +539,7 @@ function OrderCalendarGrid({
 function SellerOrderListView({
   date,
   day,
+  inquiryById,
   onBack,
   onClearDate,
   onMenu,
@@ -535,6 +547,7 @@ function SellerOrderListView({
 }: {
   date: string;
   day?: OrderCalendarDay;
+  inquiryById: Map<string, InquiryListItem>;
   onBack: () => void;
   onClearDate: () => void;
   onMenu: () => void;
@@ -603,6 +616,7 @@ function SellerOrderListView({
                   key={order.orderId}
                   onClick={() => onOpenDetail(order.orderId)}
                   order={order}
+                  inquiry={inquiryById.get(order.inquiryId)}
                   referenceAssetById={referenceAssetById}
                 />
               ))
@@ -620,11 +634,13 @@ function SellerOrderListView({
 
 function OrderListItem({
   highlighted,
+  inquiry,
   onClick,
   order,
   referenceAssetById,
 }: {
   highlighted?: boolean;
+  inquiry?: InquiryListItem;
   onClick: () => void;
   order: OrderCalendarItem;
   referenceAssetById: Map<string, Asset>;
@@ -632,6 +648,7 @@ function OrderListItem({
   const thumbnailUrl = getReferenceThumbnailUrl(
     order.startReferenceAssets,
     referenceAssetById,
+    order.referenceAssets,
   );
 
   return (
@@ -659,7 +676,7 @@ function OrderListItem({
           {formatPickupTime(order.pickupTime)}
         </p>
         <p className="min-w-full overflow-hidden text-[13px] leading-[18px] font-normal tracking-[-0.13px] text-ellipsis text-text-tertiary">
-          {formatKoreanDate(order.pickupDate)} · 고객 님
+          {formatKoreanDate(order.pickupDate)} · {inquiry?.buyerName ?? "고객"} 님
         </p>
         <p className="text-[15px] leading-[22px] font-semibold tracking-[-0.15px] text-text-secondary">
           {formatWon(order.paidAmount)}
@@ -694,6 +711,7 @@ function SellerOrderDetailView({
   const thumbnailUrl = getReferenceThumbnailUrl(
     order?.startReferenceAssets,
     referenceAssetById,
+    order?.referenceAssets,
   );
   const optionLines =
     detail && detail.optionRows.length > 0

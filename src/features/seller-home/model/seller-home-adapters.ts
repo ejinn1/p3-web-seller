@@ -52,6 +52,7 @@ function toSellerHomePickup(
 ): SellerHomePickup {
   return {
     id: order.orderId,
+    inquiryId: order.inquiryId,
     pickupDate: order.pickupDate,
     pickupTime: formatPickupTime(order.pickupTime, order.pickupAt),
     customerName: "고객",

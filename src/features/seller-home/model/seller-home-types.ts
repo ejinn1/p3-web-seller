@@ -49,12 +49,13 @@ export type SellerDashboardResponse = {
 
 export type SellerHomePickup = {
   id: string;
+  inquiryId: string;
   pickupDate: string;
   pickupTime: string;
   customerName: string;
   customerMaskedName: string;
   totalPrice: number;
-  imageUrl: string;
+  imageUrl: string | null;
   status: SellerHomeOrderStatus;
 };
 

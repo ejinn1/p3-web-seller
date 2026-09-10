@@ -15,6 +15,8 @@ import { SellerSidebar } from "@/components/widgets/seller-sidebar";
 import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
 import { useAssetQueries } from "@/features/assets/model/asset-queries";
 import type { Asset } from "@/features/assets/model/asset-types";
+import { useSellerInquiriesQuery } from "@/features/inquiries/model/inquiry-queries";
+import type { InquiryListItem } from "@/features/inquiries/model/inquiry-types";
 import { useSellerOrdersQuery } from "@/features/orders/model/order-queries";
 import {
   getReferenceAssetIds,
@@ -60,6 +62,7 @@ export function SellerOrdersScreen() {
       }
     : {};
   const query = useSellerOrdersQuery(orderListParams);
+  const inquiriesQuery = useSellerInquiriesQuery();
   const referenceAssetIds = useMemo(
     () =>
       getReferenceAssetIds(
@@ -73,9 +76,16 @@ export function SellerOrdersScreen() {
       assetQuery.data ? [[assetQuery.data.id, assetQuery.data] as const] : [],
     ),
   );
+  const inquiryById = useMemo(
+    () =>
+      new Map(
+        (inquiriesQuery.data ?? []).map((inquiry) => [inquiry.id, inquiry]),
+      ),
+    [inquiriesQuery.data],
+  );
 
   const orders = (query.data ?? []).map((order) =>
-    toOrderViewModel(order, referenceAssetById),
+    toOrderViewModel(order, referenceAssetById, inquiryById.get(order.inquiryId)),
   );
   const groupedOrders = useMemo(
     () => groupOrdersByPaymentDate(orders),
@@ -620,10 +630,11 @@ function OrdersState({ message }: { message: string }) {
 function toOrderViewModel(
   order: SellerOrderListItem,
   referenceAssetById: Map<string, Asset>,
+  inquiry?: InquiryListItem,
 ): SellerOrderViewModel {
   return {
     ...order,
-    buyerName: "고객",
+    buyerName: inquiry?.buyerName ?? "고객",
     detailRows: [
       { label: "디자인", value: order.menuName, price: null },
       { label: "옵션", value: order.optionSummary, price: null },
@@ -632,6 +643,7 @@ function toOrderViewModel(
     thumbnailUrl: getReferenceThumbnailUrl(
       order.startReferenceAssets,
       referenceAssetById,
+      order.referenceAssets,
     ),
   };
 }

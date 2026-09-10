@@ -84,6 +84,9 @@ export const getSellerOrderConfirmationPreview = (inquiryId: string) =>
     `/seller/inquiries/${inquiryId}/confirmations/preview`,
   );
 
+export const getSellerInquiryChatDetail = (inquiryId: string) =>
+  getJson<InquiryChatDetailResponse>(`/seller/inquiries/${inquiryId}`);
+
 export const markSellerInquiryRead = (inquiryId: string) =>
   sendJson<void>(`/seller/inquiries/${inquiryId}/read`, "PATCH");
 
@@ -93,6 +96,14 @@ export const getSellerOrderFormSubmission = (
 ) =>
   getJson<InquiryOrderFormSubmissionResponse>(
     `/seller/inquiries/${inquiryId}/order-form-submissions/${submissionId}`,
+  );
+
+export const getSellerOrderConfirmation = (
+  inquiryId: string,
+  confirmationId: string,
+) =>
+  getJson<InquiryOrderConfirmationResponse>(
+    `/seller/inquiries/${inquiryId}/confirmations/${confirmationId}`,
   );
 
 export const requestSellerOrderFormRevision = (
