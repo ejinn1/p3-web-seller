@@ -72,6 +72,16 @@ export function toInquiryDetail({
   const submissionsById = new Map(
     submissions.map((submission) => [submission.id, submission]),
   );
+  const ordersBySubmissionId = Object.fromEntries(
+    submissions.map((submission) => [
+      submission.id,
+      toSubmissionOrderConfirmation(
+        detail,
+        submission,
+        preview?.orderFormSubmissionId === submission.id ? preview : null,
+      ),
+    ]),
+  );
 
   return {
     createdAt: detail.createdAt,
@@ -95,6 +105,7 @@ export function toInquiryDetail({
       latestConfirmation,
       preview,
     ),
+    ordersBySubmissionId,
     participantUserId: detail.participant.userId,
     profileImageUrl: detail.participant.profileImageDeliveryUrl,
     status,
@@ -158,6 +169,7 @@ function toChatMessage(
       owner: "buyer" as const,
       receivedNoticeText: formatOrderReceivedNotice(item.createdAt),
       sentAt,
+      submissionId: item.referenceId ?? submission?.id ?? null,
       summary: card.summary,
       title: card.title,
     };
@@ -198,6 +210,19 @@ function toChatMessage(
     kind: "notice" as const,
     text: item.content ?? "주문 확인서가 수정되었습니다.",
   };
+}
+
+function toSubmissionOrderConfirmation(
+  detail: InquiryChatDetailResponse,
+  submission: InquiryOrderFormSubmissionResponse,
+  preview: InquiryOrderConfirmationPreviewResponse | null,
+) {
+  return toInquiryOrderConfirmation(
+    { ...detail, startReferenceAsset: null },
+    { ...submission, optionRows: [] },
+    null,
+    preview,
+  );
 }
 
 function toInquiryOrderConfirmation(
