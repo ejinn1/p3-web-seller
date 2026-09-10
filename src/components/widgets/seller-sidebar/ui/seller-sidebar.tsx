@@ -35,6 +35,12 @@ export function SellerSidebar({ onOpenChange, open }: SellerSidebarProps) {
         />
         <Dialog.Content asChild>
           <div className="seller-sidebar-content pointer-events-none fixed inset-y-0 left-1/2 z-20 w-full max-w-[768px] -translate-x-1/2 overflow-hidden focus:outline-none">
+            <button
+              aria-label="사이드바 닫기"
+              className="pointer-events-auto absolute inset-y-0 left-0 right-[300px] cursor-default"
+              onClick={() => onOpenChange(false)}
+              type="button"
+            />
             <aside className="seller-sidebar-panel pointer-events-auto absolute top-0 right-0 flex h-dvh w-[300px] flex-col overflow-hidden bg-surface-elevated pb-[41px]">
               <Dialog.Title className="sr-only">판매자 메뉴</Dialog.Title>
               <div className="flex h-14 w-full shrink-0 items-center justify-between px-6">
