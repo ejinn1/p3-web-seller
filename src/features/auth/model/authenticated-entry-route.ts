@@ -29,20 +29,6 @@ export async function resolveAuthenticatedEntryRoute(user?: UserSync) {
     return "/admin";
   }
 
-  const store = await getStore().catch((error: unknown) => {
-    if (error instanceof ApiError && error.status === 404) {
-      return null;
-    }
-
-    throw error;
-  });
-
-  if (store) {
-    return store.status === "ACTIVE"
-      ? "/seller/home"
-      : "/seller/store-management";
-  }
-
   const onboarding = await getCurrentOnboarding().catch((error: unknown) => {
     if (error instanceof ApiError && error.status === 404) {
       return null;
@@ -61,6 +47,20 @@ export async function resolveAuthenticatedEntryRoute(user?: UserSync) {
 
   if (onboarding.status === "REJECTED") {
     return "/onboarding/rejected";
+  }
+
+  const store = await getStore().catch((error: unknown) => {
+    if (error instanceof ApiError && error.status === 404) {
+      return null;
+    }
+
+    throw error;
+  });
+
+  if (store) {
+    return store.status === "ACTIVE"
+      ? "/seller/home"
+      : "/seller/store-management";
   }
 
   return "/seller/store-management";
