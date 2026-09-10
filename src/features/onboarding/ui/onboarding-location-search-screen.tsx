@@ -42,9 +42,9 @@ export function OnboardingLocationSearchScreen({
         onBack={onBack}
         title="스토어 위치"
       />
-      <section className="flex flex-1 flex-col bg-surface-subtle">
+      <section className="flex flex-1 flex-col bg-surface-default">
         <div className="border-b border-border-subtle px-4 py-3">
-          <div className="flex h-11 items-center gap-2 rounded-seller-sm bg-surface-default px-4">
+          <div className="flex h-11 items-center gap-2 rounded-seller-sm bg-surface-subtle px-4">
             <Search
               aria-hidden="true"
               className="size-5 shrink-0 text-text-secondary"
