@@ -197,7 +197,7 @@ function RevenueHeader({
 }) {
   return (
     <header
-      className="flex h-14 shrink-0 items-center justify-between bg-surface-default"
+      className="sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between bg-surface-default"
       data-revenue-element="header"
     >
       <div className="flex min-w-0 flex-1 items-center">

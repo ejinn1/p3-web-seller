@@ -248,11 +248,11 @@ export function StoreInformationForm({
       </section>
       <div className="px-4 pt-4 pb-[34px]">
         <Button
-          className="h-[52px] rounded-seller-md text-seller-heading-md font-semibold tracking-[-0.54px]"
+          className="h-11 rounded-seller-md text-[15px] font-semibold"
           disabled={!canSaveDescription || isDescriptionSaving}
           fullWidth
           onClick={() => void saveDescription()}
-          size="lg"
+          size="md"
         >
           {isDescriptionSaving ? "저장 중..." : "저장"}
         </Button>

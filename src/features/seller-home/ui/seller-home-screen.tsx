@@ -412,7 +412,7 @@ function DashboardOverview({
             <button
               aria-pressed={cell.date === selectedDate}
               className={cn(
-                "flex aspect-square items-center justify-center rounded-seller-sm text-[15px] leading-[22px] font-semibold tracking-[-0.15px]",
+                "mx-auto flex aspect-square w-[52px] max-w-full items-center justify-center rounded-seller-sm text-[15px] leading-[22px] font-semibold tracking-[-0.15px]",
                 cell.date === selectedDate && "bg-surface-inverse text-text-inverse",
                 cell.disabled &&
                   cell.date !== selectedDate &&
