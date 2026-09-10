@@ -241,14 +241,16 @@ export type InquiryChatMessage =
       kind: "payment-request";
       owner: "seller";
       sentAt: string;
-      amount: number;
+      amount: number | null;
+      confirmationId: string;
     }
   | {
       id: string;
       kind: "payment-complete";
       owner: "buyer";
       sentAt: string;
-      amount: number;
+      amount: number | null;
+      orderId: string;
     }
   | {
       id: string;
@@ -295,9 +297,11 @@ export type InquiryDetail = {
   statusLabel: string;
   messages: InquiryChatMessage[];
   order: InquiryOrderConfirmation;
+  confirmationsById: Record<string, InquiryOrderConfirmation>;
   ordersBySubmissionId: Record<string, InquiryOrderConfirmation>;
   timelineContext: {
     confirmationAmountsById: Record<string, number>;
+    orderAmountsById: Record<string, number>;
     startReferenceImageUrl: string | null;
     submissionsById: Record<string, InquiryOrderFormSubmissionResponse>;
   };
