@@ -165,10 +165,10 @@ function OrderFormSection({
         {price ? (
           <span
             className={cn(
-              "min-w-px flex-1 shrink-0 text-right text-[15px] font-semibold",
+              "min-w-px shrink-0 text-right text-[15px] font-semibold",
               title === "픽업 일시"
-                ? "leading-5 tracking-[-0.3px] text-text-secondary"
-                : "leading-[22px] tracking-[-0.15px] text-text-primary",
+                ? "ml-auto leading-5 tracking-[-0.3px] text-text-secondary"
+                : "flex-1 leading-[22px] tracking-[-0.15px] text-text-primary",
             )}
           >
             {price}
