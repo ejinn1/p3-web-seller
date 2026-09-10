@@ -148,14 +148,15 @@ function OrderFormSection({
       >
         <span className="flex h-11 min-w-0 shrink items-center justify-end">
           {showRadio ? (
-            <Image
-              alt=""
-              aria-hidden="true"
-              className="size-8 shrink-0"
-              height={32}
-              src="/order-form/radio-checked.svg"
-              width={32}
-            />
+            <span className="relative size-8 shrink-0" aria-hidden="true">
+              <Image
+                alt=""
+                className="absolute top-[7px] left-0 size-[18px]"
+                height={18}
+                src="/order-form/radio-checked.svg"
+                width={18}
+              />
+            </span>
           ) : null}
           <span className="min-w-0 truncate text-[16px] leading-6 font-normal tracking-[-0.32px] text-text-primary">
             {value}
