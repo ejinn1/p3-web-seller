@@ -55,7 +55,7 @@ export function Header({
   return (
     <header
       className={cn(
-        "relative flex h-14 shrink-0 items-center border-b border-seller-border bg-surface-default",
+        "sticky top-0 z-10 flex h-14 shrink-0 items-center border-b border-seller-border bg-surface-default",
         className,
       )}
     >

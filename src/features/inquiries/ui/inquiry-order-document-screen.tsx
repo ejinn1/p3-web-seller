@@ -78,7 +78,7 @@ function DocumentHeader({
         : "주문 확인서";
 
   return (
-    <header className="grid h-14 shrink-0 grid-cols-[1fr_auto_1fr] items-center bg-surface-default">
+    <header className="sticky top-0 z-10 grid h-14 shrink-0 grid-cols-[1fr_auto_1fr] items-center bg-surface-default">
       <div className="flex min-w-0 items-center">
         <button
           aria-label="뒤로 가기"

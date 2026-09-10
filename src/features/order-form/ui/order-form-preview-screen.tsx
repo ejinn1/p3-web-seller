@@ -16,7 +16,7 @@ export function OrderFormPreviewScreen() {
 
   return (
     <main className="mx-auto min-h-dvh w-full max-w-[768px] bg-surface-subtle text-text-primary">
-      <div className="bg-surface-default">
+      <div className="sticky top-0 z-10 bg-surface-default">
         <OrderFormHeader
           backHref={getSellerBackHref("orderFormPreview")}
           backLabel="주문서 양식으로 돌아가기"

@@ -86,7 +86,7 @@ function ChatHeader({
   onMenu: () => void;
 }) {
   return (
-    <header className="shrink-0 bg-surface-default">
+    <header className="sticky top-0 z-10 shrink-0 bg-surface-default">
       <div className="flex h-14 items-center justify-between">
         <button
           aria-label="뒤로 가기"

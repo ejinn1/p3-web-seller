@@ -269,7 +269,7 @@ function CalendarHeader({
   return (
     <header
       className={cn(
-        "flex h-14 w-full shrink-0 items-center justify-between overflow-hidden bg-surface-default",
+        "sticky top-0 z-10 flex h-14 w-full shrink-0 items-center justify-between overflow-hidden bg-surface-default",
         className,
       )}
     >
