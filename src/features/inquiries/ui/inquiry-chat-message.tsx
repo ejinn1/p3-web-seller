@@ -10,6 +10,7 @@ export function InquiryChatMessage({
   onOpenOrderConfirmation,
   onOpenOrderForm,
   onOpenOrderHistory,
+  writeOrderConfirmationDisabled = false,
   onWriteOrderConfirmation,
 }: {
   buyerProfileImageUrl: string | null;
@@ -17,6 +18,7 @@ export function InquiryChatMessage({
   onOpenOrderConfirmation: () => void;
   onOpenOrderForm: () => void;
   onOpenOrderHistory: () => void;
+  writeOrderConfirmationDisabled?: boolean;
   onWriteOrderConfirmation: () => void;
 }) {
   if (message.kind === "notice") {
@@ -54,7 +56,10 @@ export function InquiryChatMessage({
               <ActionButton onClick={onOpenOrderForm} variant="outline">
                 주문서 보기
               </ActionButton>
-              <ActionButton onClick={onWriteOrderConfirmation}>
+              <ActionButton
+                disabled={writeOrderConfirmationDisabled}
+                onClick={onWriteOrderConfirmation}
+              >
                 주문확인서 작성
               </ActionButton>
             </div>
@@ -199,6 +204,7 @@ function ActionButton({
         variant === "outline"
           ? "border border-border-default bg-surface-default text-text-primary"
           : "bg-brand-primary text-text-inverse",
+        disabled && variant === "primary" && "bg-brand-disabled",
         disabled && "text-text-disabled",
       )}
       disabled={disabled}

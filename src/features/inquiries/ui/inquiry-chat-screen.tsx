@@ -31,6 +31,7 @@ export function InquiryChatScreen({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const scrollRef = useRef<HTMLElement>(null);
+  const writeOrderConfirmationDisabled = inquiry.status === "WAITING";
 
   useEffect(() => {
     const scrollArea = scrollRef.current;
@@ -62,6 +63,7 @@ export function InquiryChatScreen({
               onOpenOrderConfirmation={onOpenOrderConfirmation}
               onOpenOrderForm={onOpenOrderForm}
               onOpenOrderHistory={onOpenOrderHistory}
+              writeOrderConfirmationDisabled={writeOrderConfirmationDisabled}
               onWriteOrderConfirmation={onWriteOrderConfirmation}
             />
           ))}
