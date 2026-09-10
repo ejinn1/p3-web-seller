@@ -163,6 +163,16 @@ function toChatMessage(
     };
   }
 
+  if (item.type === "ORDER_FORM_REVISION_REQUEST") {
+    return {
+      id: item.eventId,
+      kind: "order-form-revision-request" as const,
+      owner: "seller" as const,
+      sentAt,
+      submissionId: item.referenceId ?? "",
+    };
+  }
+
   if (item.type === "ORDER_CONFIRMATION") {
     return {
       amount: confirmationAmount,
@@ -838,6 +848,10 @@ function formatLatestMessage(latestPreview: InquiryLatestPreview | null) {
 
   if (event.type === "ORDER_FORM_SUBMISSION") {
     return "주문서가 작성되었습니다.";
+  }
+
+  if (event.type === "ORDER_FORM_REVISION_REQUEST") {
+    return "주문서 수정 요청";
   }
 
   if (event.type === "ORDER_CONFIRMATION") {

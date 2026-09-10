@@ -65,6 +65,33 @@ export function InquiryChatMessage({
     );
   }
 
+  if (message.kind === "order-form-revision-request") {
+    return (
+      <BubbleRow
+        buyerProfileImageUrl={buyerProfileImageUrl}
+        owner="seller"
+        sentAt={message.sentAt}
+      >
+        <div className="flex w-60 shrink-0 flex-col gap-4 rounded-seller-lg bg-surface-default p-4">
+          <div className="flex w-[208px] flex-col gap-2">
+            <p className="text-[13px] leading-4 font-medium tracking-[-0.13px] text-text-secondary">
+              수정 요청
+            </p>
+            <p className="text-[22px] leading-[30px] font-bold tracking-[-0.66px] text-text-primary">
+              주문서를 수정해주세요
+            </p>
+            <p className="text-[13px] leading-4 font-medium tracking-[-0.13px] text-text-tertiary">
+              주문서 수정을 요청했어요
+            </p>
+          </div>
+          <ActionButton disabled variant="outline">
+            주문서 수정하기
+          </ActionButton>
+        </div>
+      </BubbleRow>
+    );
+  }
+
   if (message.kind === "payment-request") {
     return (
       <BubbleRow
@@ -156,11 +183,13 @@ function NoticeBubble({ children }: { children: ReactNode }) {
 
 function ActionButton({
   children,
+  disabled = false,
   onClick,
   variant = "primary",
 }: {
   children: ReactNode;
-  onClick: () => void;
+  disabled?: boolean;
+  onClick?: () => void;
   variant?: "outline" | "primary";
 }) {
   return (
@@ -170,7 +199,9 @@ function ActionButton({
         variant === "outline"
           ? "border border-border-default bg-surface-default text-text-primary"
           : "bg-brand-primary text-text-inverse",
+        disabled && "text-text-disabled",
       )}
+      disabled={disabled}
       onClick={onClick}
       type="button"
     >
