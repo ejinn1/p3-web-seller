@@ -217,6 +217,7 @@ export type InquiryChatMessage =
       imageUrl: string | null;
       receivedNoticeText: string;
       sentAt: string;
+      submissionId: string | null;
       summary: string;
       title: string;
     }
@@ -294,4 +295,5 @@ export type InquiryDetail = {
   statusLabel: string;
   messages: InquiryChatMessage[];
   order: InquiryOrderConfirmation;
+  ordersBySubmissionId: Record<string, InquiryOrderConfirmation>;
 };
