@@ -58,17 +58,19 @@ export function SellerSidebarStoreActions({
         </p>
       ) : null}
       <Button
-        className="h-[52px] w-full rounded-seller-md text-[18px] leading-6 font-semibold tracking-[-0.54px]"
         disabled={!canUseStoreLink}
+        fullWidth
         onClick={() => void handleShare()}
-        variant="secondary"
+        size="lg"
+        variant="outline"
       >
         스토어 공유
       </Button>
       <Button
-        className="h-[52px] w-full rounded-seller-md text-[18px] leading-6 font-semibold tracking-[-0.54px]"
         disabled={!canUseStoreLink}
+        fullWidth
         onClick={handleOpenStore}
+        size="lg"
       >
         내 스토어 보기
       </Button>

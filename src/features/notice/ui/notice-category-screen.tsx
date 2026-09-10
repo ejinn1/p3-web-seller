@@ -51,7 +51,7 @@ export function NoticeCategoryScreen({ category }: NoticeCategoryScreenProps) {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-[768px] flex-col bg-surface-subtle text-text-primary">
-      <div className="bg-surface-default">
+      <div className="sticky top-0 z-10 bg-surface-default">
         <OrderFormHeader
           backHref={getSellerBackHref("noticeCategory")}
 
