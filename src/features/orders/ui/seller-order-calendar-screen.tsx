@@ -231,25 +231,23 @@ export function SellerOrderCalendarScreen() {
           year={year}
         />
       </SellerResponsiveFrame>
-      {isMonthPickerOpen ? (
-        <MonthSelectSheet
-          initialMonth={month}
-          initialYear={year}
-          minimumDate={storeOpenedDate}
-          onClose={() => updateParams({ monthPicker: null })}
-          onConfirm={(nextYear, nextMonth) =>
-            updateParams({
-              date: null,
-              month: String(nextMonth),
-              monthPicker: null,
-              orderId: null,
-              view: null,
-              year: String(nextYear),
-            })
-          }
-          open={isMonthPickerOpen}
-        />
-      ) : null}
+      <MonthSelectSheet
+        initialMonth={month}
+        initialYear={year}
+        minimumDate={storeOpenedDate}
+        onClose={() => updateParams({ monthPicker: null })}
+        onConfirm={(nextYear, nextMonth) =>
+          updateParams({
+            date: null,
+            month: String(nextMonth),
+            monthPicker: null,
+            orderId: null,
+            view: null,
+            year: String(nextYear),
+          })
+        }
+        open={isMonthPickerOpen}
+      />
       <SellerSidebar onOpenChange={setSidebarOpen} open={sidebarOpen} />
     </>
   );
@@ -908,6 +906,23 @@ function MonthSelectSheet({
   const [year, setYear] = useState(initialCalendarMonth.year);
   const [month, setMonth] = useState(initialCalendarMonth.month);
 
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      const nextCalendarMonth = normalizeCalendarMonth(
+        initialYear,
+        initialMonth,
+      );
+      setYear(nextCalendarMonth.year);
+      setMonth(nextCalendarMonth.month);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [initialMonth, initialYear, open]);
+
   const years = [year - 2, year - 1, year, year + 1, year + 2];
   const months = [-2, -1, 0, 1, 2].map((offset) =>
     shiftCalendarMonth(year, month, offset),
@@ -1012,10 +1027,51 @@ function WheelColumn({
   }[];
   testId: string;
 }) {
+  const columnRef = useRef<HTMLDivElement>(null);
+  const lastWheelAtRef = useRef(0);
+
+  useEffect(() => {
+    const column = columnRef.current;
+
+    if (!column) {
+      return;
+    }
+
+    const handleWheel = (event: WheelEvent) => {
+      event.preventDefault();
+
+      if (Math.abs(event.deltaY) < 1) {
+        return;
+      }
+
+      const now = Date.now();
+
+      if (now - lastWheelAtRef.current < 160) {
+        return;
+      }
+
+      const selectedIndex = items.findIndex((item) => item.selected);
+      const direction = event.deltaY > 0 ? 1 : -1;
+      const nextItem = items[selectedIndex + direction];
+
+      if (!nextItem || nextItem.disabled) {
+        return;
+      }
+
+      lastWheelAtRef.current = now;
+      nextItem.onClick();
+    };
+
+    column.addEventListener("wheel", handleWheel, { passive: false });
+
+    return () => column.removeEventListener("wheel", handleWheel);
+  }, [items]);
+
   return (
     <div
-      className="flex h-[214px] min-w-0 flex-1 flex-col items-center"
+      className="flex h-[214px] min-w-0 flex-1 overscroll-contain flex-col items-center"
       data-testid={testId}
+      ref={columnRef}
     >
       {items.map((item, index) => (
         <button
