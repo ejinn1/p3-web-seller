@@ -21,8 +21,16 @@ import {
   buildSendOrderConfirmationRequest,
   calculateInquiryOrderPrice,
 } from "@/features/inquiries/model/inquiry-order-confirmation";
-import { useSellerInquiryQuery } from "@/features/inquiries/model/inquiry-queries";
+import { toInquiryChatMessages } from "@/features/inquiries/model/inquiry-adapters";
+import {
+  useSellerInquiryQuery,
+  useSellerInquiryTimelineQuery,
+} from "@/features/inquiries/model/inquiry-queries";
 import { useSellerInquiryStomp } from "@/features/inquiries/model/inquiry-stomp";
+import type {
+  InquiryChatMessage,
+  InquiryTimelineItemResponse,
+} from "@/features/inquiries/model/inquiry-types";
 import { InquiryChatScreen } from "@/features/inquiries/ui/inquiry-chat-screen";
 import { InquiryOrderDocumentScreen } from "@/features/inquiries/ui/inquiry-order-document-screen";
 import { InquiryPaymentRequestModal } from "@/features/inquiries/ui/inquiry-payment-request-modal";
@@ -35,6 +43,7 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const inquiryQuery = useSellerInquiryQuery(inquiryId);
+  const timelineQuery = useSellerInquiryTimelineQuery(inquiryId);
   const inquiry = inquiryQuery.data;
   const refetchInquiry = inquiryQuery.refetch;
   const currentUserQuery = useCurrentUserQuery(
@@ -166,11 +175,11 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
       });
   }, [documentOrder?.orderFormSubmissionId, inquiryId, refetchInquiry, state]);
 
-  if (inquiryQuery.isError) {
+  if (inquiryQuery.isError || timelineQuery.isError) {
     return <InquiryDetailState message="상담을 불러오지 못했습니다." />;
   }
 
-  if (inquiryQuery.isLoading || !inquiry) {
+  if (inquiryQuery.isLoading || timelineQuery.isLoading || !inquiry) {
     return <InquiryDetailState message="상담을 불러오는 중입니다." />;
   }
 
@@ -188,7 +197,22 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
     return <InquiryDetailState message="주문 정보를 불러오지 못했습니다." />;
   }
 
-  const displayInquiry = { ...inquiry, order: documentOrder };
+  const timelineItems = mergeTimelineItems(
+    timelineQuery.data?.pages.map((page) => page.items) ?? [],
+  );
+  const timelineMessages = toInquiryChatMessages(timelineItems, {
+    confirmationAmountsById:
+      inquiry.timelineContext.confirmationAmountsById,
+    fallbackConfirmationAmount: inquiry.order.totalPrice,
+    participantUserId: inquiry.participantUserId,
+    startReferenceImageUrl: inquiry.timelineContext.startReferenceImageUrl,
+    submissionsById: inquiry.timelineContext.submissionsById,
+  });
+  const displayInquiry = {
+    ...inquiry,
+    messages: mergeChatMessages(timelineMessages, inquiry.messages),
+    order: documentOrder,
+  };
 
   const handleSendPaymentRequest = async () => {
     if (!canRequestPayment || sendConfirmationMutation.isPending) {
@@ -331,6 +355,8 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
     <InquiryChatScreen
       connectionError={stomp.error?.message}
       inquiry={displayInquiry}
+      hasOlderMessages={Boolean(timelineQuery.hasNextPage)}
+      isLoadingOlderMessages={timelineQuery.isFetchingNextPage}
       isConnected={
         stomp.isConnected || !process.env.NEXT_PUBLIC_P3_API_BASE_URL
       }
@@ -340,12 +366,34 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
         navigate("order-form", { submissionId })
       }
       onOpenOrderHistory={() => navigate("order-history")}
+      onLoadOlderMessages={() => void timelineQuery.fetchNextPage()}
       onSend={stomp.sendMessage}
       onWriteOrderConfirmation={(submissionId) =>
         navigate("confirmation-draft", { submissionId })
       }
     />
   );
+}
+
+function mergeTimelineItems(pages: InquiryTimelineItemResponse[][]) {
+  const itemsById = new Map<string, InquiryTimelineItemResponse>();
+
+  for (const page of [...pages].reverse()) {
+    for (const item of page) itemsById.set(item.eventId, item);
+  }
+
+  return [...itemsById.values()];
+}
+
+function mergeChatMessages(
+  timelineMessages: InquiryChatMessage[],
+  liveMessages: InquiryChatMessage[],
+) {
+  const messagesById = new Map(
+    timelineMessages.map((message) => [message.id, message]),
+  );
+  for (const message of liveMessages) messagesById.set(message.id, message);
+  return [...messagesById.values()];
 }
 
 function isSubmissionDocumentState(

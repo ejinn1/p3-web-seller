@@ -57,6 +57,10 @@ export function useSellerInquiryStomp(inquiryId: string, enabled = true) {
             );
 
             void queryClient.invalidateQueries({
+              queryKey: inquiryKeys.timeline(inquiryId),
+            });
+
+            void queryClient.invalidateQueries({
               predicate: (query) => isSellerInquiryListKey(query.queryKey),
             });
 

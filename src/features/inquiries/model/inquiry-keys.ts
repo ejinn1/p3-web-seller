@@ -6,4 +6,6 @@ export const inquiryKeys = {
     [...inquiryKeys.all, inquiryId, "detail"] as const,
   list: (params: SellerInquiryListParams = {}) =>
     [...inquiryKeys.all, "list", params] as const,
+  timeline: (inquiryId: string) =>
+    [...inquiryKeys.all, inquiryId, "timeline"] as const,
 };

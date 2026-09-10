@@ -296,4 +296,9 @@ export type InquiryDetail = {
   messages: InquiryChatMessage[];
   order: InquiryOrderConfirmation;
   ordersBySubmissionId: Record<string, InquiryOrderConfirmation>;
+  timelineContext: {
+    confirmationAmountsById: Record<string, number>;
+    startReferenceImageUrl: string | null;
+    submissionsById: Record<string, InquiryOrderFormSubmissionResponse>;
+  };
 };
