@@ -13,12 +13,11 @@ type StoreInformationFormProps = {
   isDescriptionSaving: boolean;
   onDescriptionSave: (description: string) => Promise<void>;
   onDescriptionSaved: () => void;
-  pickupAddress?: string | null;
+  storeAddress?: string | null;
   refundPeriod?: string | null;
   store?: Store;
   storeQueryIsError: boolean;
   onBusinessHoursClick: () => void;
-  onPickupLocationClick: () => void;
   onRefundPeriodClick: () => void;
 };
 
@@ -148,12 +147,11 @@ export function StoreInformationForm({
   isDescriptionSaving,
   onDescriptionSave,
   onDescriptionSaved,
-  pickupAddress,
+  storeAddress,
   refundPeriod,
   store,
   storeQueryIsError,
   onBusinessHoursClick,
-  onPickupLocationClick,
   onRefundPeriodClick,
 }: StoreInformationFormProps) {
   const [description, setDescription] = useState(store?.description ?? "");
@@ -190,11 +188,10 @@ export function StoreInformationForm({
       />
       <section className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pt-6 pb-4">
         <StoreInformationField
-          label="픽업 장소"
-          maxLength={100}
-          placeholder="픽업 장소를 설정해주세요"
-          value={pickupAddress}
-          onClick={onPickupLocationClick}
+          label="스토어 위치"
+          maxLength={255}
+          placeholder="등록된 스토어 위치가 없습니다"
+          value={storeAddress}
         />
         <StoreInformationField
           label="영업시간"
