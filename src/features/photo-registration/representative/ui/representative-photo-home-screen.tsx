@@ -237,7 +237,6 @@ export function RepresentativePhotoHomeScreen() {
 
       pendingPhotos.forEach((photo) => revokePreviewUrl(photo.localPreviewUrl));
       setUploadedPhotos([]);
-      router.push("/seller/photo-registration/gallery");
     } catch {
       // The mutation state is rendered on the current screen.
     }
@@ -374,18 +373,26 @@ export function RepresentativePhotoHomeScreen() {
           </p>
         ) : null}
       </section>
-      <div className="px-4 pt-4 pb-[34px]">
+      <div className="flex gap-2 px-4 pt-4 pb-[34px]">
         <Button
-          className="h-[52px] rounded-seller-md text-seller-heading-md font-semibold tracking-[-0.54px]"
+          className="h-11 flex-1 rounded-seller-md text-[15px] font-semibold"
+          onClick={() => router.push("/seller/photo-registration/gallery")}
+          size="md"
+          variant="outline"
+        >
+          갤러리 등록하기
+        </Button>
+        <Button
+          className="h-11 flex-1 rounded-seller-md text-[15px] font-semibold"
           disabled={
             isSubmitting ||
+            pendingPhotos.length === 0 ||
             photoCount < MIN_REPRESENTATIVE_PHOTO_COUNT ||
             hasProcessingPhotos ||
             hasFailedPhoto
           }
-          fullWidth
           onClick={handleRegister}
-          size="lg"
+          size="md"
         >
           대표사진 등록하기
         </Button>

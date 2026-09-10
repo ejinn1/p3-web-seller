@@ -312,11 +312,11 @@ function StoreBusinessHoursForm({
       </section>
       <div className="px-4 pt-4 pb-[34px]">
         <Button
-          className="h-[52px] rounded-seller-md text-seller-heading-md font-semibold tracking-[-0.54px]"
+          className="h-11 rounded-seller-md text-[15px] font-semibold"
           disabled={!canSave || isSaving}
           fullWidth
           onClick={() => void handleSave()}
-          size="lg"
+          size="md"
         >
           {isSaving ? "저장 중..." : "다음"}
         </Button>
