@@ -1,6 +1,6 @@
 "use client";
 
-import { Minus, Plus, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useState } from "react";
 import { BottomSheet } from "@/components/common/bottom-sheet";
 import { Button } from "@/components/common/button";
@@ -38,7 +38,6 @@ export function OrderFormOptionSheet({
     initialOption?.description ?? "",
   );
   const [example, setExample] = useState(initialOption?.example ?? "");
-  const [imageCount, setImageCount] = useState(initialOption?.imageCount ?? 1);
   const [type, setType] = useState<OrderFormDraftOptionType>(
     initialOption?.type ?? "SELECT",
   );
@@ -53,7 +52,6 @@ export function OrderFormOptionSheet({
     onComplete({
       description: description.trim(),
       example: example.trim(),
-      imageCount,
       label: label.trim(),
       price,
       type,
@@ -200,69 +198,27 @@ export function OrderFormOptionSheet({
                     </span>
                   </span>
                 </label>
-                <div className="flex gap-4">
-                  <label className="flex min-w-0 flex-1 flex-col gap-2">
-                    <span className="flex items-center gap-1 text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-tertiary">
-                      가격
-                      <span className="relative -top-1 text-[15px] leading-4 font-semibold text-text-error">
-                        *
-                      </span>
+                <label className="flex flex-col gap-2">
+                  <span className="flex items-center gap-1 text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-tertiary">
+                    가격
+                    <span className="relative -top-1 text-[15px] leading-4 font-semibold text-text-error">
+                      *
                     </span>
-                    <span className="flex flex-col items-end gap-1">
-                      <Input
-                        className="border-0 bg-surface-subtle px-4 placeholder:text-text-unavailable"
-                        inputMode="numeric"
-                        maxLength={100}
-                        onChange={(event) => setPrice(event.target.value)}
-                        placeholder="문의필요"
-                        value={price}
-                      />
-                      <span className="text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-unavailable">
-                        {price.length}/100
-                      </span>
+                  </span>
+                  <span className="flex flex-col items-end gap-1">
+                    <Input
+                      className="border-0 bg-surface-subtle px-4 placeholder:text-text-unavailable"
+                      inputMode="numeric"
+                      maxLength={100}
+                      onChange={(event) => setPrice(event.target.value)}
+                      placeholder="문의필요"
+                      value={price}
+                    />
+                    <span className="text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-unavailable">
+                      {price.length}/100
                     </span>
-                  </label>
-                  <div className="flex min-w-0 flex-1 flex-col gap-2">
-                    <span className="text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-tertiary">
-                      사진 첨부수량
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        aria-label="사진 첨부수량 줄이기"
-                        className="flex size-11 shrink-0 items-center justify-center rounded-seller-sm bg-surface-subtle text-text-tertiary disabled:text-text-unavailable"
-                        disabled={imageCount === 1}
-                        onClick={() =>
-                          setImageCount((count) => Math.max(1, count - 1))
-                        }
-                        type="button"
-                      >
-                        <Minus
-                          aria-hidden="true"
-                          className="size-6"
-                          strokeWidth={2}
-                        />
-                      </button>
-                      <div className="flex h-11 min-w-0 flex-1 items-center justify-center rounded-seller-sm bg-surface-subtle text-seller-heading-lg font-bold tracking-[-0.2px]">
-                        {imageCount}
-                      </div>
-                      <button
-                        aria-label="사진 첨부수량 늘리기"
-                        className="flex size-11 shrink-0 items-center justify-center rounded-seller-sm bg-surface-subtle text-text-tertiary disabled:text-text-unavailable"
-                        disabled={imageCount === 3}
-                        onClick={() =>
-                          setImageCount((count) => Math.min(3, count + 1))
-                        }
-                        type="button"
-                      >
-                        <Plus
-                          aria-hidden="true"
-                          className="size-6"
-                          strokeWidth={2}
-                        />
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                  </span>
+                </label>
                 <label className="flex flex-col gap-2">
                   <span className="text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-tertiary">
                     서브 설명

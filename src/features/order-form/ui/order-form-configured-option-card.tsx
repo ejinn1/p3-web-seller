@@ -22,7 +22,6 @@ function formatPrice(price: string) {
 export function OrderFormConfiguredOptionCard({
   description,
   example,
-  imageCount,
   index,
   label,
   onSelect,
@@ -74,7 +73,7 @@ export function OrderFormConfiguredOptionCard({
             </p>
           </div>
           <div
-            aria-label={`사진 ${imageCount}장 첨부`}
+            aria-label="사진 첨부"
             className="flex size-[100px] items-center justify-center rounded-seller-sm bg-surface-subtle text-text-tertiary"
             role="img"
           >

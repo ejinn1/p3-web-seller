@@ -112,7 +112,7 @@ export function OrderFormPreviewOption({
       <div className="flex flex-col gap-2">
         <OptionHeader groupName={groupName} option={option} />
         <div
-          aria-label={`사진 ${option.imageCount}장 첨부 영역`}
+          aria-label="사진 첨부 영역"
           className="flex size-[100px] items-center justify-center rounded-seller-sm bg-surface-subtle"
           role="img"
         >
