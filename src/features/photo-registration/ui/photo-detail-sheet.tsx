@@ -2,7 +2,7 @@ import { X } from "lucide-react";
 
 import { BottomSheet } from "@/components/common/bottom-sheet";
 import { Button } from "@/components/common/button";
-import { PHOTO_UPLOAD_ACCEPT } from "@/features/photo-registration/model/photo-upload";
+import { IMAGE_UPLOAD_ACCEPT } from "@/features/assets/model/image-upload";
 
 type PhotoDetailSheetProps = {
   alt: string;
@@ -56,7 +56,7 @@ export function PhotoDetailSheet({
           </Button>
           <label className="flex h-11 min-w-px flex-[1_0_0] cursor-pointer items-center justify-center rounded-seller-md border border-border-default px-6 text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-primary has-disabled:cursor-not-allowed has-disabled:opacity-40">
             <input
-              accept={PHOTO_UPLOAD_ACCEPT}
+              accept={IMAGE_UPLOAD_ACCEPT}
               className="sr-only"
               disabled={isSubmitting}
               onChange={(event) => {

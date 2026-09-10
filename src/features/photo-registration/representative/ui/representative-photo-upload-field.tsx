@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { PHOTO_UPLOAD_ACCEPT } from "@/features/photo-registration/model/photo-upload";
+import { IMAGE_UPLOAD_ACCEPT } from "@/features/assets/model/image-upload";
 
 type RepresentativePhotoUploadFieldProps = {
   disabled?: boolean;
@@ -16,7 +16,7 @@ export function RepresentativePhotoUploadField({
       className="flex aspect-square w-full cursor-pointer items-center justify-center overflow-hidden rounded-seller-sm bg-surface-subtle has-disabled:cursor-not-allowed has-disabled:opacity-40"
     >
       <input
-        accept={PHOTO_UPLOAD_ACCEPT}
+        accept={IMAGE_UPLOAD_ACCEPT}
         className="sr-only"
         disabled={disabled}
         onChange={(event) => {
