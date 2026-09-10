@@ -23,7 +23,7 @@ export function AccountSettingsProfileImage({
       <label
         aria-label="프로필 사진 변경"
         className={cn(
-          "relative block size-20 cursor-pointer rounded-full focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-seller-primary",
+          "relative block size-20 cursor-pointer rounded-full",
           isPending && "cursor-wait opacity-60",
         )}
       >
