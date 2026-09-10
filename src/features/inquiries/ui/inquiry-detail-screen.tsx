@@ -41,6 +41,7 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
     Boolean(process.env.NEXT_PUBLIC_P3_API_BASE_URL),
   );
   const state = parseInquiryScreenState(searchParams.get("state"));
+  const selectedSubmissionId = searchParams.get("submissionId");
   const sheet = searchParams.get("sheet");
   const modal = searchParams.get("modal");
   const markedReadInquiryRef = useRef<string | null>(null);
@@ -55,40 +56,60 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
   const [priceDraftState, setPriceDraftState] = useState<{
     drafts: Record<string, number>;
     inquiryId: string;
-  }>({ drafts: {}, inquiryId });
+    submissionId: string | null;
+  }>({ drafts: {}, inquiryId, submissionId: null });
   const [paymentRequestErrorState, setPaymentRequestErrorState] = useState<{
     inquiryId: string;
     message: string | null;
-  }>({ inquiryId, message: null });
+    submissionId: string | null;
+  }>({ inquiryId, message: null, submissionId: null });
   const [revisionRequestErrorState, setRevisionRequestErrorState] = useState<{
     inquiryId: string;
     message: string | null;
-  }>({ inquiryId, message: null });
+    submissionId: string | null;
+  }>({ inquiryId, message: null, submissionId: null });
 
   const priceDrafts =
-    priceDraftState.inquiryId === inquiryId
+    priceDraftState.inquiryId === inquiryId &&
+    priceDraftState.submissionId === selectedSubmissionId
       ? priceDraftState.drafts
       : EMPTY_PRICE_DRAFTS;
   const paymentRequestError =
-    paymentRequestErrorState.inquiryId === inquiryId
+    paymentRequestErrorState.inquiryId === inquiryId &&
+    paymentRequestErrorState.submissionId === selectedSubmissionId
       ? paymentRequestErrorState.message
       : null;
   const revisionRequestError =
-    revisionRequestErrorState.inquiryId === inquiryId
+    revisionRequestErrorState.inquiryId === inquiryId &&
+    revisionRequestErrorState.submissionId === selectedSubmissionId
       ? revisionRequestErrorState.message
       : null;
+  const usesSelectedSubmission = isSubmissionDocumentState(state);
+  const selectedSubmissionOrder =
+    selectedSubmissionId && inquiry
+      ? (inquiry.ordersBySubmissionId[selectedSubmissionId] ?? null)
+      : null;
+  const documentSourceOrder = usesSelectedSubmission
+    ? selectedSubmissionOrder
+    : (inquiry?.order ?? null);
   const documentOrder = useMemo(
-    () => (inquiry ? applyPriceDrafts(inquiry.order, priceDrafts) : null),
-    [inquiry, priceDrafts],
+    () =>
+      documentSourceOrder
+        ? applyPriceDrafts(documentSourceOrder, priceDrafts)
+        : null,
+    [documentSourceOrder, priceDrafts],
   );
   const priceRequiredOptions = useMemo(
-    () => inquiry?.order.options.filter((option) => option.needsPrice) ?? [],
-    [inquiry],
+    () =>
+      documentSourceOrder?.options.filter((option) => option.needsPrice) ?? [],
+    [documentSourceOrder],
   );
   const priceCalculation = useMemo(
     () =>
-      inquiry ? calculateInquiryOrderPrice(inquiry.order, priceDrafts) : null,
-    [inquiry, priceDrafts],
+      documentSourceOrder
+        ? calculateInquiryOrderPrice(documentSourceOrder, priceDrafts)
+        : null,
+    [documentSourceOrder, priceDrafts],
   );
   const canRequestPayment = Boolean(
     documentOrder?.orderFormSubmissionId &&
@@ -100,8 +121,8 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
 
   const navigate = (
     nextState: Parameters<typeof getInquiryDetailHref>[1],
-    overlay?: Parameters<typeof getInquiryDetailHref>[2],
-  ) => router.push(getInquiryDetailHref(inquiryId, nextState, overlay));
+    options?: Parameters<typeof getInquiryDetailHref>[2],
+  ) => router.push(getInquiryDetailHref(inquiryId, nextState, options));
 
   useEffect(() => {
     if (
@@ -149,8 +170,22 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
     return <InquiryDetailState message="상담을 불러오지 못했습니다." />;
   }
 
-  if (inquiryQuery.isLoading || !inquiry || !documentOrder) {
+  if (inquiryQuery.isLoading || !inquiry) {
     return <InquiryDetailState message="상담을 불러오는 중입니다." />;
+  }
+
+  if (usesSelectedSubmission && !selectedSubmissionId) {
+    return <InquiryDetailState message="선택한 주문서 정보가 없습니다." />;
+  }
+
+  if (usesSelectedSubmission && !selectedSubmissionOrder) {
+    return (
+      <InquiryDetailState message="선택한 주문서를 불러오지 못했습니다." />
+    );
+  }
+
+  if (!documentOrder || !documentSourceOrder) {
+    return <InquiryDetailState message="주문 정보를 불러오지 못했습니다." />;
   }
 
   const displayInquiry = { ...inquiry, order: documentOrder };
@@ -160,11 +195,15 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
       return;
     }
 
-    setPaymentRequestErrorState({ inquiryId, message: null });
+    setPaymentRequestErrorState({
+      inquiryId,
+      message: null,
+      submissionId: selectedSubmissionId,
+    });
 
     try {
       await sendConfirmationMutation.mutateAsync(
-        buildSendOrderConfirmationRequest(inquiry.order, priceDrafts),
+        buildSendOrderConfirmationRequest(documentSourceOrder, priceDrafts),
       );
       navigate("chat");
     } catch (error) {
@@ -174,6 +213,7 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
           error instanceof Error
             ? error.message
             : "결제 요청을 처리하지 못했습니다.",
+        submissionId: selectedSubmissionId,
       });
     }
   };
@@ -185,7 +225,11 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
       return;
     }
 
-    setRevisionRequestErrorState({ inquiryId, message: null });
+    setRevisionRequestErrorState({
+      inquiryId,
+      message: null,
+      submissionId: selectedSubmissionId,
+    });
 
     try {
       await requestRevisionMutation.mutateAsync(submissionId);
@@ -197,6 +241,7 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
           error instanceof Error
             ? error.message
             : "수정 요청을 처리하지 못했습니다.",
+        submissionId: selectedSubmissionId,
       });
     }
   };
@@ -210,14 +255,23 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
           onOpenPrice={
             state === "order-form"
               ? undefined
-              : () => navigate("confirmation-draft", { sheet: "price" })
+              : () =>
+                  navigate("confirmation-draft", {
+                    sheet: "price",
+                    submissionId: selectedSubmissionId ?? undefined,
+                  })
           }
           onPrimary={() => {
             if (state === "order-form") {
-              navigate("confirmation-draft");
+              navigate("confirmation-draft", {
+                submissionId: selectedSubmissionId ?? undefined,
+              });
               return;
             }
-            navigate("confirmation-priced", { modal: "payment-request" });
+            navigate("confirmation-priced", {
+              modal: "payment-request",
+              submissionId: selectedSubmissionId ?? undefined,
+            });
           }}
           onRevisionRequest={
             state === "order-form" ? handleRequestOrderFormRevision : undefined
@@ -230,11 +284,25 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
         />
         {sheet === "price" ? (
           <InquiryPriceSheet
-            onClose={() => navigate("confirmation-draft")}
+            onClose={() =>
+              navigate("confirmation-draft", {
+                submissionId: selectedSubmissionId ?? undefined,
+              })
+            }
             onConfirm={(nextDrafts) => {
-              setPriceDraftState({ drafts: nextDrafts, inquiryId });
-              setPaymentRequestErrorState({ inquiryId, message: null });
-              navigate("confirmation-priced");
+              setPriceDraftState({
+                drafts: nextDrafts,
+                inquiryId,
+                submissionId: selectedSubmissionId,
+              });
+              setPaymentRequestErrorState({
+                inquiryId,
+                message: null,
+                submissionId: selectedSubmissionId,
+              });
+              navigate("confirmation-priced", {
+                submissionId: selectedSubmissionId ?? undefined,
+              });
             }}
             options={priceRequiredOptions}
             prices={priceDrafts}
@@ -244,7 +312,11 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
           <InquiryPaymentRequestModal
             errorMessage={paymentRequestError}
             isPending={sendConfirmationMutation.isPending}
-            onCancel={() => navigate("confirmation-priced")}
+            onCancel={() =>
+              navigate("confirmation-priced", {
+                submissionId: selectedSubmissionId ?? undefined,
+              })
+            }
             onConfirm={handleSendPaymentRequest}
           />
         ) : null}
@@ -264,11 +336,25 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
       }
       onBack={() => router.push(getSellerBackHref("inquiryDetail"))}
       onOpenOrderConfirmation={() => navigate("confirmation-view")}
-      onOpenOrderForm={() => navigate("order-form")}
+      onOpenOrderForm={(submissionId) =>
+        navigate("order-form", { submissionId })
+      }
       onOpenOrderHistory={() => navigate("order-history")}
       onSend={stomp.sendMessage}
-      onWriteOrderConfirmation={() => navigate("confirmation-draft")}
+      onWriteOrderConfirmation={(submissionId) =>
+        navigate("confirmation-draft", { submissionId })
+      }
     />
+  );
+}
+
+function isSubmissionDocumentState(
+  state: ReturnType<typeof parseInquiryScreenState>,
+) {
+  return (
+    state === "order-form" ||
+    state === "confirmation-draft" ||
+    state === "confirmation-priced"
   );
 }
 

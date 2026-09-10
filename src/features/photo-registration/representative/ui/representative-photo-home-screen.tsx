@@ -7,7 +7,7 @@ import { getAssetDeliveryUrl } from "@/features/assets/model/asset-delivery";
 import { useAssetQueries } from "@/features/assets/model/asset-queries";
 import { useUploadAssetMutation } from "@/features/assets/model/asset-mutations";
 import { OrderFormHeader } from "@/features/order-form/ui/order-form-header";
-import { getPhotoUploadError } from "@/features/photo-registration/model/photo-upload";
+import { getImageUploadError } from "@/features/assets/model/image-upload";
 import {
   useCreateRepresentativeImageMutation,
   useDeleteRepresentativeImageMutation,
@@ -152,7 +152,7 @@ export function RepresentativePhotoHomeScreen() {
   const uploadPhoto = (file: File, replacement?: PendingPhoto) => {
     if (!canAddPhoto && !replacement) return;
 
-    const validationError = getPhotoUploadError(file);
+    const validationError = getImageUploadError(file);
     if (validationError) {
       setFileError(validationError);
       return;
@@ -280,7 +280,7 @@ export function RepresentativePhotoHomeScreen() {
       return;
     }
 
-    const validationError = getPhotoUploadError(file);
+    const validationError = getImageUploadError(file);
     if (validationError) {
       setFileError(validationError);
       setIsPhotoDetailSheetOpen(false);

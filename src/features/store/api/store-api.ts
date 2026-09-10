@@ -1,5 +1,7 @@
 import { getJson, sendJson } from "@/lib/api/client";
 import type {
+  SellerProfileImage,
+  SellerProfileImageInput,
   Store,
   StoreBusinessHours,
   StoreBusinessHoursInput,
@@ -22,6 +24,12 @@ export const createStore = (input: StoreInput) =>
 export const updateStoreStatus = (status: StoreStatus) =>
   sendJson<Store>("/seller/store/status", "PATCH", { status });
 export const deleteStore = () => sendJson<void>("/seller/store", "DELETE");
+export const updateSellerProfileImage = (input: SellerProfileImageInput) =>
+  sendJson<SellerProfileImage>(
+    "/seller/store/profile-image",
+    "PATCH",
+    input,
+  );
 
 export const getStoreSettings = () =>
   getJson<StoreSettings>("/seller/store/settings");

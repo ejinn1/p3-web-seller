@@ -28,18 +28,25 @@ export function parseInquiryScreenState(
 export function getInquiryDetailHref(
   inquiryId: string,
   state: InquiryScreenState,
-  overlay?: { modal?: "payment-request"; sheet?: "price" },
+  options?: {
+    modal?: "payment-request";
+    sheet?: "price";
+    submissionId?: string;
+  },
 ) {
   const params = new URLSearchParams();
 
   if (state !== "chat") {
     params.set("state", state);
   }
-  if (overlay?.sheet) {
-    params.set("sheet", overlay.sheet);
+  if (options?.submissionId) {
+    params.set("submissionId", options.submissionId);
   }
-  if (overlay?.modal) {
-    params.set("modal", overlay.modal);
+  if (options?.sheet) {
+    params.set("sheet", options.sheet);
+  }
+  if (options?.modal) {
+    params.set("modal", options.modal);
   }
 
   const query = params.toString();
