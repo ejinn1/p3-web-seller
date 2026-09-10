@@ -912,7 +912,7 @@ function InquiryRow({
               {inquiry.previewMessage}
             </p>
           </div>
-          <time className="h-full w-11 shrink-0 text-right text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-tertiary">
+          <time className="h-full shrink-0 text-right text-[11px] leading-4 font-medium tracking-[-0.11px] whitespace-nowrap text-text-tertiary">
             {inquiry.sentAt}
           </time>
         </div>
