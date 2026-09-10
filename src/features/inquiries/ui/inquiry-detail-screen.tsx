@@ -13,6 +13,7 @@ import {
 import { useSellerInquiryListStomp } from "@/features/inquiries/model/inquiry-list-stomp";
 import {
   useMarkSellerInquiryReadMutation,
+  useRequestSellerOrderFormRevisionMutation,
   useSendSellerOrderConfirmationMutation,
 } from "@/features/inquiries/model/inquiry-mutations";
 import {
@@ -47,6 +48,8 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
   const stomp = useSellerInquiryStomp(inquiryId, Boolean(inquiry));
   useSellerInquiryListStomp(currentUserQuery.data?.userId, Boolean(inquiry));
   const markReadMutation = useMarkSellerInquiryReadMutation(inquiryId);
+  const requestRevisionMutation =
+    useRequestSellerOrderFormRevisionMutation(inquiryId);
   const sendConfirmationMutation =
     useSendSellerOrderConfirmationMutation(inquiryId);
   const [priceDraftState, setPriceDraftState] = useState<{
@@ -54,6 +57,10 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
     inquiryId: string;
   }>({ drafts: {}, inquiryId });
   const [paymentRequestErrorState, setPaymentRequestErrorState] = useState<{
+    inquiryId: string;
+    message: string | null;
+  }>({ inquiryId, message: null });
+  const [revisionRequestErrorState, setRevisionRequestErrorState] = useState<{
     inquiryId: string;
     message: string | null;
   }>({ inquiryId, message: null });
@@ -65,6 +72,10 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
   const paymentRequestError =
     paymentRequestErrorState.inquiryId === inquiryId
       ? paymentRequestErrorState.message
+      : null;
+  const revisionRequestError =
+    revisionRequestErrorState.inquiryId === inquiryId
+      ? revisionRequestErrorState.message
       : null;
   const documentOrder = useMemo(
     () => (inquiry ? applyPriceDrafts(inquiry.order, priceDrafts) : null),
@@ -167,6 +178,29 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
     }
   };
 
+  const handleRequestOrderFormRevision = async () => {
+    const submissionId = documentOrder?.orderFormSubmissionId;
+
+    if (!submissionId || requestRevisionMutation.isPending) {
+      return;
+    }
+
+    setRevisionRequestErrorState({ inquiryId, message: null });
+
+    try {
+      await requestRevisionMutation.mutateAsync(submissionId);
+      navigate("chat");
+    } catch (error) {
+      setRevisionRequestErrorState({
+        inquiryId,
+        message:
+          error instanceof Error
+            ? error.message
+            : "수정 요청을 처리하지 못했습니다.",
+      });
+    }
+  };
+
   if (isInquiryDocumentState(state)) {
     return (
       <>
@@ -185,9 +219,14 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
             }
             navigate("confirmation-priced", { modal: "payment-request" });
           }}
+          onRevisionRequest={
+            state === "order-form" ? handleRequestOrderFormRevision : undefined
+          }
           order={documentOrder}
           paymentRequestDisabled={!canRequestPayment}
           paymentRequestPending={sendConfirmationMutation.isPending}
+          revisionRequestDisabled={!documentOrder.orderFormSubmissionId}
+          revisionRequestPending={requestRevisionMutation.isPending}
         />
         {sheet === "price" ? (
           <InquiryPriceSheet
@@ -208,6 +247,9 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
             onCancel={() => navigate("confirmation-priced")}
             onConfirm={handleSendPaymentRequest}
           />
+        ) : null}
+        {revisionRequestError ? (
+          <p className="sr-only">수정 요청 오류: {revisionRequestError}</p>
         ) : null}
       </>
     );

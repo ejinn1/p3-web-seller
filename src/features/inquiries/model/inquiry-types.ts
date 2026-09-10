@@ -6,6 +6,7 @@ export type InquiryStatus =
 export type InquiryTimelineItemType =
   | "MESSAGE"
   | "ORDER_FORM_SUBMISSION"
+  | "ORDER_FORM_REVISION_REQUEST"
   | "ORDER_CONFIRMATION"
   | "ORDER_CONFIRMATION_REVISION"
   | "PAYMENT_COMPLETED";
@@ -218,6 +219,13 @@ export type InquiryChatMessage =
       sentAt: string;
       summary: string;
       title: string;
+    }
+  | {
+      id: string;
+      kind: "order-form-revision-request";
+      owner: "seller";
+      sentAt: string;
+      submissionId: string;
     }
   | {
       id: string;
