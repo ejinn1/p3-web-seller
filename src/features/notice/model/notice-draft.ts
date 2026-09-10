@@ -7,6 +7,7 @@ export type NoticeDraftState = {
   ensureInitialItem: (type: NoticeType) => void;
   isInitialized: boolean;
   itemsByType: Partial<Record<NoticeType, string[]>>;
+  removeItem: (type: NoticeType, index: number) => void;
   replaceDraft: (itemsByType: NoticeDraftState["itemsByType"]) => void;
   setInitialized: () => void;
   updateItem: (type: NoticeType, index: number, content: string) => void;
@@ -37,6 +38,15 @@ export const useNoticeDraftStore = create<NoticeDraftState>()(
         }),
       isInitialized: false,
       itemsByType: {},
+      removeItem: (type, index) =>
+        set((state) => ({
+          itemsByType: {
+            ...state.itemsByType,
+            [type]: (state.itemsByType[type] ?? []).filter(
+              (_, itemIndex) => itemIndex !== index,
+            ),
+          },
+        })),
       replaceDraft: (itemsByType) => set({ itemsByType }),
       setInitialized: () => set({ isInitialized: true }),
       updateItem: (type, index, content) =>
