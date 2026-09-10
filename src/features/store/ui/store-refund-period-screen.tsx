@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, Plus } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/common/button";
@@ -12,7 +12,8 @@ import type {
   StoreRefundPolicyInput,
   StoreRefundPolicyRule,
 } from "@/features/store/model/store-types";
-import { cn } from "@/lib/utils";
+
+import { InlineSelect } from "./inline-select";
 
 type StoreRefundPeriodScreenProps = {
   onBack: () => void;
@@ -35,8 +36,11 @@ type RefundRule = {
   percentage: number;
 };
 
-const refundPercentages = [100, 80, 70, 50, 30];
-const refundDays = [0, 2, 3, 4, 5, 6, 7];
+const refundPercentages = Array.from(
+  { length: 11 },
+  (_, index) => 100 - index * 10,
+);
+const refundDays = [7, 6, 5, 4, 3, 2];
 const selectableRefundDays = new Set(refundDays);
 
 function isSelectableRefundDay(day: number | null): day is number {
@@ -57,19 +61,34 @@ function RefundRuleFields({
   rule,
   rules,
   onChange,
+  onDelete,
 }: {
   index: number;
   rule: RefundRule;
   rules: RefundRule[];
   onChange: (nextRule: RefundRule) => void;
+  onDelete: () => void;
 }) {
   const previousPercentage =
     index === 0 ? Number.POSITIVE_INFINITY : rules[index - 1].percentage;
-  const nextPercentage = rules[index + 1]?.percentage ?? 0;
+  const nextPercentage = rules[index + 1]?.percentage ?? -10;
   const selectablePercentages = refundPercentages.filter(
     (percentage) =>
       percentage < previousPercentage && percentage > nextPercentage,
   );
+  const previousDaysBefore =
+    index === 0
+      ? Number.POSITIVE_INFINITY
+      : (rules[index - 1].daysBefore ??
+        refundDays[index - 1] ??
+        Number.POSITIVE_INFINITY);
+  const nextDaysBefore = rules[index + 1]
+    ? (rules[index + 1].daysBefore ?? refundDays[index + 1] ?? 1)
+    : 1;
+  const selectableDays = refundDays.filter(
+    (day) => day < previousDaysBefore && day > nextDaysBefore,
+  );
+  const placeholderDay = refundDays[index] ?? refundDays.at(-1)!;
   const hasValue = rule.daysBefore !== null;
 
   return (
@@ -79,59 +98,44 @@ function RefundRuleFields({
           픽업 일 기준
         </p>
       ) : null}
-      <div className="flex items-center gap-2">
-        <span className="relative flex h-11 w-[100px] items-center border-b border-border-default pl-2">
-          <select
-            aria-label={`환불 비율 ${index + 1}`}
-            className="h-full w-full appearance-none bg-transparent pr-8 text-seller-display-sm font-bold tracking-[-0.66px] outline-none"
-            onChange={(event) =>
-              onChange({ ...rule, percentage: Number(event.target.value) })
-            }
-            value={rule.percentage}
+      <div className="flex items-start gap-2">
+        <InlineSelect
+          ariaLabel={`환불 비율 ${index + 1}`}
+          className="w-28 shrink-0"
+          onValueChange={(value) =>
+            onChange({ ...rule, percentage: Number(value) })
+          }
+          options={selectablePercentages.map((percentage) => ({
+            label: `${percentage}%`,
+            value: String(percentage),
+          }))}
+          placeholder={`${rule.percentage}%`}
+          value={String(rule.percentage)}
+          valueClassName="text-seller-display-sm font-bold tracking-[-0.66px]"
+        />
+        <InlineSelect
+          ariaLabel={`환불 기간 ${index + 1}`}
+          className="min-w-0 flex-1"
+          onValueChange={(value) =>
+            onChange({ ...rule, daysBefore: Number(value) })
+          }
+          options={selectableDays.map((day) => ({
+            label: `${day}일 전`,
+            value: String(day),
+          }))}
+          placeholder={`${placeholderDay}일 전`}
+          value={hasValue ? String(rule.daysBefore) : null}
+        />
+        {rules.length > 1 ? (
+          <button
+            aria-label={`환불 기간 ${index + 1} 삭제`}
+            className="flex size-11 shrink-0 items-center justify-center text-icon-default outline-none hover:text-text-error focus-visible:text-text-error"
+            onClick={onDelete}
+            type="button"
           >
-            {selectablePercentages.map((percentage) => (
-              <option key={percentage} value={percentage}>
-                {percentage}%
-              </option>
-            ))}
-          </select>
-          <ChevronDown
-            aria-hidden="true"
-            className="pointer-events-none absolute right-1 size-5 text-text-secondary"
-            strokeWidth={1.8}
-          />
-        </span>
-        <span className="relative flex h-11 min-w-0 flex-1 items-center border-b border-border-default pl-4">
-          <select
-            aria-label={`환불 기간 ${index + 1}`}
-            className={cn(
-              "h-full w-full appearance-none bg-transparent pr-10 text-base leading-6 tracking-[-0.32px] outline-none",
-              hasValue ? "text-text-primary" : "text-text-unavailable",
-            )}
-            onChange={(event) =>
-              onChange({
-                ...rule,
-                daysBefore:
-                  event.target.value === "" ? null : Number(event.target.value),
-              })
-            }
-            value={rule.daysBefore ?? ""}
-          >
-            <option disabled hidden value="">
-              7일 전
-            </option>
-            {refundDays.map((day) => (
-              <option key={day} value={day}>
-                {day === 0 ? "당일" : `${day}일 전`}
-              </option>
-            ))}
-          </select>
-          <ChevronDown
-            aria-hidden="true"
-            className="pointer-events-none absolute right-3 size-5 text-text-secondary"
-            strokeWidth={1.8}
-          />
-        </span>
+            <X aria-hidden="true" className="size-3.5" strokeWidth={2} />
+          </button>
+        ) : null}
       </div>
     </div>
   );
@@ -176,9 +180,12 @@ function StoreRefundPeriodForm({
     !isLoadError &&
     rules.every((rule) => isSelectableRefundDay(rule.daysBefore)) &&
     isOrdered;
-  const nextPercentage = refundPercentages.find(
-    (percentage) => percentage < rules.at(-1)!.percentage,
-  );
+  const nextPercentage =
+    rules.length < refundDays.length
+      ? refundPercentages.find(
+          (percentage) => percentage < rules.at(-1)!.percentage,
+        )
+      : undefined;
 
   const updateRule = (nextRule: RefundRule) => {
     setRules((currentRules) =>
@@ -186,8 +193,14 @@ function StoreRefundPeriodForm({
     );
   };
 
+  const deleteRule = (ruleId: number) => {
+    setRules((currentRules) =>
+      currentRules.filter((rule) => rule.id !== ruleId),
+    );
+  };
+
   const addRule = () => {
-    if (!nextPercentage) {
+    if (nextPercentage === undefined) {
       return;
     }
 
@@ -245,6 +258,7 @@ function StoreRefundPeriodForm({
               index={index}
               key={rule.id}
               onChange={updateRule}
+              onDelete={() => deleteRule(rule.id)}
               rule={rule}
               rules={rules}
             />
@@ -267,7 +281,7 @@ function StoreRefundPeriodForm({
         ) : null}
         <button
           className="flex h-11 w-fit items-center justify-center rounded-seller-md bg-surface-inverse pr-4 text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-inverse disabled:opacity-40"
-          disabled={!nextPercentage}
+          disabled={nextPercentage === undefined}
           onClick={addRule}
           type="button"
         >
