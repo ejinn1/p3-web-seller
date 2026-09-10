@@ -131,6 +131,7 @@ function appendTimelineItemOnce(
 function isCtaTimelineItem(item: InquiryTimelineItemResponse) {
   return (
     item.type === "ORDER_FORM_SUBMISSION" ||
+    item.type === "ORDER_FORM_REVISION_REQUEST" ||
     item.type === "ORDER_CONFIRMATION" ||
     item.type === "ORDER_CONFIRMATION_REVISION" ||
     item.type === "PAYMENT_COMPLETED"

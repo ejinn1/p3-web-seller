@@ -14,17 +14,23 @@ export function InquiryOrderDocumentScreen({
   onBack,
   onOpenPrice,
   onPrimary,
+  onRevisionRequest,
   order,
   paymentRequestDisabled = false,
   paymentRequestPending = false,
+  revisionRequestDisabled = false,
+  revisionRequestPending = false,
 }: {
   mode: InquiryDocumentMode;
   onBack: () => void;
   onOpenPrice?: () => void;
   onPrimary?: () => void;
+  onRevisionRequest?: () => void;
   order: InquiryOrderConfirmation;
   paymentRequestDisabled?: boolean;
   paymentRequestPending?: boolean;
+  revisionRequestDisabled?: boolean;
+  revisionRequestPending?: boolean;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isOrderForm = mode === "order-form";
@@ -52,6 +58,9 @@ export function InquiryOrderDocumentScreen({
           isPrimaryDisabled={isPrimaryDisabled}
           isPrimaryPending={paymentRequestPending}
           onPrimary={onPrimary}
+          onRevisionRequest={onRevisionRequest}
+          revisionRequestDisabled={revisionRequestDisabled}
+          revisionRequestPending={revisionRequestPending}
         />
       ) : null}
       <SellerSidebar onOpenChange={setSidebarOpen} open={sidebarOpen} />
@@ -113,11 +122,17 @@ function DocumentActions({
   isPrimaryDisabled,
   isPrimaryPending,
   onPrimary,
+  onRevisionRequest,
+  revisionRequestDisabled,
+  revisionRequestPending,
 }: {
   isOrderForm: boolean;
   isPrimaryDisabled: boolean;
   isPrimaryPending: boolean;
   onPrimary?: () => void;
+  onRevisionRequest?: () => void;
+  revisionRequestDisabled: boolean;
+  revisionRequestPending: boolean;
 }) {
   return (
     <div
@@ -130,10 +145,14 @@ function DocumentActions({
         className={cn(
           "h-11 min-w-0 flex-1 rounded-seller-md border bg-surface-default text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-primary",
           isOrderForm ? "border-border-strong" : "border-border-default",
+          (revisionRequestDisabled || revisionRequestPending) &&
+            "text-text-disabled",
         )}
+        disabled={revisionRequestDisabled || revisionRequestPending}
+        onClick={isOrderForm ? onRevisionRequest : undefined}
         type="button"
       >
-        수정 요청
+        {revisionRequestPending ? "요청 중" : "수정 요청"}
       </button>
       <button
         className={cn(

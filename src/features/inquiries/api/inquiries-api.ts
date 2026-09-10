@@ -11,6 +11,7 @@ import type {
   InquiryOrderConfirmationResponse,
   InquiryOrderConfirmationPreviewResponse,
   InquiryOrderFormSubmissionResponse,
+  InquiryTimelineItemResponse,
   InquiryTimelinePageResponse,
   SellerInquiryListParams,
   SendSellerOrderConfirmationRequest,
@@ -92,6 +93,15 @@ export const getSellerOrderFormSubmission = (
 ) =>
   getJson<InquiryOrderFormSubmissionResponse>(
     `/seller/inquiries/${inquiryId}/order-form-submissions/${submissionId}`,
+  );
+
+export const requestSellerOrderFormRevision = (
+  inquiryId: string,
+  submissionId: string,
+) =>
+  sendJson<InquiryTimelineItemResponse>(
+    `/seller/inquiries/${inquiryId}/order-form-submissions/${submissionId}/revision-request`,
+    "POST",
   );
 
 export const moveSellerInquiryToTrash = (inquiryId: string) =>

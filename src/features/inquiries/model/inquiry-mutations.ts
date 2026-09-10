@@ -8,6 +8,7 @@ import {
 import {
   markSellerInquiryRead,
   moveSellerInquiryToTrash,
+  requestSellerOrderFormRevision,
   sendSellerOrderConfirmation,
 } from "@/features/inquiries/api/inquiries-api";
 import { inquiryKeys } from "@/features/inquiries/model/inquiry-keys";
@@ -107,6 +108,21 @@ function matchesSellerInquiryListParams(
   }
 
   return true;
+}
+
+export function useRequestSellerOrderFormRevisionMutation(inquiryId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (submissionId: string) =>
+      requestSellerOrderFormRevision(inquiryId, submissionId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: inquiryKeys.detail(inquiryId),
+      });
+      void queryClient.invalidateQueries({ queryKey: inquiryKeys.all });
+    },
+  });
 }
 
 export function useMoveSellerInquiryToTrashMutation() {
