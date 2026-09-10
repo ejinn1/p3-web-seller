@@ -12,8 +12,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { BottomSheet } from "@/components/common/bottom-sheet";
 import { SellerSidebar } from "@/components/widgets/seller-sidebar";
 import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
-import { useAssetQueries } from "@/features/assets/model/asset-queries";
-import type { Asset } from "@/features/assets/model/asset-types";
+import { useSellerInquiriesQuery } from "@/features/inquiries/model/inquiry-queries";
+import type { InquiryListItem } from "@/features/inquiries/model/inquiry-types";
 import {
   useSellerOrderCalendarMonthQuery,
   useSellerOrderDetailQuery,
@@ -23,10 +23,6 @@ import type {
   OrderCalendarItem,
   SellerOrderDetailResponse,
 } from "@/features/orders/model/order-calendar-types";
-import {
-  getReferenceAssetIds,
-  getReferenceThumbnailUrl,
-} from "@/features/orders/model/order-reference-assets";
 import { useStoreQuery } from "@/features/store/model/store-queries";
 import { getSellerBackHref } from "@/lib/navigation/seller-back-routes";
 import { cn } from "@/lib/utils";
@@ -69,7 +65,15 @@ export function SellerOrderCalendarScreen() {
 
   const calendarQuery = useSellerOrderCalendarMonthQuery({ month, year });
   const storeQuery = useStoreQuery();
+  const inquiriesQuery = useSellerInquiriesQuery();
   const calendar = calendarQuery.data;
+  const inquiryById = useMemo(
+    () =>
+      new Map(
+        (inquiriesQuery.data ?? []).map((inquiry) => [inquiry.id, inquiry]),
+      ),
+    [inquiriesQuery.data],
+  );
   const storeOpenedDate = getStoreOpenedDate(storeQuery.data?.createdAt);
   const previousCalendarMonth = shiftCalendarMonth(year, month, -1);
   const selectedDay = calendar?.days.find((day) => day.date === activeDate);
@@ -162,6 +166,7 @@ export function SellerOrderCalendarScreen() {
         <SellerOrderListView
           date={activeDate}
           day={selectedDay}
+          inquiryById={inquiryById}
           onBack={() => {
             suppressListRedirectForDateRef.current = activeDate;
             updateParams({ orderId: null, view: null });
@@ -169,7 +174,7 @@ export function SellerOrderCalendarScreen() {
           onClearDate={() => updateParams({ date: null, view: null })}
           onMenu={() => setSidebarOpen(true)}
           onOpenDetail={(orderId) =>
-            updateParams({ orderId, view: "detail", date: activeDate })
+            router.push(`/seller/orders/${orderId}?view=selected`)
           }
         />
         <SellerSidebar onOpenChange={setSidebarOpen} open={sidebarOpen} />
@@ -528,6 +533,7 @@ function OrderCalendarGrid({
 function SellerOrderListView({
   date,
   day,
+  inquiryById,
   onBack,
   onClearDate,
   onMenu,
@@ -535,25 +541,13 @@ function SellerOrderListView({
 }: {
   date: string;
   day?: OrderCalendarDay;
+  inquiryById: Map<string, InquiryListItem>;
   onBack: () => void;
   onClearDate: () => void;
   onMenu: () => void;
   onOpenDetail: (orderId: string) => void;
 }) {
   const orders = useMemo(() => day?.orders ?? [], [day?.orders]);
-  const referenceAssetIds = useMemo(
-    () =>
-      getReferenceAssetIds(
-        orders.flatMap((order) => order.startReferenceAssets ?? []),
-      ),
-    [orders],
-  );
-  const referenceAssetQueries = useAssetQueries(referenceAssetIds);
-  const referenceAssetById = new Map(
-    referenceAssetQueries.flatMap((assetQuery) =>
-      assetQuery.data ? [[assetQuery.data.id, assetQuery.data] as const] : [],
-    ),
-  );
 
   return (
     <SellerResponsiveFrame>
@@ -603,7 +597,7 @@ function SellerOrderListView({
                   key={order.orderId}
                   onClick={() => onOpenDetail(order.orderId)}
                   order={order}
-                  referenceAssetById={referenceAssetById}
+                  inquiry={inquiryById.get(order.inquiryId)}
                 />
               ))
             ) : (
@@ -620,46 +614,32 @@ function SellerOrderListView({
 
 function OrderListItem({
   highlighted,
+  inquiry,
   onClick,
   order,
-  referenceAssetById,
 }: {
   highlighted?: boolean;
+  inquiry?: InquiryListItem;
   onClick: () => void;
   order: OrderCalendarItem;
-  referenceAssetById: Map<string, Asset>;
 }) {
-  const thumbnailUrl = getReferenceThumbnailUrl(
-    order.startReferenceAssets,
-    referenceAssetById,
-  );
-
   return (
     <button
       className={cn(
-        "flex h-[102px] w-full items-start gap-4 p-4 text-left",
+        "flex w-full flex-col items-start justify-between p-4 text-left",
+        highlighted ? "h-[102px]" : "h-24",
         highlighted ? "bg-surface-subtle" : "bg-surface-default",
       )}
       data-testid="calendar-order-item"
       onClick={onClick}
       type="button"
     >
-      <div className="size-[70px] shrink-0 overflow-hidden rounded-seller-sm bg-surface-subtle">
-        {thumbnailUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            alt=""
-            className="size-full object-cover"
-            src={thumbnailUrl}
-          />
-        ) : null}
-      </div>
-      <div className="flex h-[70px] min-w-0 flex-1 flex-col items-start justify-between whitespace-nowrap">
+      <div className="flex h-full min-w-0 flex-col items-start justify-between whitespace-nowrap">
         <p className="text-[18px] leading-6 font-semibold tracking-[-0.54px] text-text-primary">
           {formatPickupTime(order.pickupTime)}
         </p>
         <p className="min-w-full overflow-hidden text-[13px] leading-[18px] font-normal tracking-[-0.13px] text-ellipsis text-text-tertiary">
-          {formatKoreanDate(order.pickupDate)} · 고객 님
+          {formatKoreanDate(order.pickupDate)} · {inquiry?.buyerName ?? "고객"} 님
         </p>
         <p className="text-[15px] leading-[22px] font-semibold tracking-[-0.15px] text-text-secondary">
           {formatWon(order.paidAmount)}
@@ -681,20 +661,6 @@ function SellerOrderDetailView({
   onMenu: () => void;
 }) {
   const order = detail?.order;
-  const referenceAssetIds = useMemo(
-    () => getReferenceAssetIds(order?.startReferenceAssets ?? []),
-    [order?.startReferenceAssets],
-  );
-  const referenceAssetQueries = useAssetQueries(referenceAssetIds);
-  const referenceAssetById = new Map(
-    referenceAssetQueries.flatMap((assetQuery) =>
-      assetQuery.data ? [[assetQuery.data.id, assetQuery.data] as const] : [],
-    ),
-  );
-  const thumbnailUrl = getReferenceThumbnailUrl(
-    order?.startReferenceAssets,
-    referenceAssetById,
-  );
   const optionLines =
     detail && detail.optionRows.length > 0
       ? detail.optionRows.map((row) => ({
@@ -755,16 +721,6 @@ function SellerOrderDetailView({
                     {formatWon(order.paidAmount)}
                   </p>
                 </div>
-                {thumbnailUrl ? (
-                  <div className="size-[96px] overflow-hidden rounded-seller-sm bg-surface-subtle">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      alt="주문 참조 이미지"
-                      className="size-full object-cover"
-                      src={thumbnailUrl}
-                    />
-                  </div>
-                ) : null}
               </div>
               <div
                 className="h-px w-full bg-surface-subtle opacity-90"

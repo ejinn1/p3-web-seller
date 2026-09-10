@@ -1,21 +1,27 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/common/button";
 import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
 import { SellerSidebar } from "@/components/widgets/seller-sidebar";
-import { useAssetQueries } from "@/features/assets/model/asset-queries";
-import type { Asset } from "@/features/assets/model/asset-types";
+import { getInquiryOrderOptionRows } from "@/features/inquiries/model/inquiry-adapters";
+import type {
+  InquiryChatDetailResponse,
+  InquiryOrderConfirmationResponse,
+  InquiryOrderFormSubmissionResponse,
+  InquiryReferenceAssetResponse,
+} from "@/features/inquiries/model/inquiry-types";
 import {
   useCompleteSellerOrderPickupMutation,
   useRefundSellerOrderMutation,
 } from "@/features/orders/model/order-mutations";
-import { useSellerOrderQuery } from "@/features/orders/model/order-queries";
 import {
-  getReferenceAssetIds,
-  getReferenceThumbnailUrl,
-} from "@/features/orders/model/order-reference-assets";
+  useSellerOrderConfirmationQuery,
+  useSellerOrderInquiryQuery,
+  useSellerOrderQuery,
+  useSellerOrderSubmissionQuery,
+} from "@/features/orders/model/order-queries";
 import type {
   SellerOrderDetail,
   SellerOrderViewModel,
@@ -36,17 +42,24 @@ export function SellerOrderDetailScreen({ orderId }: { orderId: string }) {
   const query = useSellerOrderQuery(orderId);
   const pickupMutation = useCompleteSellerOrderPickupMutation(orderId);
   const refundMutation = useRefundSellerOrderMutation(orderId);
-  const referenceAssetIds = useMemo(
-    () => getReferenceAssetIds(query.data?.order.startReferenceAssets ?? []),
-    [query.data?.order.startReferenceAssets],
+  const order = query.data?.order ?? null;
+  const inquiryQuery = useSellerOrderInquiryQuery(order?.inquiryId ?? null);
+  const confirmationQuery = useSellerOrderConfirmationQuery(
+    order?.inquiryId ?? null,
+    order?.confirmationId ?? null,
   );
-  const referenceAssetQueries = useAssetQueries(referenceAssetIds);
-  const referenceAssetById = new Map(
-    referenceAssetQueries.flatMap((assetQuery) =>
-      assetQuery.data ? [[assetQuery.data.id, assetQuery.data] as const] : [],
-    ),
+  const submissionId = confirmationQuery.data?.orderFormSubmissionId ?? null;
+  const submissionQuery = useSellerOrderSubmissionQuery(
+    order?.inquiryId ?? null,
+    submissionId,
   );
-  const view = query.data ? toDetailView(query.data, referenceAssetById) : null;
+  const view = query.data
+    ? toDetailView(query.data, {
+        confirmation: confirmationQuery.data,
+        inquiry: inquiryQuery.data,
+        submission: submissionQuery.data,
+      })
+    : null;
   const isLoading = query.isLoading;
   const isError = query.isError;
 
@@ -160,16 +173,6 @@ function OrderDetailCard({
             {formatPrice(view.order.paidAmount)}
           </p>
         </div>
-        {view.viewModel.thumbnailUrl ? (
-          <div className="size-[96px] overflow-hidden rounded-seller-sm bg-surface-subtle">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              alt="주문 참조 이미지"
-              className="size-full object-cover"
-              src={view.viewModel.thumbnailUrl}
-            />
-          </div>
-        ) : null}
       </div>
       <div className="h-px w-full bg-surface-subtle opacity-90" />
       <div className="flex flex-col gap-6">
@@ -192,10 +195,42 @@ function OrderDetailCard({
                 </p>
               ) : null}
             </div>
+            <OrderOptionAssetPreviewList assets={row.assetPreviews} />
           </div>
         ))}
       </div>
     </article>
+  );
+}
+
+function OrderOptionAssetPreviewList({
+  assets,
+}: {
+  assets?: SellerOrderViewModel["detailRows"][number]["assetPreviews"];
+}) {
+  if (!assets?.length) {
+    return null;
+  }
+
+  return (
+    <div
+      className="flex gap-2 overflow-x-auto pb-1"
+      data-qa="orders-detail-option-assets"
+    >
+      {assets.map((asset, index) => (
+        <div
+          className="size-16 shrink-0 overflow-hidden rounded-seller-sm bg-surface-subtle"
+          key={`${asset.assetId}-${index}`}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            alt="첨부 이미지 미리보기"
+            className="size-full object-cover"
+            src={asset.deliveryUrl}
+          />
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -234,17 +269,19 @@ type DetailView = {
 
 function toDetailView(
   detail: SellerOrderDetail,
-  referenceAssetById: Map<string, Asset>,
+  relations: {
+    confirmation?: InquiryOrderConfirmationResponse | null;
+    inquiry?: InquiryChatDetailResponse | null;
+    submission?: InquiryOrderFormSubmissionResponse | null;
+  } = {},
 ): DetailView {
   const startReferenceAssets = detail.order.startReferenceAssets ?? [];
-  const detailRows =
-    detail.optionRows.length > 0
-      ? detail.optionRows.map((row) => ({
-          label: row.label,
-          price: row.amount,
-          value: row.value,
-        }))
-      : parseOptionRows(detail.order.optionSummary);
+  const detailRows = buildDetailRows(detail, relations);
+  const buyerName = relations.inquiry?.participant.name ?? "고객";
+  const storeName =
+    relations.confirmation?.storeNameSnapshot ??
+    relations.inquiry?.storeName ??
+    "스토어";
 
   return {
     detail,
@@ -252,15 +289,55 @@ function toDetailView(
     viewModel: {
       ...detail.order,
       startReferenceAssets,
-      buyerName: "고객",
+      buyerName,
+      detailBuyerName: buyerName,
       detailRows,
-      storeName: "스토어",
-      thumbnailUrl: getReferenceThumbnailUrl(
-        startReferenceAssets,
-        referenceAssetById,
-      ),
+      selectedRows: detailRows,
+      storeName,
+      thumbnailUrl: null,
     },
   };
+}
+
+function buildDetailRows(
+  detail: SellerOrderDetail,
+  relations: {
+    confirmation?: InquiryOrderConfirmationResponse | null;
+    submission?: InquiryOrderFormSubmissionResponse | null;
+  },
+) {
+  const referenceAssetsById = new Map<string, InquiryReferenceAssetResponse>(
+    (relations.submission?.referenceAssets ?? []).map((asset) => [
+      asset.assetId,
+      asset,
+    ]),
+  );
+  const hydratedRows = getInquiryOrderOptionRows(
+    relations.confirmation?.optionRows,
+    relations.confirmation?.summaryText,
+    relations.submission?.optionRows,
+    relations.submission?.answers,
+    relations.confirmation?.additionalItems,
+    referenceAssetsById,
+  );
+
+  if (hydratedRows.length > 0) {
+    return hydratedRows.map((row) => ({
+      assetPreviews: row.assetPreviews,
+      label: row.label,
+      price: row.amount,
+      priceText: row.priceLabel ?? undefined,
+      value: row.value,
+    }));
+  }
+
+  return detail.optionRows.length > 0
+    ? detail.optionRows.map((row) => ({
+        label: row.label,
+        price: row.amount,
+        value: row.value,
+      }))
+    : parseOptionRows(detail.order.optionSummary);
 }
 
 function formatDateTime(value: string) {

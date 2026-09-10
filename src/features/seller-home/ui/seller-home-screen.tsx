@@ -11,7 +11,9 @@ import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-fr
 import { useCurrentUserQuery } from "@/features/auth/model/auth-queries";
 import { getInquiryDetailHref } from "@/features/inquiries/model/inquiry-detail-state";
 import { useSellerInquiryListStomp } from "@/features/inquiries/model/inquiry-list-stomp";
+import { useSellerInquiriesQuery } from "@/features/inquiries/model/inquiry-queries";
 import { useSellerOrdersQuery } from "@/features/orders/model/order-queries";
+import { getReferenceAssetThumbnailUrl } from "@/features/orders/model/order-reference-assets";
 import type {
   SellerOrderListItem,
   SellerOrderStatus,
@@ -45,6 +47,7 @@ export function SellerHomeScreen() {
   const dashboardQuery = useSellerHomeDashboardQuery();
   const currentUserQuery = useCurrentUserQuery(!useFixtures);
   useSellerInquiryListStomp(currentUserQuery.data?.userId, !useFixtures);
+  const allInquiriesQuery = useSellerInquiriesQuery({}, !useFixtures);
 
   const view = (searchParams.get("view") ?? "home") as SellerHomeView;
   const tab = parseSellerHomeTab(searchParams.get("tab"));
@@ -118,7 +121,15 @@ export function SellerHomeScreen() {
   );
   const selectedPickups = useFixtures
     ? dashboard.pickups.filter((pickup) => pickup.pickupDate === selectedDate)
-    : (selectedPickupOrdersQuery.data ?? []).map(toSellerHomePickup);
+    : (selectedPickupOrdersQuery.data ?? []).map((order, index) =>
+        toSellerHomePickup(
+          order,
+          index,
+          allInquiriesQuery.data?.find(
+            (inquiry) => inquiry.id === order.inquiryId,
+          )?.buyerName,
+        ),
+      );
   const selectedPickupCount = useFixtures
     ? selectedPickups.length
     : (selectedPickupOrdersQuery.data?.length ??
@@ -267,8 +278,12 @@ export function SellerHomeScreen() {
               pickups={selectedPickups}
               isError={selectedPickupOrdersQuery.isError}
               isLoading={selectedPickupOrdersQuery.isLoading}
-              onChat={() => setState({ view: "chat" })}
-              onConfirmation={() => setState({ view: "confirmation" })}
+              onChat={(pickup) =>
+                router.push(getInquiryDetailHref(pickup.inquiryId, "chat"))
+              }
+              onConfirmation={(pickup) =>
+                router.push(`/seller/orders/${pickup.id}?view=selected`)
+              }
               onSelect={(id) => setState({ pickupId: id })}
             />
           ) : (
@@ -498,8 +513,8 @@ function PickupList({
 }: {
   isError: boolean;
   isLoading: boolean;
-  onChat: () => void;
-  onConfirmation: () => void;
+  onChat: (pickup: SellerHomePickup) => void;
+  onConfirmation: (pickup: SellerHomePickup) => void;
   onSelect: (id: string) => void;
   pickupId: string | null;
   pickups: SellerHomePickup[];
@@ -535,8 +550,8 @@ function PickupList({
         return (
           <PickupRow
             key={pickup.id}
-            onChat={onChat}
-            onConfirmation={onConfirmation}
+            onChat={() => onChat(pickup)}
+            onConfirmation={() => onConfirmation(pickup)}
             onSelect={() => onSelect(pickup.id)}
             pickup={pickup}
             selected={selected}
@@ -728,15 +743,21 @@ function isDefaultSelectedDate(
 function toSellerHomePickup(
   order: SellerOrderListItem,
   index: number,
+  buyerName?: string,
 ): SellerHomePickup {
+  const displayBuyerName = buyerName ?? "고객";
+
   return {
     id: order.id,
+    inquiryId: order.inquiryId,
     pickupDate: toKoreaIsoDate(order.pickupAt),
     pickupTime: formatPickupTime(order.pickupAt),
-    customerName: "고객",
-    customerMaskedName: "고객 님",
+    customerName: displayBuyerName,
+    customerMaskedName: `${displayBuyerName} 님`,
     totalPrice: order.paidAmount,
-    imageUrl: pickupImageFallbacks[index % pickupImageFallbacks.length],
+    imageUrl:
+      getReferenceAssetThumbnailUrl(order.referenceAssets) ??
+      pickupImageFallbacks[index % pickupImageFallbacks.length],
     status: toHomeOrderStatus(order.status),
   };
 }
@@ -803,13 +824,17 @@ function PickupRow({
         onClick={onSelect}
         type="button"
       >
-        <Image
-          alt=""
-          className="size-[70px] shrink-0 rounded-seller-sm object-cover"
-          height={70}
-          src={pickup.imageUrl}
-          width={70}
-        />
+        {pickup.imageUrl ? (
+          <Image
+            alt=""
+            className="size-[70px] shrink-0 rounded-seller-sm object-cover"
+            height={70}
+            src={pickup.imageUrl}
+            width={70}
+          />
+        ) : (
+          <StoreAvatar />
+        )}
         <div className="flex h-full min-w-0 flex-1 flex-col items-start justify-between whitespace-nowrap">
           <p className="text-[18px] leading-6 font-semibold tracking-[-0.54px] text-text-primary">
             {pickup.pickupTime}

@@ -1,5 +1,6 @@
 import type {
   OrderOptionRow,
+  OrderReferenceAsset,
   PaymentAttempt,
   Refund,
 } from "@/features/orders/model/order-types";
@@ -19,6 +20,7 @@ export type OrderCalendarItem = {
   orderNumber: string;
   menuName: string;
   startReferenceAssets?: string[];
+  referenceAssets?: OrderReferenceAsset[];
   paidAmount: number;
   pickupAt: string;
   pickupDate: string;
@@ -50,6 +52,7 @@ export type OrderResponse = {
   menuName: string;
   optionSummary: string;
   startReferenceAssets?: string[];
+  referenceAssets?: OrderReferenceAsset[];
   paidAmount: number;
   pickupAt: string;
   status: OrderStatus;
