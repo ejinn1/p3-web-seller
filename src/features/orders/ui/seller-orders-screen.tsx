@@ -13,15 +13,9 @@ import { BottomSheet } from "@/components/common/bottom-sheet";
 import { Header } from "@/components/common/header";
 import { SellerSidebar } from "@/components/widgets/seller-sidebar";
 import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
-import { useAssetQueries } from "@/features/assets/model/asset-queries";
-import type { Asset } from "@/features/assets/model/asset-types";
 import { useSellerInquiriesQuery } from "@/features/inquiries/model/inquiry-queries";
 import type { InquiryListItem } from "@/features/inquiries/model/inquiry-types";
 import { useSellerOrdersQuery } from "@/features/orders/model/order-queries";
-import {
-  getReferenceAssetIds,
-  getReferenceThumbnailUrl,
-} from "@/features/orders/model/order-reference-assets";
 import type {
   SellerOrderListItem,
   SellerOrderStatus,
@@ -63,19 +57,6 @@ export function SellerOrdersScreen() {
     : {};
   const query = useSellerOrdersQuery(orderListParams);
   const inquiriesQuery = useSellerInquiriesQuery();
-  const referenceAssetIds = useMemo(
-    () =>
-      getReferenceAssetIds(
-        (query.data ?? []).flatMap((order) => order.startReferenceAssets),
-      ),
-    [query.data],
-  );
-  const referenceAssetQueries = useAssetQueries(referenceAssetIds);
-  const referenceAssetById = new Map(
-    referenceAssetQueries.flatMap((assetQuery) =>
-      assetQuery.data ? [[assetQuery.data.id, assetQuery.data] as const] : [],
-    ),
-  );
   const inquiryById = useMemo(
     () =>
       new Map(
@@ -85,7 +66,7 @@ export function SellerOrdersScreen() {
   );
 
   const orders = (query.data ?? []).map((order) =>
-    toOrderViewModel(order, referenceAssetById, inquiryById.get(order.inquiryId)),
+    toOrderViewModel(order, inquiryById.get(order.inquiryId)),
   );
   const groupedOrders = useMemo(
     () => groupOrdersByPaymentDate(orders),
@@ -274,23 +255,14 @@ function OrderListItem({
   return (
     <Link
       className={cn(
-        "flex h-[102px] w-full gap-4 p-4",
+        "flex w-full flex-col items-start justify-between p-4",
+        highlighted ? "h-[102px]" : "h-24",
         highlighted ? "bg-surface-subtle" : "bg-surface-default",
       )}
       data-qa="orders-list-item"
       href={`/seller/orders/${order.id}?view=selected`}
     >
-      <div className="relative size-[70px] shrink-0 overflow-hidden rounded-seller-sm bg-surface-subtle">
-        {order.thumbnailUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            alt=""
-            className="size-full object-cover"
-            src={order.thumbnailUrl}
-          />
-        ) : null}
-      </div>
-      <div className="flex min-w-0 flex-1 flex-col justify-between whitespace-nowrap">
+      <div className="flex h-full min-w-0 flex-col items-start justify-between whitespace-nowrap">
         <p
           className="truncate text-seller-heading-md leading-6 font-semibold tracking-[-0.54px] text-text-primary"
           data-qa="orders-pickup-time"
@@ -629,7 +601,6 @@ function OrdersState({ message }: { message: string }) {
 
 function toOrderViewModel(
   order: SellerOrderListItem,
-  referenceAssetById: Map<string, Asset>,
   inquiry?: InquiryListItem,
 ): SellerOrderViewModel {
   return {
@@ -640,11 +611,7 @@ function toOrderViewModel(
       { label: "옵션", value: order.optionSummary, price: null },
     ],
     storeName: "스토어",
-    thumbnailUrl: getReferenceThumbnailUrl(
-      order.startReferenceAssets,
-      referenceAssetById,
-      order.referenceAssets,
-    ),
+    thumbnailUrl: null,
   };
 }
 

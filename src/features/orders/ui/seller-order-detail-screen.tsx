@@ -1,12 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/common/button";
 import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
 import { SellerSidebar } from "@/components/widgets/seller-sidebar";
-import { useAssetQueries } from "@/features/assets/model/asset-queries";
-import type { Asset } from "@/features/assets/model/asset-types";
 import { getInquiryOrderOptionRows } from "@/features/inquiries/model/inquiry-adapters";
 import type {
   InquiryChatDetailResponse,
@@ -24,10 +22,6 @@ import {
   useSellerOrderQuery,
   useSellerOrderSubmissionQuery,
 } from "@/features/orders/model/order-queries";
-import {
-  getReferenceAssetIds,
-  getReferenceThumbnailUrl,
-} from "@/features/orders/model/order-reference-assets";
 import type {
   SellerOrderDetail,
   SellerOrderViewModel,
@@ -48,11 +42,6 @@ export function SellerOrderDetailScreen({ orderId }: { orderId: string }) {
   const query = useSellerOrderQuery(orderId);
   const pickupMutation = useCompleteSellerOrderPickupMutation(orderId);
   const refundMutation = useRefundSellerOrderMutation(orderId);
-  const referenceAssetIds = useMemo(
-    () => getReferenceAssetIds(query.data?.order.startReferenceAssets ?? []),
-    [query.data?.order.startReferenceAssets],
-  );
-  const referenceAssetQueries = useAssetQueries(referenceAssetIds);
   const order = query.data?.order ?? null;
   const inquiryQuery = useSellerOrderInquiryQuery(order?.inquiryId ?? null);
   const confirmationQuery = useSellerOrderConfirmationQuery(
@@ -64,13 +53,8 @@ export function SellerOrderDetailScreen({ orderId }: { orderId: string }) {
     order?.inquiryId ?? null,
     submissionId,
   );
-  const referenceAssetById = new Map(
-    referenceAssetQueries.flatMap((assetQuery) =>
-      assetQuery.data ? [[assetQuery.data.id, assetQuery.data] as const] : [],
-    ),
-  );
   const view = query.data
-    ? toDetailView(query.data, referenceAssetById, {
+    ? toDetailView(query.data, {
         confirmation: confirmationQuery.data,
         inquiry: inquiryQuery.data,
         submission: submissionQuery.data,
@@ -153,7 +137,6 @@ function OrderDetailCard({
     selected && view.viewModel.selectedRows
       ? view.viewModel.selectedRows
       : view.viewModel.detailRows;
-  const hasOptionAssets = rows.some((row) => row.assetPreviews?.length);
 
   return (
     <article
@@ -190,16 +173,6 @@ function OrderDetailCard({
             {formatPrice(view.order.paidAmount)}
           </p>
         </div>
-        {view.viewModel.thumbnailUrl && !hasOptionAssets ? (
-          <div className="size-[96px] overflow-hidden rounded-seller-sm bg-surface-subtle">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              alt="주문 참조 이미지"
-              className="size-full object-cover"
-              src={view.viewModel.thumbnailUrl}
-            />
-          </div>
-        ) : null}
       </div>
       <div className="h-px w-full bg-surface-subtle opacity-90" />
       <div className="flex flex-col gap-6">
@@ -296,7 +269,6 @@ type DetailView = {
 
 function toDetailView(
   detail: SellerOrderDetail,
-  referenceAssetById: Map<string, Asset>,
   relations: {
     confirmation?: InquiryOrderConfirmationResponse | null;
     inquiry?: InquiryChatDetailResponse | null;
@@ -322,11 +294,7 @@ function toDetailView(
       detailRows,
       selectedRows: detailRows,
       storeName,
-      thumbnailUrl: getReferenceThumbnailUrl(
-        startReferenceAssets,
-        referenceAssetById,
-        detail.order.referenceAssets,
-      ),
+      thumbnailUrl: null,
     },
   };
 }
