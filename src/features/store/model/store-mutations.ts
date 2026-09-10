@@ -8,7 +8,9 @@ import {
   updateStoreRefundPolicy,
   updateStoreSettings,
   updateStoreStatus,
+  updateSellerProfileImage,
 } from "@/features/store/api/store-api";
+import { authKeys } from "@/features/auth/api/auth-keys";
 import { storeKeys } from "@/features/store/model/store-keys";
 
 export function useCreateStoreMutation() {
@@ -64,6 +66,20 @@ export function useDeleteStoreMutation() {
   return useMutation({
     mutationFn: deleteStore,
     onSuccess: () => queryClient.removeQueries({ queryKey: storeKeys.all }),
+  });
+}
+
+export function useUpdateSellerProfileImageMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updateSellerProfileImage,
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: authKeys.all }),
+        queryClient.invalidateQueries({ queryKey: storeKeys.all }),
+      ]);
+    },
   });
 }
 

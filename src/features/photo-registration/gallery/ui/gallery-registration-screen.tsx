@@ -7,7 +7,7 @@ import { getAssetDeliveryUrl } from "@/features/assets/model/asset-delivery";
 import { useAssetQueries } from "@/features/assets/model/asset-queries";
 import { useUploadAssetMutation } from "@/features/assets/model/asset-mutations";
 import { OrderFormHeader } from "@/features/order-form/ui/order-form-header";
-import { getPhotoUploadError } from "@/features/photo-registration/model/photo-upload";
+import { getImageUploadError } from "@/features/assets/model/image-upload";
 import {
   useCreateGalleryItemMutation,
   useDeleteGalleryItemMutation,
@@ -173,7 +173,7 @@ export function GalleryRegistrationScreen() {
   };
 
   const uploadPhoto = (file: File, replacement?: PendingPhoto) => {
-    const validationError = getPhotoUploadError(file);
+    const validationError = getImageUploadError(file);
     if (validationError) {
       setFileError(validationError);
       return;
@@ -290,7 +290,7 @@ export function GalleryRegistrationScreen() {
     if (pendingPhoto) {
       uploadPhoto(file, pendingPhoto);
     } else if (selectedPhoto.galleryItemId) {
-      const validationError = getPhotoUploadError(file);
+      const validationError = getImageUploadError(file);
       if (validationError) {
         setFileError(validationError);
         setIsPhotoDetailSheetOpen(false);
