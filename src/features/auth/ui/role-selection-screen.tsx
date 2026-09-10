@@ -2,6 +2,7 @@
 
 import { Header } from "@/components/common/header";
 import { roleOptions } from "@/features/auth/constants/roles";
+import { BUYER_HOME_URL } from "@/features/auth/model/authenticated-entry-route";
 import { getSellerBackHref } from "@/lib/navigation/seller-back-routes";
 
 export function RoleSelectionScreen() {
@@ -42,9 +43,9 @@ export function RoleSelectionScreen() {
                 {content}
               </a>
             ) : (
-              <button className={className} key={role.label} type="button">
+              <a className={className} href={BUYER_HOME_URL} key={role.label}>
                 {content}
-              </button>
+              </a>
             );
           })}
         </div>

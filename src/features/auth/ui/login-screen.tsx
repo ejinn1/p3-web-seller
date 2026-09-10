@@ -1,15 +1,39 @@
 "use client";
 
 import {
+  clearCognitoSession,
   CognitoError,
+  hasCognitoSession,
   startCognitoSignIn,
 } from "@/features/auth/model/cognito";
+import { resolveAuthenticatedEntryRoute } from "@/features/auth/model/authenticated-entry-route";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export function LoginScreen() {
   const [error, setError] = useState<string>();
   const [pendingProvider, setPendingProvider] = useState<"kakao" | "google">();
+  const [isResolvingSession, setIsResolvingSession] = useState(true);
+
+  useEffect(() => {
+    async function redirectAuthenticatedUser() {
+      if (!hasCognitoSession()) {
+        setIsResolvingSession(false);
+        return;
+      }
+
+      try {
+        const nextRoute = await resolveAuthenticatedEntryRoute();
+        window.location.replace(nextRoute);
+      } catch {
+        clearCognitoSession();
+        setError("로그인 상태를 확인하지 못했습니다. 다시 로그인해 주세요.");
+        setIsResolvingSession(false);
+      }
+    }
+
+    void redirectAuthenticatedUser();
+  }, []);
 
   async function handleSignIn(provider: "kakao" | "google") {
     setError(undefined);
@@ -25,6 +49,16 @@ export function LoginScreen() {
           : "로그인을 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.",
       );
     }
+  }
+
+  if (isResolvingSession) {
+    return (
+      <main className="flex min-h-dvh items-center justify-center bg-surface-default p-6 text-center text-text-primary">
+        <p aria-live="polite" className="text-sm text-text-secondary">
+          로그인 상태를 확인하고 있어요.
+        </p>
+      </main>
+    );
   }
 
   return (
