@@ -88,17 +88,19 @@ export function toInquiryDetail({
     id: detail.inquiryId,
     buyerName: detail.participant.name,
     chatInfo: "픽업 상담",
-    messages: timeline.map((item) =>
-      toChatMessage(
-        item,
-        detail.participant.userId,
-        confirmationAmounts.get(item.referenceId ?? "") ??
-          latestConfirmation?.amount ??
-          0,
-        submissionsById.get(item.referenceId ?? "") ?? null,
-        detail.startReferenceAsset?.deliveryUrl ?? null,
-      ),
-    ),
+    messages: timeline
+      .map((item) =>
+        toChatMessage(
+          item,
+          detail.participant.userId,
+          confirmationAmounts.get(item.referenceId ?? "") ??
+            latestConfirmation?.amount ??
+            0,
+          submissionsById.get(item.referenceId ?? "") ?? null,
+          detail.startReferenceAsset?.deliveryUrl ?? null,
+        ),
+      )
+      .filter(isInquiryChatMessage),
     order: toInquiryOrderConfirmation(
       detail,
       latestSubmission,
@@ -117,12 +119,16 @@ export function appendTimelineItem(
   inquiry: InquiryDetail,
   item: InquiryTimelineItemResponse,
 ): InquiryDetail {
+  const message = toChatMessage(
+    item,
+    inquiry.participantUserId,
+    inquiry.order.totalPrice,
+  );
+  if (!message) return inquiry;
+
   return {
     ...inquiry,
-    messages: [
-      ...inquiry.messages,
-      toChatMessage(item, inquiry.participantUserId, inquiry.order.totalPrice),
-    ],
+    messages: [...inquiry.messages, message],
   };
 }
 
@@ -144,7 +150,7 @@ function toChatMessage(
   confirmationAmount: number,
   submission: InquiryOrderFormSubmissionResponse | null = null,
   startReferenceImageUrl: string | null = null,
-): InquiryChatMessage {
+): InquiryChatMessage | null {
   const owner: "buyer" | "seller" =
     buyerUserId && item.senderUserId === buyerUserId ? "buyer" : "seller";
   const sentAt = formatShortTime(item.createdAt);
@@ -205,11 +211,21 @@ function toChatMessage(
     };
   }
 
+  if (item.type === "ORDER_CONFIRMATION_REVISION") {
+    return null;
+  }
+
   return {
     id: item.eventId,
     kind: "notice" as const,
     text: item.content ?? "주문 확인서가 수정되었습니다.",
   };
+}
+
+function isInquiryChatMessage(
+  message: InquiryChatMessage | null,
+): message is InquiryChatMessage {
+  return message !== null;
 }
 
 function toSubmissionOrderConfirmation(
