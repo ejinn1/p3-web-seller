@@ -50,6 +50,7 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
     Boolean(process.env.NEXT_PUBLIC_P3_API_BASE_URL),
   );
   const state = parseInquiryScreenState(searchParams.get("state"));
+  const selectedConfirmationId = searchParams.get("confirmationId");
   const selectedSubmissionId = searchParams.get("submissionId");
   const sheet = searchParams.get("sheet");
   const modal = searchParams.get("modal");
@@ -98,9 +99,16 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
     selectedSubmissionId && inquiry
       ? (inquiry.ordersBySubmissionId[selectedSubmissionId] ?? null)
       : null;
-  const documentSourceOrder = usesSelectedSubmission
-    ? selectedSubmissionOrder
-    : (inquiry?.order ?? null);
+  const selectedConfirmationOrder =
+    selectedConfirmationId && inquiry
+      ? (inquiry.confirmationsById[selectedConfirmationId] ?? null)
+      : null;
+  const documentSourceOrder =
+    state === "confirmation-view" && selectedConfirmationId
+      ? selectedConfirmationOrder
+      : usesSelectedSubmission
+        ? selectedSubmissionOrder
+        : (inquiry?.order ?? null);
   const documentOrder = useMemo(
     () =>
       documentSourceOrder
@@ -193,6 +201,16 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
     );
   }
 
+  if (
+    state === "confirmation-view" &&
+    selectedConfirmationId &&
+    !selectedConfirmationOrder
+  ) {
+    return (
+      <InquiryDetailState message="선택한 주문확인서를 불러오지 못했습니다." />
+    );
+  }
+
   if (!documentOrder || !documentSourceOrder) {
     return <InquiryDetailState message="주문 정보를 불러오지 못했습니다." />;
   }
@@ -203,7 +221,7 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
   const timelineMessages = toInquiryChatMessages(timelineItems, {
     confirmationAmountsById:
       inquiry.timelineContext.confirmationAmountsById,
-    fallbackConfirmationAmount: inquiry.order.totalPrice,
+    orderAmountsById: inquiry.timelineContext.orderAmountsById,
     participantUserId: inquiry.participantUserId,
     startReferenceImageUrl: inquiry.timelineContext.startReferenceImageUrl,
     submissionsById: inquiry.timelineContext.submissionsById,
@@ -361,11 +379,15 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
         stomp.isConnected || !process.env.NEXT_PUBLIC_P3_API_BASE_URL
       }
       onBack={() => router.push(getSellerBackHref("inquiryDetail"))}
-      onOpenOrderConfirmation={() => navigate("confirmation-view")}
+      onOpenOrderConfirmation={(confirmationId) =>
+        navigate("confirmation-view", { confirmationId })
+      }
       onOpenOrderForm={(submissionId) =>
         navigate("order-form", { submissionId })
       }
-      onOpenOrderHistory={() => navigate("order-history")}
+      onOpenOrderHistory={(orderId) =>
+        router.push(`/seller/orders/${encodeURIComponent(orderId)}`)
+      }
       onLoadOlderMessages={() => void timelineQuery.fetchNextPage()}
       onSend={stomp.sendMessage}
       onWriteOrderConfirmation={(submissionId) =>

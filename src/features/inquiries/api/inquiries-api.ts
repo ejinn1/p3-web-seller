@@ -1,4 +1,5 @@
 import { getJson, sendJson } from "@/lib/api/client";
+import { getSellerOrders } from "@/features/orders/api/orders-api";
 import {
   toInquiryDetail,
   toInquiryListItem,
@@ -46,7 +47,7 @@ export async function getSellerInquiries(
 export async function getSellerInquiry(
   inquiryId: string,
 ): Promise<InquiryDetail> {
-  const [detail, submissions, confirmations, listItems, trashItems] =
+  const [detail, submissions, confirmations, orders, listItems, trashItems] =
     await Promise.all([
       getJson<InquiryChatDetailResponse>(`/seller/inquiries/${inquiryId}`),
       getJson<InquiryOrderFormSubmissionResponse[]>(
@@ -55,6 +56,7 @@ export async function getSellerInquiry(
       getJson<InquiryOrderConfirmationResponse[]>(
         `/seller/inquiries/${inquiryId}/confirmations`,
       ),
+      getSellerOrders(),
       getJson<InquiryListApiItem[]>("/seller/inquiries"),
       getJson<InquiryListApiItem[]>("/seller/inquiries?status=TRASH"),
     ]);
@@ -69,6 +71,7 @@ export async function getSellerInquiry(
   return toInquiryDetail({
     confirmations,
     detail,
+    orders: orders.filter((order) => order.inquiryId === inquiryId),
     preview,
     submissions,
     status,
