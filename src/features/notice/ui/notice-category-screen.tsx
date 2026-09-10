@@ -33,6 +33,7 @@ export function NoticeCategoryScreen({ category }: NoticeCategoryScreenProps) {
   const currentCategoryIndex = noticeCategories.findIndex(
     (item) => item.type === category.type,
   );
+  const previousCategory = noticeCategories[currentCategoryIndex - 1];
   const nextCategory = noticeCategories[currentCategoryIndex + 1];
   const isItemLimitReached = items.length >= 6;
 
@@ -97,11 +98,17 @@ export function NoticeCategoryScreen({ category }: NoticeCategoryScreenProps) {
       <div className="flex gap-2 px-4 pt-4 pb-[34px]">
         <Button
           className="h-11 flex-1 rounded-seller-md text-[15px] font-semibold"
-          onClick={() => router.push("/seller/notice")}
+          onClick={() =>
+            router.push(
+              previousCategory
+                ? `/seller/notice/${previousCategory.slug}`
+                : "/seller/notice",
+            )
+          }
           size="md"
           variant="outline"
         >
-          확인
+          이전
         </Button>
         <Button
           className="h-11 flex-1 rounded-seller-md text-[15px] font-semibold"
