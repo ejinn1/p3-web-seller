@@ -28,6 +28,7 @@ export function NoticeCategoryScreen({ category }: NoticeCategoryScreenProps) {
   const ensureInitialItem = useNoticeDraftStore(
     (state) => state.ensureInitialItem,
   );
+  const removeItem = useNoticeDraftStore((state) => state.removeItem);
   const updateItem = useNoticeDraftStore((state) => state.updateItem);
   const currentCategoryIndex = noticeCategories.findIndex(
     (item) => item.type === category.type,
@@ -69,6 +70,7 @@ export function NoticeCategoryScreen({ category }: NoticeCategoryScreenProps) {
                   onChange={(content) =>
                     updateItem(category.type, index, content)
                   }
+                  onDelete={() => removeItem(category.type, index)}
                   value={item}
                 />
               ))}
