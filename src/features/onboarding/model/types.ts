@@ -5,6 +5,7 @@ export type SellerOnboardingInput = {
   storeName: string;
   phoneNumber: string;
   address: string;
+  detailAddress?: string | null;
   snsLink?: string | null;
 };
 
@@ -15,7 +16,23 @@ export type SellerOnboarding = {
 };
 
 export type CurrentSellerOnboarding = SellerOnboarding &
-  SellerOnboardingInput & {
+  Omit<SellerOnboardingInput, "detailAddress"> & {
     rejectionReason: string | null;
     reviewedAt: string | null;
   };
+
+export type OnboardingLocation = {
+  address: string;
+  buildingName: string;
+  jibunAddress: string;
+  zipCode: string;
+};
+
+export type OnboardingLocationSearchResult = {
+  items: {
+    buildingName: string;
+    roadAddress: string;
+    jibunAddress: string;
+    zipCode: string;
+  }[];
+};

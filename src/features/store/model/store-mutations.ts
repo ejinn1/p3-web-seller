@@ -3,7 +3,6 @@ import {
   createStore,
   completeAccountRegistration,
   deleteStore,
-  updateStore,
   updateStoreBusinessHours,
   updateStoreDescription,
   updateStoreRefundPolicy,
@@ -16,14 +15,6 @@ export function useCreateStoreMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: createStore,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: storeKeys.all }),
-  });
-}
-
-export function useUpdateStoreMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: updateStore,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: storeKeys.all }),
   });
 }

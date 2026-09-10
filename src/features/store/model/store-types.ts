@@ -51,17 +51,6 @@ export type StoreSettings = StoreSettingsInput & { storeId: string };
 
 export type StoreShareLink = { slug: string; url: string };
 
-export type StoreLocationSearchItem = {
-  buildingName: string;
-  roadAddress: string;
-  jibunAddress: string;
-  zipCode: string;
-};
-
-export type StoreLocationSearchResult = {
-  items: StoreLocationSearchItem[];
-};
-
 export type DayOfWeek =
   | "MONDAY"
   | "TUESDAY"
