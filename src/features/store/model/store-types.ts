@@ -24,6 +24,14 @@ export type Store = StoreInput & {
   updatedAt: string;
 };
 
+export type SellerProfileImageInput = {
+  profileAssetId: string | null;
+};
+
+export type SellerProfileImage = SellerProfileImageInput & {
+  profileImageDeliveryUrl: string | null;
+};
+
 export type WeeklyPickupSetting = {
   dayOfWeek:
     | "MONDAY"

@@ -15,10 +15,15 @@ export type UserProfile = {
   email: string;
   phoneNumber: string | null;
   signupProvider: SignupProvider | null;
+  profileAssetId: string | null;
+  profileImageDeliveryUrl: string | null;
   name: string;
   role: UserRole;
   status: UserStatus;
+  createdAt: string;
   nextRoute: string;
 };
 
-export type UpdateUserProfileInput = Pick<UserProfile, "email" | "name">;
+export type UpdateUserProfileInput = Pick<UserProfile, "email" | "name"> & {
+  profileAssetId?: string | null;
+};
