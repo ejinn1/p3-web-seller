@@ -302,9 +302,8 @@ export function SellerHomeScreen() {
 
 function HomeHeader({ onMenu }: { onMenu: () => void }) {
   return (
-    <Header
-      className="w-full border-none pl-4"
-      leading={
+    <header className="flex h-14 w-full shrink-0 items-center justify-between bg-surface-default pl-4">
+      <div className="flex size-12 shrink-0 items-center justify-center pr-2">
         <Image
           alt="wihada"
           className="size-8"
@@ -313,11 +312,16 @@ function HomeHeader({ onMenu }: { onMenu: () => void }) {
           src="/seller-home/wihada-symbol.svg"
           width={32}
         />
-      }
-      onMenu={onMenu}
-      showMenu
-      showNotification
-    />
+      </div>
+      <div className="flex h-11 w-24 shrink-0 items-center justify-end px-1">
+        <span aria-hidden="true" className="grid size-11 place-items-center">
+          <Image alt="" height={44} src="/seller-home/header-bell.svg" width={44} />
+        </span>
+        <button aria-label="메뉴" className="grid size-11 place-items-center" onClick={onMenu} type="button">
+          <Image alt="" height={44} src="/seller-home/header-hamburger.svg" width={44} />
+        </button>
+      </div>
+    </header>
   );
 }
 
