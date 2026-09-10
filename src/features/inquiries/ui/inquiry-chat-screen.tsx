@@ -24,10 +24,10 @@ export function InquiryChatScreen({
   isConnected: boolean;
   onBack: () => void;
   onOpenOrderConfirmation: () => void;
-  onOpenOrderForm: () => void;
+  onOpenOrderForm: (submissionId: string) => void;
   onOpenOrderHistory: () => void;
   onSend: (content: string) => void;
-  onWriteOrderConfirmation: () => void;
+  onWriteOrderConfirmation: (submissionId: string) => void;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const scrollRef = useRef<HTMLElement>(null);
