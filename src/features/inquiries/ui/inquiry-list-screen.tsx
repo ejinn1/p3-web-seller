@@ -27,7 +27,7 @@ const tabs: Array<{ label: string; status?: InquiryStatus }> = [
   { label: toInquiryStatusLabel("TRASH"), status: "TRASH" },
 ];
 
-const SWIPE_ACTION_WIDTH = 152;
+const SWIPE_ACTION_WIDTH = 104;
 const SWIPE_OPEN_THRESHOLD = 56;
 const SWIPE_START_THRESHOLD = 8;
 
@@ -266,18 +266,9 @@ function InquiryRow({
     >
       <div
         aria-hidden={!open}
-        className="absolute inset-y-0 right-4 flex items-center justify-end gap-2"
+        className="absolute inset-y-0 right-4 flex items-center justify-end"
         data-qa="inquiry-swipe-actions"
       >
-        <button
-          className="flex size-[72px] items-center justify-center rounded-seller-md bg-surface-inverse text-center text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-inverse disabled:opacity-40"
-          data-qa="inquiry-consult-action"
-          onClick={onConsult}
-          tabIndex={open ? 0 : -1}
-          type="button"
-        >
-          상담
-        </button>
         <button
           className="flex size-[72px] items-center justify-center rounded-seller-md bg-brand-destructive text-center text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-inverse disabled:opacity-40"
           data-qa="inquiry-leave-action"
