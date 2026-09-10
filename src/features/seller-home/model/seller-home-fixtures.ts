@@ -17,6 +17,7 @@ export const sellerHomeDashboardFixture = {
   pickups: [
     {
       id: "pickup-1",
+      inquiryId: "inquiry-1",
       pickupDate: "2026-08-19",
       pickupTime: "오후 02:00",
       customerName: "김지현",
@@ -27,6 +28,7 @@ export const sellerHomeDashboardFixture = {
     },
     {
       id: "pickup-2",
+      inquiryId: "inquiry-2",
       pickupDate: "2026-08-19",
       pickupTime: "오후 03:30",
       customerName: "박서연",
@@ -37,6 +39,7 @@ export const sellerHomeDashboardFixture = {
     },
     {
       id: "pickup-3",
+      inquiryId: "inquiry-1",
       pickupDate: "2026-08-19",
       pickupTime: "오후 06:00",
       customerName: "이도현",

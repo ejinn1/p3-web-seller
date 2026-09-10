@@ -8,8 +8,12 @@ import {
 import { inquiryKeys } from "@/features/inquiries/model/inquiry-keys";
 import type { SellerInquiryListParams } from "@/features/inquiries/model/inquiry-types";
 
-export function useSellerInquiriesQuery(params: SellerInquiryListParams = {}) {
+export function useSellerInquiriesQuery(
+  params: SellerInquiryListParams = {},
+  enabled = true,
+) {
   return useQuery({
+    enabled,
     queryFn: () => getSellerInquiries(params),
     queryKey: inquiryKeys.list(params),
   });
