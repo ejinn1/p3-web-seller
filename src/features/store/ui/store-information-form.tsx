@@ -13,16 +13,16 @@ type StoreInformationFormProps = {
   isDescriptionSaving: boolean;
   onDescriptionSave: (description: string) => Promise<void>;
   onDescriptionSaved: () => void;
-  pickupAddress?: string | null;
+  storeAddress?: string | null;
   refundPeriod?: string | null;
   store?: Store;
   storeQueryIsError: boolean;
   onBusinessHoursClick: () => void;
-  onPickupLocationClick: () => void;
   onRefundPeriodClick: () => void;
 };
 
 type StoreInformationFieldProps = {
+  disabled?: boolean;
   label: string;
   maxLength: number;
   multiline?: boolean;
@@ -32,6 +32,7 @@ type StoreInformationFieldProps = {
 };
 
 function StoreInformationField({
+  disabled = false,
   label,
   maxLength,
   multiline = false,
@@ -42,7 +43,13 @@ function StoreInformationField({
   const displayValue = value ?? "";
   const inputContent = (
     <span
-      className={displayValue ? "text-text-primary" : "text-text-unavailable"}
+      className={
+        disabled
+          ? "text-text-disabled"
+          : displayValue
+            ? "text-text-primary"
+            : "text-text-unavailable"
+      }
     >
       {displayValue || placeholder}
     </span>
@@ -53,7 +60,24 @@ function StoreInformationField({
     </span>
   );
 
-  const field = onClick ? (
+  const field = disabled ? (
+    <button
+      className="flex w-full cursor-not-allowed flex-col items-end gap-1 text-left"
+      disabled
+      type="button"
+    >
+      <span
+        className={`flex w-full rounded-seller-sm bg-surface-subtle px-4 text-base leading-6 tracking-[-0.32px] ${
+          multiline ? "h-[88px] items-start py-2" : "h-11 items-center truncate"
+        }`}
+      >
+        <span className={multiline ? "line-clamp-3" : "truncate"}>
+          {inputContent}
+        </span>
+      </span>
+      {counter}
+    </button>
+  ) : onClick ? (
     <button
       className="flex w-full flex-col items-end gap-1 text-left"
       onClick={onClick}
@@ -148,12 +172,11 @@ export function StoreInformationForm({
   isDescriptionSaving,
   onDescriptionSave,
   onDescriptionSaved,
-  pickupAddress,
+  storeAddress,
   refundPeriod,
   store,
   storeQueryIsError,
   onBusinessHoursClick,
-  onPickupLocationClick,
   onRefundPeriodClick,
 }: StoreInformationFormProps) {
   const [description, setDescription] = useState(store?.description ?? "");
@@ -190,11 +213,11 @@ export function StoreInformationForm({
       />
       <section className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pt-6 pb-4">
         <StoreInformationField
-          label="픽업 장소"
-          maxLength={100}
-          placeholder="픽업 장소를 설정해주세요"
-          value={pickupAddress}
-          onClick={onPickupLocationClick}
+          disabled
+          label="스토어 위치"
+          maxLength={255}
+          placeholder="등록된 스토어 위치가 없습니다"
+          value={storeAddress}
         />
         <StoreInformationField
           label="영업시간"

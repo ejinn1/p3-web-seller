@@ -5,7 +5,6 @@ import type {
   StoreBusinessHoursInput,
   StoreDescriptionInput,
   StoreInput,
-  StoreLocationSearchResult,
   StoreManagementStatus,
   StoreRefundPolicy,
   StoreRefundPolicyInput,
@@ -20,8 +19,6 @@ export const getStoreManagementStatus = () =>
   getJson<StoreManagementStatus>("/seller/store/management-status");
 export const createStore = (input: StoreInput) =>
   sendJson<Store>("/seller/store", "POST", input);
-export const updateStore = (input: StoreInput) =>
-  sendJson<Store>("/seller/store", "PATCH", input);
 export const updateStoreStatus = (status: StoreStatus) =>
   sendJson<Store>("/seller/store/status", "PATCH", { status });
 export const deleteStore = () => sendJson<void>("/seller/store", "DELETE");
@@ -44,7 +41,3 @@ export const getStoreRefundPolicy = () =>
   getJson<StoreRefundPolicy>("/seller/store/refund-policy");
 export const updateStoreRefundPolicy = (input: StoreRefundPolicyInput) =>
   sendJson<StoreRefundPolicy>("/seller/store/refund-policy", "PUT", input);
-export const searchStoreLocations = (query: string) =>
-  getJson<StoreLocationSearchResult>(
-    `/seller/store/locations/search?query=${encodeURIComponent(query)}`,
-  );
