@@ -62,7 +62,7 @@ export function SellerSidebarStoreActions({
         fullWidth
         onClick={() => void handleShare()}
         size="lg"
-        variant="secondary"
+        variant="outline"
       >
         스토어 공유
       </Button>

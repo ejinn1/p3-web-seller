@@ -29,7 +29,10 @@ export function SellerSidebar({ onOpenChange, open }: SellerSidebarProps) {
   return (
     <Dialog.Root onOpenChange={onOpenChange} open={open}>
       <Dialog.Portal>
-        <Dialog.Overlay className="seller-sidebar-overlay fixed inset-y-0 left-1/2 z-20 w-full max-w-[768px] -translate-x-1/2 bg-surface-scrim" />
+        <Dialog.Overlay
+          className="seller-sidebar-overlay fixed inset-y-0 left-1/2 z-20 w-full max-w-[768px] -translate-x-1/2 bg-surface-scrim"
+          onClick={() => onOpenChange(false)}
+        />
         <Dialog.Content asChild>
           <div className="seller-sidebar-content pointer-events-none fixed inset-y-0 left-1/2 z-20 w-full max-w-[768px] -translate-x-1/2 overflow-hidden focus:outline-none">
             <aside className="seller-sidebar-panel pointer-events-auto absolute top-0 right-0 flex h-dvh w-[300px] flex-col overflow-hidden bg-surface-elevated pb-[41px]">
