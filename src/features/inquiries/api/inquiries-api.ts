@@ -46,12 +46,9 @@ export async function getSellerInquiries(
 export async function getSellerInquiry(
   inquiryId: string,
 ): Promise<InquiryDetail> {
-  const [detail, timeline, submissions, confirmations, listItems, trashItems] =
+  const [detail, submissions, confirmations, listItems, trashItems] =
     await Promise.all([
       getJson<InquiryChatDetailResponse>(`/seller/inquiries/${inquiryId}`),
-      getJson<InquiryTimelinePageResponse>(
-        `/seller/inquiries/${inquiryId}/events?size=50`,
-      ),
       getJson<InquiryOrderFormSubmissionResponse[]>(
         `/seller/inquiries/${inquiryId}/order-form-submissions`,
       ),
@@ -75,8 +72,31 @@ export async function getSellerInquiry(
     preview,
     submissions,
     status,
-    timeline: timeline.items,
+    timeline: [],
   });
+}
+
+export type SellerInquiryTimelineParams = {
+  cursorCreatedAt?: string;
+  cursorId?: string;
+  size?: number;
+};
+
+export function getSellerInquiryTimeline(
+  inquiryId: string,
+  params: SellerInquiryTimelineParams = {},
+) {
+  const searchParams = new URLSearchParams();
+  if (params.cursorCreatedAt) {
+    searchParams.set("cursorCreatedAt", params.cursorCreatedAt);
+  }
+  if (params.cursorId) searchParams.set("cursorId", params.cursorId);
+  if (params.size) searchParams.set("size", String(params.size));
+
+  const query = searchParams.toString();
+  return getJson<InquiryTimelinePageResponse>(
+    `/seller/inquiries/${inquiryId}/events${query ? `?${query}` : ""}`,
+  );
 }
 
 export const getSellerOrderConfirmationPreview = (inquiryId: string) =>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ChevronLeft, Menu } from "lucide-react";
 import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
 import { SellerSidebar } from "@/components/widgets/seller-sidebar";
@@ -10,36 +10,118 @@ import { InquiryChatMessage } from "@/features/inquiries/ui/inquiry-chat-message
 
 export function InquiryChatScreen({
   connectionError,
+  hasOlderMessages,
   inquiry,
   isConnected,
+  isLoadingOlderMessages,
   onBack,
   onOpenOrderConfirmation,
   onOpenOrderForm,
   onOpenOrderHistory,
+  onLoadOlderMessages,
   onSend,
   onWriteOrderConfirmation,
 }: {
   connectionError?: string;
+  hasOlderMessages: boolean;
   inquiry: InquiryDetail;
   isConnected: boolean;
+  isLoadingOlderMessages: boolean;
   onBack: () => void;
   onOpenOrderConfirmation: () => void;
   onOpenOrderForm: (submissionId: string) => void;
   onOpenOrderHistory: () => void;
+  onLoadOlderMessages: () => void;
   onSend: (content: string) => void;
   onWriteOrderConfirmation: (submissionId: string) => void;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const scrollRef = useRef<HTMLElement>(null);
+  const initializedRef = useRef(false);
+  const nearBottomRef = useRef(true);
+  const previousLatestMessageIdRef = useRef(inquiry.messages.at(-1)?.id);
+  const previousOldestMessageIdRef = useRef(inquiry.messages.at(0)?.id);
+  const prependSnapshotRef = useRef<{ scrollHeight: number; scrollTop: number } | null>(null);
+  const loadRequestedRef = useRef(false);
   const writeOrderConfirmationDisabled = inquiry.status === "WAITING";
+
+  useLayoutEffect(() => {
+    const scrollArea = scrollRef.current;
+    if (!scrollArea) return;
+
+    const latestMessageId = inquiry.messages.at(-1)?.id;
+    const oldestMessageId = inquiry.messages.at(0)?.id;
+
+    if (!initializedRef.current) {
+      scrollArea.scrollTop = scrollArea.scrollHeight;
+      initializedRef.current = true;
+    } else if (
+      previousOldestMessageIdRef.current !== oldestMessageId &&
+      prependSnapshotRef.current
+    ) {
+      const snapshot = prependSnapshotRef.current;
+      scrollArea.scrollTop =
+        snapshot.scrollTop + (scrollArea.scrollHeight - snapshot.scrollHeight);
+      prependSnapshotRef.current = null;
+      loadRequestedRef.current = false;
+    } else if (
+      previousLatestMessageIdRef.current !== latestMessageId &&
+      nearBottomRef.current
+    ) {
+      scrollArea.scrollTop = scrollArea.scrollHeight;
+    }
+
+    previousLatestMessageIdRef.current = latestMessageId;
+    previousOldestMessageIdRef.current = oldestMessageId;
+  }, [inquiry.messages]);
+
+  useEffect(() => {
+    if (!isLoadingOlderMessages) {
+      loadRequestedRef.current = false;
+    }
+  }, [isLoadingOlderMessages]);
 
   useEffect(() => {
     const scrollArea = scrollRef.current;
-
-    if (scrollArea && inquiry.messages.length > 2) {
-      scrollArea.scrollTop = scrollArea.scrollHeight;
+    if (
+      !scrollArea ||
+      !hasOlderMessages ||
+      isLoadingOlderMessages ||
+      loadRequestedRef.current ||
+      scrollArea.scrollHeight > scrollArea.clientHeight + 80
+    ) {
+      return;
     }
-  }, [inquiry.messages.length]);
+
+    prependSnapshotRef.current = {
+      scrollHeight: scrollArea.scrollHeight,
+      scrollTop: scrollArea.scrollTop,
+    };
+    loadRequestedRef.current = true;
+    onLoadOlderMessages();
+  }, [hasOlderMessages, inquiry.messages, isLoadingOlderMessages, onLoadOlderMessages]);
+
+  const handleScroll = () => {
+    const scrollArea = scrollRef.current;
+    if (!scrollArea) return;
+
+    nearBottomRef.current =
+      scrollArea.scrollHeight - scrollArea.scrollTop - scrollArea.clientHeight <= 80;
+
+    if (
+      scrollArea.scrollTop <= 80 &&
+      hasOlderMessages &&
+      !isLoadingOlderMessages &&
+      !loadRequestedRef.current
+    ) {
+      prependSnapshotRef.current = {
+        scrollHeight: scrollArea.scrollHeight,
+        scrollTop: scrollArea.scrollTop,
+      };
+      loadRequestedRef.current = true;
+      onLoadOlderMessages();
+    }
+  };
 
   return (
     <SellerResponsiveFrame className="h-dvh bg-surface-subtle">
@@ -51,6 +133,7 @@ export function InquiryChatScreen({
       <section
         className="min-h-0 flex-1 overflow-y-auto bg-surface-subtle pb-6"
         data-qa="chat-scroll-area"
+        onScroll={handleScroll}
         ref={scrollRef}
       >
         <ChatDate createdAt={inquiry.createdAt} />

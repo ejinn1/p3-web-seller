@@ -82,25 +82,24 @@ export function toInquiryDetail({
       ),
     ]),
   );
+  const timelineContext = {
+    confirmationAmountsById: Object.fromEntries(confirmationAmounts),
+    startReferenceImageUrl: detail.startReferenceAsset?.deliveryUrl ?? null,
+    submissionsById: Object.fromEntries(submissionsById),
+  };
 
   return {
     createdAt: detail.createdAt,
     id: detail.inquiryId,
     buyerName: detail.participant.name,
     chatInfo: "픽업 상담",
-    messages: timeline
-      .map((item) =>
-        toChatMessage(
-          item,
-          detail.participant.userId,
-          confirmationAmounts.get(item.referenceId ?? "") ??
-            latestConfirmation?.amount ??
-            0,
-          submissionsById.get(item.referenceId ?? "") ?? null,
-          detail.startReferenceAsset?.deliveryUrl ?? null,
-        ),
-      )
-      .filter(isInquiryChatMessage),
+    messages: toInquiryChatMessages(timeline, {
+      confirmationAmountsById: timelineContext.confirmationAmountsById,
+      fallbackConfirmationAmount: latestConfirmation?.amount ?? 0,
+      participantUserId: detail.participant.userId,
+      startReferenceImageUrl: timelineContext.startReferenceImageUrl,
+      submissionsById: timelineContext.submissionsById,
+    }),
     order: toInquiryOrderConfirmation(
       detail,
       latestSubmission,
@@ -112,18 +111,45 @@ export function toInquiryDetail({
     profileImageUrl: detail.participant.profileImageDeliveryUrl,
     status,
     statusLabel: toInquiryStatusLabel(status),
+    timelineContext,
   };
+}
+
+export function toInquiryChatMessages(
+  timeline: InquiryTimelineItemResponse[],
+  context: {
+    confirmationAmountsById: Record<string, number>;
+    fallbackConfirmationAmount: number;
+    participantUserId: string | null;
+    startReferenceImageUrl: string | null;
+    submissionsById: Record<string, InquiryOrderFormSubmissionResponse>;
+  },
+): InquiryChatMessage[] {
+  return timeline
+    .map((item) =>
+      toChatMessage(
+        item,
+        context.participantUserId,
+        context.confirmationAmountsById[item.referenceId ?? ""] ??
+          context.fallbackConfirmationAmount,
+        context.submissionsById[item.referenceId ?? ""] ?? null,
+        context.startReferenceImageUrl,
+      ),
+    )
+    .filter(isInquiryChatMessage);
 }
 
 export function appendTimelineItem(
   inquiry: InquiryDetail,
   item: InquiryTimelineItemResponse,
 ): InquiryDetail {
-  const message = toChatMessage(
-    item,
-    inquiry.participantUserId,
-    inquiry.order.totalPrice,
-  );
+  const message = toInquiryChatMessages([item], {
+    confirmationAmountsById: inquiry.timelineContext.confirmationAmountsById,
+    fallbackConfirmationAmount: inquiry.order.totalPrice,
+    participantUserId: inquiry.participantUserId,
+    startReferenceImageUrl: inquiry.timelineContext.startReferenceImageUrl,
+    submissionsById: inquiry.timelineContext.submissionsById,
+  }).at(0);
   if (!message) return inquiry;
 
   return {
