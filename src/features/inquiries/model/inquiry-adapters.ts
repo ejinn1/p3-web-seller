@@ -1,5 +1,6 @@
 import { getAssetDeliveryUrl } from "@/features/assets/model/asset-delivery";
 import type { AssetVariantType } from "@/features/assets/model/asset-types";
+import type { SellerOrderListItem } from "@/features/orders/model/order-types";
 import type {
   InquiryChatDetailResponse,
   InquiryChatMessage,
@@ -49,6 +50,7 @@ export function toInquiryListItem(item: InquiryListApiItem): InquiryListItem {
 export function toInquiryDetail({
   confirmations,
   detail,
+  orders,
   preview,
   submissions,
   status = "WAITING",
@@ -56,6 +58,7 @@ export function toInquiryDetail({
 }: {
   confirmations: InquiryOrderConfirmationResponse[];
   detail: InquiryChatDetailResponse;
+  orders: SellerOrderListItem[];
   preview: InquiryOrderConfirmationPreviewResponse | null;
   submissions: InquiryOrderFormSubmissionResponse[];
   status?: InquiryStatus;
@@ -82,8 +85,22 @@ export function toInquiryDetail({
       ),
     ]),
   );
+  const confirmationsById = Object.fromEntries(
+    confirmations.map((confirmation) => [
+      confirmation.confirmationId,
+      toInquiryOrderConfirmation(
+        detail,
+        submissionsById.get(confirmation.orderFormSubmissionId) ?? null,
+        confirmation,
+        null,
+      ),
+    ]),
+  );
   const timelineContext = {
     confirmationAmountsById: Object.fromEntries(confirmationAmounts),
+    orderAmountsById: Object.fromEntries(
+      orders.map((order) => [order.id, order.paidAmount]),
+    ),
     startReferenceImageUrl: detail.startReferenceAsset?.deliveryUrl ?? null,
     submissionsById: Object.fromEntries(submissionsById),
   };
@@ -95,7 +112,7 @@ export function toInquiryDetail({
     chatInfo: "픽업 상담",
     messages: toInquiryChatMessages(timeline, {
       confirmationAmountsById: timelineContext.confirmationAmountsById,
-      fallbackConfirmationAmount: latestConfirmation?.amount ?? 0,
+      orderAmountsById: timelineContext.orderAmountsById,
       participantUserId: detail.participant.userId,
       startReferenceImageUrl: timelineContext.startReferenceImageUrl,
       submissionsById: timelineContext.submissionsById,
@@ -106,6 +123,7 @@ export function toInquiryDetail({
       latestConfirmation,
       preview,
     ),
+    confirmationsById,
     ordersBySubmissionId,
     participantUserId: detail.participant.userId,
     profileImageUrl: detail.participant.profileImageDeliveryUrl,
@@ -119,7 +137,7 @@ export function toInquiryChatMessages(
   timeline: InquiryTimelineItemResponse[],
   context: {
     confirmationAmountsById: Record<string, number>;
-    fallbackConfirmationAmount: number;
+    orderAmountsById: Record<string, number>;
     participantUserId: string | null;
     startReferenceImageUrl: string | null;
     submissionsById: Record<string, InquiryOrderFormSubmissionResponse>;
@@ -130,8 +148,8 @@ export function toInquiryChatMessages(
       toChatMessage(
         item,
         context.participantUserId,
-        context.confirmationAmountsById[item.referenceId ?? ""] ??
-          context.fallbackConfirmationAmount,
+        context.confirmationAmountsById[item.referenceId ?? ""] ?? null,
+        context.orderAmountsById[item.referenceId ?? ""] ?? null,
         context.submissionsById[item.referenceId ?? ""] ?? null,
         context.startReferenceImageUrl,
       ),
@@ -145,7 +163,7 @@ export function appendTimelineItem(
 ): InquiryDetail {
   const message = toInquiryChatMessages([item], {
     confirmationAmountsById: inquiry.timelineContext.confirmationAmountsById,
-    fallbackConfirmationAmount: inquiry.order.totalPrice,
+    orderAmountsById: inquiry.timelineContext.orderAmountsById,
     participantUserId: inquiry.participantUserId,
     startReferenceImageUrl: inquiry.timelineContext.startReferenceImageUrl,
     submissionsById: inquiry.timelineContext.submissionsById,
@@ -173,7 +191,8 @@ export function toInquiryStatusLabel(status: InquiryStatus) {
 function toChatMessage(
   item: InquiryTimelineItemResponse,
   buyerUserId: string | null,
-  confirmationAmount: number,
+  confirmationAmount: number | null,
+  orderAmount: number | null,
   submission: InquiryOrderFormSubmissionResponse | null = null,
   startReferenceImageUrl: string | null = null,
 ): InquiryChatMessage | null {
@@ -220,6 +239,7 @@ function toChatMessage(
   if (item.type === "ORDER_CONFIRMATION") {
     return {
       amount: confirmationAmount,
+      confirmationId: item.referenceId ?? "",
       id: item.eventId,
       kind: "payment-request" as const,
       owner: "seller" as const,
@@ -229,10 +249,11 @@ function toChatMessage(
 
   if (item.type === "PAYMENT_COMPLETED") {
     return {
-      amount: confirmationAmount,
+      amount: orderAmount,
       id: item.eventId,
       kind: "payment-complete" as const,
       owner: "buyer" as const,
+      orderId: item.referenceId ?? "",
       sentAt,
     };
   }

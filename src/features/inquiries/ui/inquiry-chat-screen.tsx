@@ -28,9 +28,9 @@ export function InquiryChatScreen({
   isConnected: boolean;
   isLoadingOlderMessages: boolean;
   onBack: () => void;
-  onOpenOrderConfirmation: () => void;
+  onOpenOrderConfirmation: (confirmationId: string) => void;
   onOpenOrderForm: (submissionId: string) => void;
-  onOpenOrderHistory: () => void;
+  onOpenOrderHistory: (orderId: string) => void;
   onLoadOlderMessages: () => void;
   onSend: (content: string) => void;
   onWriteOrderConfirmation: (submissionId: string) => void;

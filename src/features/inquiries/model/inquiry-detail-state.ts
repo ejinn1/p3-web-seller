@@ -29,6 +29,7 @@ export function getInquiryDetailHref(
   inquiryId: string,
   state: InquiryScreenState,
   options?: {
+    confirmationId?: string;
     modal?: "payment-request";
     sheet?: "price";
     submissionId?: string;
@@ -41,6 +42,9 @@ export function getInquiryDetailHref(
   }
   if (options?.submissionId) {
     params.set("submissionId", options.submissionId);
+  }
+  if (options?.confirmationId) {
+    params.set("confirmationId", options.confirmationId);
   }
   if (options?.sheet) {
     params.set("sheet", options.sheet);

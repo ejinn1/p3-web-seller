@@ -15,9 +15,9 @@ export function InquiryChatMessage({
 }: {
   buyerProfileImageUrl: string | null;
   message: InquiryChatMessageType;
-  onOpenOrderConfirmation: () => void;
+  onOpenOrderConfirmation: (confirmationId: string) => void;
   onOpenOrderForm: (submissionId: string) => void;
-  onOpenOrderHistory: () => void;
+  onOpenOrderHistory: (orderId: string) => void;
   writeOrderConfirmationDisabled?: boolean;
   onWriteOrderConfirmation: (submissionId: string) => void;
 }) {
@@ -125,13 +125,20 @@ export function InquiryChatMessage({
             </p>
             <div className="flex items-center justify-between text-[22px] leading-[30px] font-bold tracking-[-0.66px] text-text-primary">
               <p>최종 가격</p>
-              <p>{formatInquiryPrice(message.amount)}</p>
+              <p>
+                {message.amount === null
+                  ? "금액 확인 중"
+                  : formatInquiryPrice(message.amount)}
+              </p>
             </div>
             <p className="text-[13px] leading-4 font-medium tracking-[-0.13px] text-text-disabled">
               주문서를 확인해보세요
             </p>
           </div>
-          <ActionButton onClick={onOpenOrderConfirmation} variant="outline">
+          <ActionButton
+            onClick={() => onOpenOrderConfirmation(message.confirmationId)}
+            variant="outline"
+          >
             주문확인서 보기
           </ActionButton>
         </div>
@@ -152,13 +159,18 @@ export function InquiryChatMessage({
               결제 완료
             </p>
             <p className="text-[22px] leading-[30px] font-bold tracking-[-0.66px] text-text-primary">
-              {formatInquiryPrice(message.amount)}을 보냈어요.
+              {message.amount === null
+                ? "결제를 완료했어요."
+                : `${formatInquiryPrice(message.amount)}을 보냈어요.`}
             </p>
             <p className="text-center text-[13px] leading-4 font-medium tracking-[-0.13px] text-text-disabled">
               사장님께 결제금액을 보냈어요
             </p>
           </div>
-          <ActionButton onClick={onOpenOrderHistory} variant="outline">
+          <ActionButton
+            onClick={() => onOpenOrderHistory(message.orderId)}
+            variant="outline"
+          >
             주문내역 보기
           </ActionButton>
         </div>
