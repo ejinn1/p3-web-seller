@@ -1,11 +1,10 @@
-import { BUYER_HOME_URL } from "@/features/auth/model/authenticated-entry-route";
 import { OnboardingStatusLayout } from "@/features/onboarding/ui/onboarding-status-layout";
 
 export function OnboardingPendingScreen() {
   return (
     <OnboardingStatusLayout
-      actionHref={BUYER_HOME_URL}
-      actionLabel="홈으로 가기"
+      actionHref="/onboarding"
+      actionLabel="다시 조회하기"
       description={
         <p>
           보통 하루 안에 결과를 알려드려요.
