@@ -1,6 +1,5 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/common/button";
@@ -13,6 +12,8 @@ import type {
   StoreBusinessHoursInput,
 } from "@/features/store/model/store-types";
 import { cn } from "@/lib/utils";
+
+import { InlineSelect } from "./inline-select";
 
 type StoreBusinessHoursScreenProps = {
   onBack: () => void;
@@ -62,35 +63,19 @@ function normalizeTime(time: string) {
 
 function TimeField({ label, onChange, placeholder, value }: TimeFieldProps) {
   return (
-    <label className="flex h-11 items-center gap-4">
+    <div className="flex items-center gap-4">
       <span className="shrink-0 text-seller-heading-md font-semibold tracking-[-0.54px]">
         {label}
       </span>
-      <span className="relative flex h-11 flex-1 items-center border-b border-border-default pl-4">
-        <select
-          className={cn(
-            "h-full min-w-0 flex-1 appearance-none bg-transparent pr-12 text-base leading-6 tracking-[-0.32px] outline-none",
-            value ? "text-text-primary" : "text-text-unavailable",
-          )}
-          onChange={(event) => onChange(event.target.value)}
-          value={value ?? ""}
-        >
-          <option disabled hidden value="">
-            {placeholder}
-          </option>
-          {timeOptions.map((time) => (
-            <option key={time.value} value={time.value}>
-              {time.label}
-            </option>
-          ))}
-        </select>
-        <ChevronDown
-          aria-hidden="true"
-          className="pointer-events-none absolute right-3 size-5 text-text-secondary"
-          strokeWidth={1.8}
-        />
-      </span>
-    </label>
+      <InlineSelect
+        ariaLabel={`${label} 시간`}
+        className="min-w-0 flex-1"
+        onValueChange={onChange}
+        options={timeOptions}
+        placeholder={placeholder}
+        value={value}
+      />
+    </div>
   );
 }
 
