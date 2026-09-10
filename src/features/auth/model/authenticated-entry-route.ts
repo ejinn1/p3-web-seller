@@ -6,14 +6,18 @@ import { ApiError } from "@/lib/api/types";
 
 export const BUYER_HOME_URL = "https://wihada.com";
 
+export function isRoleSelectionRequired(user: UserSync) {
+  return (
+    !user.registered ||
+    user.registrationRequired ||
+    user.nextRoute === "ROLE_SELECTION"
+  );
+}
+
 export async function resolveAuthenticatedEntryRoute(user?: UserSync) {
   const currentUser = user ?? (await syncCurrentUser());
 
-  if (
-    !currentUser.registered ||
-    currentUser.registrationRequired ||
-    currentUser.nextRoute === "ROLE_SELECTION"
-  ) {
+  if (isRoleSelectionRequired(currentUser)) {
     return "/auth/role";
   }
 

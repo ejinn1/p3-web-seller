@@ -3,8 +3,12 @@
 import { usePathname } from "next/navigation";
 import { type ReactNode, useEffect, useState } from "react";
 
+import { syncCurrentUser } from "@/features/auth/api/auth-api";
 import { hasCognitoSession } from "@/features/auth/model/cognito";
-import { resolveAuthenticatedEntryRoute } from "@/features/auth/model/authenticated-entry-route";
+import {
+  isRoleSelectionRequired,
+  resolveAuthenticatedEntryRoute,
+} from "@/features/auth/model/authenticated-entry-route";
 
 type OnboardingRouteGuardProps = {
   children: ReactNode;
@@ -26,7 +30,16 @@ export function OnboardingRouteGuard({ children }: OnboardingRouteGuardProps) {
       }
 
       try {
-        const nextRoute = await resolveAuthenticatedEntryRoute();
+        const currentUser = await syncCurrentUser();
+
+        if (pathname === "/onboarding" && isRoleSelectionRequired(currentUser)) {
+          if (!isCancelled) {
+            setState("allowed");
+          }
+          return;
+        }
+
+        const nextRoute = await resolveAuthenticatedEntryRoute(currentUser);
 
         if (nextRoute !== pathname) {
           window.location.replace(nextRoute);
