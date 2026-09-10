@@ -8,7 +8,6 @@ export type OrderFormDraftOptionType =
 export type OrderFormDraftOption = {
   description: string;
   example: string;
-  imageCount: number;
   label: string;
   price: string;
   type: OrderFormDraftOptionType;

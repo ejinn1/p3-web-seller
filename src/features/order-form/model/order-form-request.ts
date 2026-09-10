@@ -24,10 +24,6 @@ function serializeSettings(option: OrderFormDraftOption) {
     if (option.example) settings.placeholder = option.example;
   }
 
-  if (option.type === "IMAGE") {
-    settings.maxCount = option.imageCount;
-  }
-
   if (option.type === "TEXTAREA") {
     if (option.example) settings.placeholder = option.example;
     settings.maxLength = 500;

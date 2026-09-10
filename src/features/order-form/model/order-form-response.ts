@@ -20,7 +20,6 @@ type OrderFormDraftSnapshot = {
 
 type OptionSettings = {
   helperText?: unknown;
-  maxCount?: unknown;
   placeholder?: unknown;
 };
 
@@ -55,7 +54,6 @@ function toDraftOption(option: OrderFormOption): OrderFormDraftOption {
       typeof settings.helperText === "string" ? settings.helperText : "",
     example:
       typeof settings.placeholder === "string" ? settings.placeholder : "",
-    imageCount: typeof settings.maxCount === "number" ? settings.maxCount : 1,
     label: option.label,
     price:
       option.price === null
