@@ -31,11 +31,6 @@ const formatWon = (value: number) => `${value.toLocaleString("ko-KR")}원`;
 const useFixtures =
   process.env.NEXT_PUBLIC_P3_USE_MOCKS === "true" ||
   !process.env.NEXT_PUBLIC_P3_API_BASE_URL;
-const pickupImageFallbacks = [
-  "/seller-home/cake-flower.png",
-  "/seller-home/cake-berries.png",
-  "/seller-home/cake-box.png",
-];
 
 type SellerHomeTab = "pickup" | "selected-pickup" | "waiting";
 type SellerHomeView =
@@ -121,10 +116,9 @@ export function SellerHomeScreen() {
   );
   const selectedPickups = useFixtures
     ? dashboard.pickups.filter((pickup) => pickup.pickupDate === selectedDate)
-    : (selectedPickupOrdersQuery.data ?? []).map((order, index) =>
+    : (selectedPickupOrdersQuery.data ?? []).map((order) =>
         toSellerHomePickup(
           order,
-          index,
           allInquiriesQuery.data?.find(
             (inquiry) => inquiry.id === order.inquiryId,
           )?.buyerName,
@@ -742,7 +736,6 @@ function isDefaultSelectedDate(
 
 function toSellerHomePickup(
   order: SellerOrderListItem,
-  index: number,
   buyerName?: string,
 ): SellerHomePickup {
   const displayBuyerName = buyerName ?? "고객";
@@ -755,9 +748,7 @@ function toSellerHomePickup(
     customerName: displayBuyerName,
     customerMaskedName: `${displayBuyerName} 님`,
     totalPrice: order.paidAmount,
-    imageUrl:
-      getReferenceAssetThumbnailUrl(order.referenceAssets) ??
-      pickupImageFallbacks[index % pickupImageFallbacks.length],
+    imageUrl: getReferenceAssetThumbnailUrl(order.referenceAssets),
     status: toHomeOrderStatus(order.status),
   };
 }
