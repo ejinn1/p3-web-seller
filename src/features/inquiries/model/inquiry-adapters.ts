@@ -219,6 +219,7 @@ function toChatMessage(
       kind: "order-request" as const,
       owner: "buyer" as const,
       receivedNoticeText: formatOrderReceivedNotice(item.createdAt),
+      sellerViewed: submission?.sellerViewed ?? false,
       sentAt,
       submissionId: item.referenceId ?? submission?.id ?? null,
       summary: card.summary,
@@ -380,6 +381,61 @@ function toInquiryOrderConfirmation(
       rows.map((row) => `${row.label}: ${row.value}`).join("\n") ??
       "주문확인서",
     totalPrice: confirmation?.amount ?? basePrice,
+  };
+}
+
+export function applyOrderConfirmationPreview(
+  order: InquiryOrderConfirmation,
+  preview: InquiryOrderConfirmationPreviewResponse,
+): InquiryOrderConfirmation {
+  const unconfirmedOptions = new Map(
+    preview.unconfirmedOptions.map((option) => [
+      `${option.optionGroupId}:${option.optionValue}`,
+      option,
+    ]),
+  );
+  const options = order.options.map((option) => {
+    const previewOption = unconfirmedOptions.get(option.id);
+
+    if (!previewOption) return option;
+
+    unconfirmedOptions.delete(option.id);
+    return {
+      ...option,
+      amount: null,
+      label: previewOption.label,
+      needsPrice: true,
+      optionGroupId: previewOption.optionGroupId,
+      optionValue: previewOption.optionValue,
+      priceText: previewOption.priceLabel,
+      value: previewOption.displayValue,
+    };
+  });
+
+  for (const option of unconfirmedOptions.values()) {
+    options.push({
+      amount: null,
+      id: `${option.optionGroupId}:${option.optionValue}`,
+      label: option.label,
+      needsPrice: true,
+      optionGroupId: option.optionGroupId,
+      optionValue: option.optionValue,
+      priceText: option.priceLabel,
+      value: option.displayValue,
+    });
+  }
+
+  return {
+    ...order,
+    basePrice: preview.baseAmount,
+    confirmationTitle: preview.confirmationTitle,
+    options,
+    orderFormSubmissionId: preview.orderFormSubmissionId,
+    pickupAt: preview.pickupAt,
+    pickupDate: formatFullDate(preview.pickupAt),
+    pickupTime: formatShortTime(preview.pickupAt),
+    summaryText: preview.fixedOrderSummary,
+    totalPrice: preview.baseAmount,
   };
 }
 

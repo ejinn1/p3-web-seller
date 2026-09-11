@@ -16,6 +16,7 @@ export function InquiryOrderDocumentScreen({
   onPrimary,
   onRevisionRequest,
   order,
+  orderConfirmationWriteDisabled = false,
   paymentRequestDisabled = false,
   paymentRequestPending = false,
   revisionRequestDisabled = false,
@@ -27,6 +28,7 @@ export function InquiryOrderDocumentScreen({
   onPrimary?: () => void;
   onRevisionRequest?: () => void;
   order: InquiryOrderConfirmation;
+  orderConfirmationWriteDisabled?: boolean;
   paymentRequestDisabled?: boolean;
   paymentRequestPending?: boolean;
   revisionRequestDisabled?: boolean;
@@ -35,8 +37,9 @@ export function InquiryOrderDocumentScreen({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isOrderForm = mode === "order-form";
   const isReadOnly = mode === "confirmation-view" || mode === "order-history";
-  const isPrimaryDisabled =
-    !isOrderForm && (paymentRequestDisabled || paymentRequestPending);
+  const isPrimaryDisabled = isOrderForm
+    ? orderConfirmationWriteDisabled
+    : paymentRequestDisabled || paymentRequestPending;
 
   return (
     <SellerResponsiveFrame className="h-dvh bg-surface-subtle">

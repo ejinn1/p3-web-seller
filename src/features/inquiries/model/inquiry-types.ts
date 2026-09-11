@@ -124,6 +124,8 @@ export type InquiryOrderFormSubmissionResponse = {
   referenceAssets: InquiryReferenceAssetResponse[];
   optionRows: InquiryOrderOptionRow[];
   cancellationRefundAgreed: boolean;
+  sellerViewedAt: string | null;
+  sellerViewed: boolean;
   submittedAt: string;
 };
 
@@ -181,7 +183,7 @@ export type SendSellerOrderConfirmationConfirmedOptionPrice = {
 };
 
 export type SendSellerOrderConfirmationRequest = {
-  orderFormSubmissionId: string | null;
+  orderFormSubmissionId: string;
   confirmationTitle: string;
   summaryText: string;
   amount: number;
@@ -216,6 +218,7 @@ export type InquiryChatMessage =
       owner: "buyer";
       imageUrl: string | null;
       receivedNoticeText: string;
+      sellerViewed: boolean;
       sentAt: string;
       submissionId: string | null;
       summary: string;

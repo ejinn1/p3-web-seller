@@ -63,16 +63,11 @@ export async function getSellerInquiry(
   const status = [...listItems, ...trashItems].find(
     (item) => item.inquiryId === inquiryId,
   )?.status;
-  const preview =
-    submissions.length && confirmations.length === 0
-      ? await getSellerOrderConfirmationPreview(inquiryId)
-      : null;
-
   return toInquiryDetail({
     confirmations,
     detail,
     orders: orders.filter((order) => order.inquiryId === inquiryId),
-    preview,
+    preview: null,
     submissions,
     status,
     timeline: [],
@@ -102,10 +97,18 @@ export function getSellerInquiryTimeline(
   );
 }
 
-export const getSellerOrderConfirmationPreview = (inquiryId: string) =>
-  getJson<InquiryOrderConfirmationPreviewResponse>(
-    `/seller/inquiries/${inquiryId}/confirmations/preview`,
+export const getSellerOrderConfirmationPreview = (
+  inquiryId: string,
+  submissionId: string,
+) => {
+  const searchParams = new URLSearchParams({
+    orderFormSubmissionId: submissionId,
+  });
+
+  return getJson<InquiryOrderConfirmationPreviewResponse>(
+    `/seller/inquiries/${inquiryId}/confirmations/preview?${searchParams.toString()}`,
   );
+};
 
 export const getSellerInquiryChatDetail = (inquiryId: string) =>
   getJson<InquiryChatDetailResponse>(`/seller/inquiries/${inquiryId}`);
@@ -119,6 +122,15 @@ export const getSellerOrderFormSubmission = (
 ) =>
   getJson<InquiryOrderFormSubmissionResponse>(
     `/seller/inquiries/${inquiryId}/order-form-submissions/${submissionId}`,
+  );
+
+export const markSellerOrderFormSubmissionViewed = (
+  inquiryId: string,
+  submissionId: string,
+) =>
+  sendJson<InquiryOrderFormSubmissionResponse>(
+    `/seller/inquiries/${inquiryId}/order-form-submissions/${submissionId}/view`,
+    "POST",
   );
 
 export const getSellerOrderConfirmation = (

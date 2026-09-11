@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
-import { getSellerOrderFormSubmission } from "@/features/inquiries/api/inquiries-api";
 import { useCurrentUserQuery } from "@/features/auth/model/auth-queries";
 import {
   getInquiryDetailHref,
@@ -13,6 +12,7 @@ import {
 import { useSellerInquiryListStomp } from "@/features/inquiries/model/inquiry-list-stomp";
 import {
   useMarkSellerInquiryReadMutation,
+  useMarkSellerOrderFormSubmissionViewedMutation,
   useRequestSellerOrderFormRevisionMutation,
   useSendSellerOrderConfirmationMutation,
 } from "@/features/inquiries/model/inquiry-mutations";
@@ -21,10 +21,14 @@ import {
   buildSendOrderConfirmationRequest,
   calculateInquiryOrderPrice,
 } from "@/features/inquiries/model/inquiry-order-confirmation";
-import { toInquiryChatMessages } from "@/features/inquiries/model/inquiry-adapters";
+import {
+  applyOrderConfirmationPreview,
+  toInquiryChatMessages,
+} from "@/features/inquiries/model/inquiry-adapters";
 import {
   useSellerInquiryQuery,
   useSellerInquiryTimelineQuery,
+  useSellerOrderConfirmationPreviewQuery,
 } from "@/features/inquiries/model/inquiry-queries";
 import { useSellerInquiryStomp } from "@/features/inquiries/model/inquiry-stomp";
 import type {
@@ -45,7 +49,6 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
   const inquiryQuery = useSellerInquiryQuery(inquiryId);
   const timelineQuery = useSellerInquiryTimelineQuery(inquiryId);
   const inquiry = inquiryQuery.data;
-  const refetchInquiry = inquiryQuery.refetch;
   const currentUserQuery = useCurrentUserQuery(
     Boolean(process.env.NEXT_PUBLIC_P3_API_BASE_URL),
   );
@@ -55,10 +58,12 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
   const sheet = searchParams.get("sheet");
   const modal = searchParams.get("modal");
   const markedReadInquiryRef = useRef<string | null>(null);
-  const reviewedSubmissionRef = useRef<string | null>(null);
+  const viewedSubmissionAttemptRef = useRef<string | null>(null);
   const stomp = useSellerInquiryStomp(inquiryId, Boolean(inquiry));
   useSellerInquiryListStomp(currentUserQuery.data?.userId, Boolean(inquiry));
   const markReadMutation = useMarkSellerInquiryReadMutation(inquiryId);
+  const markSubmissionViewedMutation =
+    useMarkSellerOrderFormSubmissionViewedMutation(inquiryId);
   const requestRevisionMutation =
     useRequestSellerOrderFormRevisionMutation(inquiryId);
   const sendConfirmationMutation =
@@ -95,6 +100,17 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
       ? revisionRequestErrorState.message
       : null;
   const usesSelectedSubmission = isSubmissionDocumentState(state);
+  const usesConfirmationDraft =
+    state === "confirmation-draft" || state === "confirmation-priced";
+  const selectedSubmission =
+    selectedSubmissionId && inquiry
+      ? (inquiry.timelineContext.submissionsById[selectedSubmissionId] ?? null)
+      : null;
+  const confirmationPreviewQuery = useSellerOrderConfirmationPreviewQuery(
+    inquiryId,
+    selectedSubmissionId,
+    usesConfirmationDraft && Boolean(selectedSubmission?.sellerViewed),
+  );
   const selectedSubmissionOrder =
     selectedSubmissionId && inquiry
       ? (inquiry.ordersBySubmissionId[selectedSubmissionId] ?? null)
@@ -103,11 +119,21 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
     selectedConfirmationId && inquiry
       ? (inquiry.confirmationsById[selectedConfirmationId] ?? null)
       : null;
+  const selectedSubmissionOrderWithPreview = useMemo(
+    () =>
+      selectedSubmissionOrder && confirmationPreviewQuery.data
+        ? applyOrderConfirmationPreview(
+            selectedSubmissionOrder,
+            confirmationPreviewQuery.data,
+          )
+        : selectedSubmissionOrder,
+    [confirmationPreviewQuery.data, selectedSubmissionOrder],
+  );
   const documentSourceOrder =
     state === "confirmation-view" && selectedConfirmationId
       ? selectedConfirmationOrder
       : usesSelectedSubmission
-        ? selectedSubmissionOrder
+        ? selectedSubmissionOrderWithPreview
         : (inquiry?.order ?? null);
   const documentOrder = useMemo(
     () =>
@@ -159,29 +185,28 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
   }, [inquiry, inquiryId, markReadMutation]);
 
   useEffect(() => {
-    const submissionId = documentOrder?.orderFormSubmissionId;
-    const shouldMarkReviewed =
-      state === "order-form" ||
-      state === "confirmation-draft" ||
-      state === "confirmation-priced";
+    if (state !== "order-form") {
+      viewedSubmissionAttemptRef.current = null;
+      return;
+    }
 
     if (
-      !shouldMarkReviewed ||
-      !submissionId ||
-      reviewedSubmissionRef.current === submissionId
+      !selectedSubmissionId ||
+      !selectedSubmission ||
+      selectedSubmission.sellerViewed ||
+      viewedSubmissionAttemptRef.current === selectedSubmissionId
     ) {
       return;
     }
 
-    reviewedSubmissionRef.current = submissionId;
-    getSellerOrderFormSubmission(inquiryId, submissionId)
-      .then(() => {
-        void refetchInquiry();
-      })
-      .catch(() => {
-        reviewedSubmissionRef.current = null;
-      });
-  }, [documentOrder?.orderFormSubmissionId, inquiryId, refetchInquiry, state]);
+    viewedSubmissionAttemptRef.current = selectedSubmissionId;
+    markSubmissionViewedMutation.mutate(selectedSubmissionId);
+  }, [
+    markSubmissionViewedMutation,
+    selectedSubmission,
+    selectedSubmissionId,
+    state,
+  ]);
 
   if (inquiryQuery.isError || timelineQuery.isError) {
     return <InquiryDetailState message="상담을 불러오지 못했습니다." />;
@@ -199,6 +224,18 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
     return (
       <InquiryDetailState message="선택한 주문서를 불러오지 못했습니다." />
     );
+  }
+
+  if (usesConfirmationDraft && !selectedSubmission?.sellerViewed) {
+    return <InquiryDetailState message="주문서를 먼저 확인해주세요." />;
+  }
+
+  if (usesConfirmationDraft && confirmationPreviewQuery.isError) {
+    return <InquiryDetailState message="주문확인서를 불러오지 못했습니다." />;
+  }
+
+  if (usesConfirmationDraft && confirmationPreviewQuery.isLoading) {
+    return <InquiryDetailState message="주문확인서를 불러오는 중입니다." />;
   }
 
   if (
@@ -319,6 +356,11 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
             state === "order-form" ? handleRequestOrderFormRevision : undefined
           }
           order={documentOrder}
+          orderConfirmationWriteDisabled={
+            state === "order-form" &&
+            (!selectedSubmission?.sellerViewed ||
+              markSubmissionViewedMutation.isPending)
+          }
           paymentRequestDisabled={!canRequestPayment}
           paymentRequestPending={sendConfirmationMutation.isPending}
           revisionRequestDisabled={!documentOrder.orderFormSubmissionId}

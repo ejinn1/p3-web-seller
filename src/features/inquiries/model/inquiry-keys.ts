@@ -2,6 +2,13 @@ import type { SellerInquiryListParams } from "@/features/inquiries/model/inquiry
 
 export const inquiryKeys = {
   all: ["seller", "inquiries"] as const,
+  confirmationPreview: (inquiryId: string, submissionId: string) =>
+    [
+      ...inquiryKeys.all,
+      inquiryId,
+      "confirmation-preview",
+      submissionId,
+    ] as const,
   detail: (inquiryId: string) =>
     [...inquiryKeys.all, inquiryId, "detail"] as const,
   list: (params: SellerInquiryListParams = {}) =>
