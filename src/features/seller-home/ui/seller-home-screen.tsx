@@ -124,13 +124,6 @@ export function SellerHomeScreen() {
           )?.buyerName,
         ),
       );
-  const selectedPickupCount = useFixtures
-    ? selectedPickups.length
-    : (selectedPickupOrdersQuery.data?.length ??
-      (isDefaultSelectedDate(selectedDate, dashboard.dateCells)
-        ? dashboard.todayPickupCount
-        : 0));
-
   if (view === "confirmation") {
     return (
       <>
@@ -196,7 +189,7 @@ export function SellerHomeScreen() {
           maxSelectableDate={maxSelectableDate}
           selectedDate={selectedDate}
           selectedDateLabel={selectedDateLabel}
-          selectedPickupCount={selectedPickupCount}
+          todayPickupCount={dashboard.todayPickupCount}
           todayDate={todayDate}
           waitingInquiryCount={dashboard.waitingInquiryCount}
           weekDays={dashboard.weekDays}
@@ -361,7 +354,7 @@ function DashboardOverview({
   onSelectDate,
   selectedDate,
   selectedDateLabel,
-  selectedPickupCount,
+  todayPickupCount,
   todayDate,
   waitingInquiryCount,
   weekDays,
@@ -372,7 +365,7 @@ function DashboardOverview({
   onSelectDate: (date: string) => void;
   selectedDate: string;
   selectedDateLabel: string;
-  selectedPickupCount: number;
+  todayPickupCount: number;
   todayDate: string;
   waitingInquiryCount: number;
   weekDays: string[];
@@ -445,7 +438,7 @@ function DashboardOverview({
         </div>
       </div>
       <div className="flex h-[86px] w-[calc(100%-32px)] items-center justify-center rounded-seller-sm bg-surface-subtle p-4 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
-        <SummaryCount label="오늘 픽업" value={selectedPickupCount} />
+        <SummaryCount label="오늘 픽업" value={todayPickupCount} />
         <div className="mx-1 h-[54px] w-px bg-surface-default opacity-90" />
         <SummaryCount label="문의대기" value={waitingInquiryCount} />
       </div>
@@ -725,13 +718,6 @@ function formatPickupDateLabel(value: string) {
   }
 
   return `${month}월 ${day}일`;
-}
-
-function isDefaultSelectedDate(
-  selectedDate: string,
-  dateCells: SellerHomeDashboard["dateCells"],
-) {
-  return dateCells.some((cell) => cell.selected && cell.date === selectedDate);
 }
 
 function toSellerHomePickup(
