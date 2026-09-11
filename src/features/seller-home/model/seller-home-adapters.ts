@@ -14,11 +14,6 @@ import type {
 } from "@/features/inquiries/model/inquiry-types";
 
 const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
-const pickupImageFallbacks = [
-  "/seller-home/cake-flower.png",
-  "/seller-home/cake-berries.png",
-  "/seller-home/cake-box.png",
-];
 export const SELLER_HOME_WAITING_INQUIRY_STATUS =
   "WAITING" satisfies InquiryStatus;
 
@@ -46,10 +41,7 @@ export function isSellerHomeWaitingInquiry(inquiry: InquiryListItem) {
   return inquiry.status === SELLER_HOME_WAITING_INQUIRY_STATUS;
 }
 
-function toSellerHomePickup(
-  order: SellerDashboardTodayOrder,
-  index: number,
-): SellerHomePickup {
+function toSellerHomePickup(order: SellerDashboardTodayOrder): SellerHomePickup {
   return {
     id: order.orderId,
     inquiryId: order.inquiryId,
@@ -58,7 +50,7 @@ function toSellerHomePickup(
     customerName: "고객",
     customerMaskedName: "고객 님",
     totalPrice: order.paidAmount,
-    imageUrl: pickupImageFallbacks[index % pickupImageFallbacks.length],
+    imageUrl: null,
     status: toHomeOrderStatus(order.status),
   };
 }
