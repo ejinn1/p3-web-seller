@@ -174,6 +174,70 @@ export function InquiryChatMessage({
     );
   }
 
+  if (message.kind === "refund-request") {
+    return (
+      <BubbleRow
+        buyerProfileImageUrl={buyerProfileImageUrl}
+        owner="buyer"
+        sentAt={message.sentAt}
+      >
+        <div className="flex w-60 shrink-0 flex-col gap-4 rounded-seller-lg bg-surface-default p-4">
+          <div className="space-y-2">
+            <p className="text-[13px] leading-4 font-medium tracking-[-0.13px] text-text-secondary">
+              취소 요청
+            </p>
+            <p className="text-[22px] leading-[30px] font-bold tracking-[-0.66px] text-text-primary">
+              취소 요청을 접수했어요
+            </p>
+            <p className="text-[13px] leading-4 font-medium tracking-[-0.13px] text-text-disabled">
+              주문 내역에서 환불 처리를 진행해주세요
+            </p>
+          </div>
+          <ActionButton
+            disabled={!message.orderId}
+            onClick={() => onOpenOrderHistory(message.orderId)}
+            variant="outline"
+          >
+            주문내역 보기
+          </ActionButton>
+        </div>
+      </BubbleRow>
+    );
+  }
+
+  if (message.kind === "refund-complete") {
+    return (
+      <BubbleRow
+        buyerProfileImageUrl={buyerProfileImageUrl}
+        owner="seller"
+        sentAt={message.sentAt}
+      >
+        <div className="flex w-60 shrink-0 flex-col gap-4 rounded-seller-lg bg-surface-default p-4">
+          <div className="space-y-2">
+            <p className="text-[13px] leading-4 font-medium tracking-[-0.13px] text-text-secondary">
+              취소 완료
+            </p>
+            <p className="text-[22px] leading-[30px] font-bold tracking-[-0.66px] text-text-primary">
+              {message.amount === null
+                ? "환불됐어요"
+                : `${formatInquiryPrice(message.amount)}이 환불됐어요`}
+            </p>
+            <p className="text-[13px] leading-4 font-medium tracking-[-0.13px] text-text-disabled">
+              취소 처리가 완료되었습니다
+            </p>
+          </div>
+          <ActionButton
+            disabled={!message.orderId}
+            onClick={() => onOpenOrderHistory(message.orderId)}
+            variant="outline"
+          >
+            주문내역 보기
+          </ActionButton>
+        </div>
+      </BubbleRow>
+    );
+  }
+
   return (
     <BubbleRow
       buyerProfileImageUrl={buyerProfileImageUrl}
