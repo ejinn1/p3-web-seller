@@ -821,6 +821,7 @@ function PickupRow({
             className="size-[70px] shrink-0 rounded-seller-sm object-cover"
             height={70}
             src={pickup.imageUrl}
+            unoptimized
             width={70}
           />
         ) : (
