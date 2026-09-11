@@ -38,11 +38,12 @@ const schema = z.object({
     .regex(/^[0-9+()\- ]+$/, "전화번호 형식을 확인해 주세요."),
   snsLink: z
     .string()
-    .trim()
-    .max(100)
+    .max(500)
     .refine(
       (value) =>
-        !value || /^https?:\/\/.+/.test(value) || /^@?[\w.]+$/.test(value),
+        /^\s*$|^\s*@?[A-Za-z0-9._]{1,30}\s*$|^\s*https?:\/\/(www\.)?instagram\.com\/@?[A-Za-z0-9._]{1,30}\/?\s*$/.test(
+          value,
+        ),
       "인스타그램 계정 또는 링크 형식을 확인해 주세요.",
     ),
 });
@@ -113,7 +114,7 @@ export function OnboardingForm() {
       address: values.address.trim(),
       detailAddress: values.detailAddress.trim() || null,
       phoneNumber: values.phoneNumber.trim(),
-      snsLink: values.snsLink.trim() || null,
+      snsLink: values.snsLink.trim() ? values.snsLink : null,
     };
     await createMutation.mutateAsync(input);
     router.replace("/onboarding/pending");
@@ -249,8 +250,9 @@ export function OnboardingForm() {
               {...form.register("snsLink")}
               error={Boolean(form.formState.errors.snsLink)}
               id="store-instagram"
-              placeholder="ex: @wihada"
-              type="url"
+              maxLength={500}
+              placeholder="@wihada.cake 또는 wihada.cake"
+              type="text"
               value={snsLink}
             />
           </Field>
