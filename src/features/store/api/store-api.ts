@@ -25,11 +25,7 @@ export const updateStoreStatus = (status: StoreStatus) =>
   sendJson<Store>("/seller/store/status", "PATCH", { status });
 export const deleteStore = () => sendJson<void>("/seller/store", "DELETE");
 export const updateSellerProfileImage = (input: SellerProfileImageInput) =>
-  sendJson<SellerProfileImage>(
-    "/seller/store/profile-image",
-    "PATCH",
-    input,
-  );
+  sendJson<SellerProfileImage>("/seller/store/profile-image", "PATCH", input);
 
 export const getStoreSettings = () =>
   getJson<StoreSettings>("/seller/store/settings");
@@ -43,8 +39,6 @@ export const updateStoreBusinessHours = (input: StoreBusinessHoursInput) =>
   sendJson<StoreBusinessHours>("/seller/store/business-hours", "PUT", input);
 export const updateStoreDescription = (input: StoreDescriptionInput) =>
   sendJson<Store>("/seller/store/description", "PUT", input);
-export const completeAccountRegistration = () =>
-  sendJson<Store>("/seller/store/account-registration/complete", "POST");
 export const getStoreRefundPolicy = () =>
   getJson<StoreRefundPolicy>("/seller/store/refund-policy");
 export const updateStoreRefundPolicy = (input: StoreRefundPolicyInput) =>
