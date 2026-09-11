@@ -94,6 +94,7 @@ function OrderFormCard({
 }) {
   return (
     <article className="min-h-[696px] w-full rounded-seller-sm bg-surface-default px-4 pt-6 pb-6 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
+      <OrderReferenceImage imageUrl={order.imageUrl} />
       <div className="space-y-12">
         <OrderFormSection
           price={order.pickupTime}
@@ -102,6 +103,7 @@ function OrderFormCard({
         />
         {order.options.map((option) => (
           <OrderFormSection
+            assets={option.assetPreviews}
             key={option.id}
             onClick={option.needsPrice ? onOpenPrice : undefined}
             price={option.priceText || (option.needsPrice ? "문의 필요" : "")}
@@ -116,12 +118,14 @@ function OrderFormCard({
 }
 
 function OrderFormSection({
+  assets,
   onClick,
   price,
   required,
   title,
   value,
 }: {
+  assets?: InquiryReferenceAssetPreview[];
   onClick?: () => void;
   price: string;
   required?: boolean;
@@ -175,6 +179,7 @@ function OrderFormSection({
           </span>
         ) : null}
       </button>
+      <ReferenceAssetPreviewList assets={assets} size="lg" />
     </section>
   );
 }

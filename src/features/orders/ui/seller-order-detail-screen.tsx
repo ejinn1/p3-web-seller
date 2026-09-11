@@ -16,6 +16,7 @@ import {
   useCompleteSellerOrderPickupMutation,
   useRefundSellerOrderMutation,
 } from "@/features/orders/model/order-mutations";
+import { getReferenceAssetThumbnailUrl } from "@/features/orders/model/order-reference-assets";
 import {
   useSellerOrderConfirmationQuery,
   useSellerOrderInquiryQuery,
@@ -168,6 +169,7 @@ function OrderConfirmationCard({ view }: { view: DetailView }) {
 
   return (
     <article className="flex w-full flex-col gap-8 overflow-hidden rounded-seller-sm bg-surface-default px-4 py-8 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
+      <OrderReferenceImage imageUrl={view.viewModel.thumbnailUrl} />
       <div className="flex w-full items-start justify-between text-seller-display-sm leading-[30px] font-bold tracking-[-0.66px] text-text-primary">
         <p>{formatConfirmationDate(pickupAt)}</p>
         <p>{formatTime(pickupAt)}</p>
@@ -209,6 +211,23 @@ function OrderConfirmationCard({ view }: { view: DetailView }) {
         <p>{formatPrice(view.confirmation?.amount ?? view.order.paidAmount)}</p>
       </div>
     </article>
+  );
+}
+
+function OrderReferenceImage({ imageUrl }: { imageUrl: string | null }) {
+  if (!imageUrl) {
+    return null;
+  }
+
+  return (
+    <div className="size-[96px] overflow-hidden rounded-seller-sm bg-surface-subtle shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        alt="주문 참조 이미지"
+        className="size-full object-cover"
+        src={imageUrl}
+      />
+    </div>
   );
 }
 
@@ -405,7 +424,9 @@ function toDetailView(
       detailRows,
       selectedRows: detailRows,
       storeName,
-      thumbnailUrl: null,
+      thumbnailUrl:
+        getReferenceAssetThumbnailUrl(detail.order.referenceAssets) ??
+        getReferenceAssetThumbnailUrl(relations.submission?.referenceAssets),
     },
   };
 }
