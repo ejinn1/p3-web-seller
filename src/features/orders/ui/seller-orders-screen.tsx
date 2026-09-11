@@ -7,6 +7,7 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { BottomSheet } from "@/components/common/bottom-sheet";
@@ -16,6 +17,7 @@ import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-fr
 import { useSellerInquiriesQuery } from "@/features/inquiries/model/inquiry-queries";
 import type { InquiryListItem } from "@/features/inquiries/model/inquiry-types";
 import { useSellerOrdersQuery } from "@/features/orders/model/order-queries";
+import { getReferenceAssetThumbnailUrl } from "@/features/orders/model/order-reference-assets";
 import type {
   SellerOrderListItem,
   SellerOrderStatus,
@@ -255,14 +257,14 @@ function OrderListItem({
   return (
     <Link
       className={cn(
-        "flex w-full flex-col items-start justify-between p-4",
-        highlighted ? "h-[102px]" : "h-24",
+        "flex h-[102px] w-full items-center gap-4 p-4",
         highlighted ? "bg-surface-subtle" : "bg-surface-default",
       )}
       data-qa="orders-list-item"
       href={`/seller/orders/${order.id}?view=selected`}
     >
-      <div className="flex h-full min-w-0 flex-col items-start justify-between whitespace-nowrap">
+      <OrderThumbnail src={order.thumbnailUrl} />
+      <div className="flex h-full min-w-0 flex-1 flex-col items-start justify-between whitespace-nowrap">
         <p
           className="truncate text-seller-heading-md leading-6 font-semibold tracking-[-0.54px] text-text-primary"
           data-qa="orders-pickup-time"
@@ -282,7 +284,40 @@ function OrderListItem({
           {formatPrice(order.paidAmount)}
         </p>
       </div>
+      <span
+        aria-hidden="true"
+        className="flex size-12 shrink-0 items-center justify-center text-icon-default"
+      >
+        <ChevronRight className="size-5" />
+      </span>
     </Link>
+  );
+}
+
+function OrderThumbnail({ src }: { src: string | null }) {
+  if (src) {
+    return (
+      <Image
+        alt=""
+        className="size-[70px] shrink-0 rounded-seller-sm object-cover"
+        height={70}
+        src={src}
+        unoptimized
+        width={70}
+      />
+    );
+  }
+
+  return (
+    <div className="flex size-[70px] shrink-0 items-center justify-center overflow-hidden rounded-seller-sm border border-border-default bg-surface-default">
+      <Image
+        alt=""
+        className="size-8 opacity-30 grayscale"
+        height={32}
+        src="/seller-home/wihada-symbol.svg"
+        width={32}
+      />
+    </div>
   );
 }
 
@@ -611,7 +646,7 @@ function toOrderViewModel(
       { label: "옵션", value: order.optionSummary, price: null },
     ],
     storeName: "스토어",
-    thumbnailUrl: null,
+    thumbnailUrl: getReferenceAssetThumbnailUrl(order.referenceAssets),
   };
 }
 
