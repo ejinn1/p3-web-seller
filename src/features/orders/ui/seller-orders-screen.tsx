@@ -34,9 +34,7 @@ type DraftDateRange = { end: string | null; start: string | null };
 const statusLabels: Record<SellerOrderStatus, string> = {
   PAID: "결제완료",
   PICKED_UP: "픽업완료",
-  CANCEL_REQUESTED: "취소요청",
-  CANCELED: "취소완료",
-  REFUND_PROCESSING: "환불처리중",
+  REFUND_REQUESTED: "환불요청",
   REFUNDED: "환불완료",
 };
 
@@ -668,18 +666,14 @@ function CalendarGrid({
 function OrderStatusBadge({ status }: { status: SellerOrderStatus | null }) {
   const label = status ? statusLabels[status] : "상태 미정";
   const isPaid = status === "PAID";
-  const isCanceled =
-    status === "CANCELED" ||
-    status === "REFUNDED" ||
-    status === "REFUND_PROCESSING" ||
-    status === "CANCEL_REQUESTED";
+  const isRefund = status === "REFUNDED" || status === "REFUND_REQUESTED";
 
   return (
     <span
       className={cn(
         "inline-flex h-6 shrink-0 items-center justify-center rounded-seller-sm px-2 py-1 text-[13px] leading-4 font-medium tracking-[-0.13px]",
         isPaid && "bg-status-success-bg text-status-success",
-        isCanceled && "bg-status-warning-bg text-status-warning",
+        isRefund && "bg-status-warning-bg text-status-warning",
         !status && "bg-surface-subtle text-text-tertiary",
         status === "PICKED_UP" && "bg-status-info-bg text-status-info",
       )}

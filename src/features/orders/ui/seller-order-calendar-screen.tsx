@@ -395,12 +395,7 @@ function MonthlySummary({ days }: { days: OrderCalendarDay[] }) {
     .filter((order) => order.status === "PAID" || order.status === "PICKED_UP")
     .reduce((sum, order) => sum + order.paidAmount, 0);
   const canceledAmount = orders
-    .filter(
-      (order) =>
-        order.status === "CANCELED" ||
-        order.status === "REFUNDED" ||
-        order.status === "REFUND_PROCESSING",
-    )
+    .filter((order) => order.status === "REFUNDED")
     .reduce((sum, order) => sum + order.paidAmount, 0);
 
   return (
@@ -412,7 +407,7 @@ function MonthlySummary({ days }: { days: OrderCalendarDay[] }) {
       <div className="h-[54px] w-px shrink-0 bg-surface-subtle opacity-90" />
       <SummaryMetric
         amount={canceledAmount}
-        label="이번 달 취소"
+        label="이번 달 환불"
         tone="error"
       />
     </div>
@@ -802,15 +797,19 @@ function CalendarOrderStatusBadge({
   const labels: Record<OrderCalendarItem["status"], string> = {
     PAID: "결제완료",
     PICKED_UP: "픽업완료",
-    CANCEL_REQUESTED: "취소요청",
-    CANCELED: "취소완료",
-    REFUND_PROCESSING: "환불처리중",
+    REFUND_REQUESTED: "환불요청",
     REFUNDED: "환불완료",
   };
 
   return (
     <span
-      className="inline-flex h-6 items-center justify-center rounded-seller-sm bg-status-success-bg px-2 py-1 text-[13px] leading-4 font-medium tracking-[-0.13px] text-status-success"
+      className={cn(
+        "inline-flex h-6 items-center justify-center rounded-seller-sm px-2 py-1 text-[13px] leading-4 font-medium tracking-[-0.13px]",
+        status === "PAID" && "bg-status-success-bg text-status-success",
+        status === "PICKED_UP" && "bg-status-info-bg text-status-info",
+        (status === "REFUND_REQUESTED" || status === "REFUNDED") &&
+          "bg-status-warning-bg text-status-warning",
+      )}
       data-testid="calendar-paid-badge"
     >
       {labels[status]}

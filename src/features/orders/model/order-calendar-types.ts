@@ -6,12 +6,7 @@ import type {
 } from "@/features/orders/model/order-types";
 
 export type OrderStatus =
-  | "PAID"
-  | "PICKED_UP"
-  | "CANCEL_REQUESTED"
-  | "CANCELED"
-  | "REFUND_PROCESSING"
-  | "REFUNDED";
+  "PAID" | "PICKED_UP" | "REFUND_REQUESTED" | "REFUNDED";
 
 export type OrderCalendarItem = {
   orderId: string;
@@ -56,8 +51,8 @@ export type OrderResponse = {
   paidAmount: number;
   pickupAt: string;
   status: OrderStatus;
-  cancelRequestedAt: string | null;
-  cancelReason: string | null;
+  refundRequestedAt: string | null;
+  refundReason: string | null;
   createdAt: string;
   updatedAt: string;
 };
