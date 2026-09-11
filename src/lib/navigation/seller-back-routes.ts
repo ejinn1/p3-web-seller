@@ -22,6 +22,7 @@ export const sellerBackRoutePolicy = {
   photoRepresentative: SELLER_STORE_MANAGEMENT_ROUTE,
   revenue: SELLER_HOME_ROUTE,
   revenueDetail: "/seller/revenue",
+  settlementAccount: SELLER_STORE_MANAGEMENT_ROUTE,
   storeInformation: SELLER_STORE_MANAGEMENT_ROUTE,
   storeManagement: SELLER_HOME_ROUTE,
 } as const;
@@ -33,5 +34,7 @@ export function getSellerBackHref(key: SellerBackRouteKey) {
 }
 
 export function getSellerStoreManagementBackHref(canEnterSellerHome: boolean) {
-  return canEnterSellerHome ? getSellerBackHref("storeManagement") : "/auth/role";
+  return canEnterSellerHome
+    ? getSellerBackHref("storeManagement")
+    : "/auth/role";
 }

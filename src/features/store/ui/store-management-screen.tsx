@@ -2,10 +2,7 @@
 
 import { Button } from "@/components/common/button";
 import { useRouter } from "next/navigation";
-import {
-  useCompleteAccountRegistrationMutation,
-  useUpdateStoreStatusMutation,
-} from "@/features/store/model/store-mutations";
+import { useUpdateStoreStatusMutation } from "@/features/store/model/store-mutations";
 import { useStoreManagementStatusQuery } from "@/features/store/model/store-queries";
 import { getStoreActivationErrorMessage } from "@/features/store/model/store-activation-error";
 import { StoreManagementHeader } from "@/features/store/ui/store-management-header";
@@ -18,8 +15,6 @@ import {
 export function StoreManagementScreen() {
   const router = useRouter();
   const statusQuery = useStoreManagementStatusQuery();
-  const completeAccountRegistrationMutation =
-    useCompleteAccountRegistrationMutation();
   const updateStoreStatusMutation = useUpdateStoreStatusMutation();
   const managementStatus = statusQuery.data;
   const items = managementStatus?.items;
@@ -46,11 +41,8 @@ export function StoreManagementScreen() {
     },
     {
       completed: items?.settlementAccount ?? false,
-      disabled:
-        (items?.settlementAccount ?? false) ||
-        completeAccountRegistrationMutation.isPending,
-      label: "계좌등록",
-      onClick: () => void completeAccountRegistrationMutation.mutateAsync(),
+      href: "/seller/settlement-account",
+      label: "정산계좌 등록",
     },
   ];
   const completedCount = managementStatus?.completedCount ?? 0;
@@ -88,11 +80,6 @@ export function StoreManagementScreen() {
             <SettingRow key={setting.label} {...setting} />
           ))}
         </div>
-        {completeAccountRegistrationMutation.isError ? (
-          <p aria-live="polite" className="text-sm text-text-error">
-            계좌등록을 완료하지 못했습니다. 잠시 후 다시 시도해 주세요.
-          </p>
-        ) : null}
       </section>
       <div className="px-4 pt-4 pb-[34px]">
         {activationErrorMessage ? (
