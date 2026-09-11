@@ -104,7 +104,6 @@ export function AccountSettingsScreen() {
             rowGroups={[
               [
                 { label: "이름", value: profileState ?? user?.name },
-                { label: "생년월일", value: undefined },
                 {
                   label: "전화번호",
                   value: profileState ?? formatPhoneNumber(user?.phoneNumber),
