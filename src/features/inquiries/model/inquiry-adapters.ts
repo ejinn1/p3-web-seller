@@ -259,6 +259,27 @@ function toChatMessage(
     };
   }
 
+  if (item.type === "ORDER_REFUND_REQUESTED") {
+    return {
+      id: item.eventId,
+      kind: "refund-request" as const,
+      orderId: item.referenceId ?? "",
+      owner: "buyer" as const,
+      sentAt,
+    };
+  }
+
+  if (item.type === "ORDER_REFUND_COMPLETED") {
+    return {
+      amount: orderAmount,
+      id: item.eventId,
+      kind: "refund-complete" as const,
+      orderId: item.referenceId ?? "",
+      owner: "seller" as const,
+      sentAt,
+    };
+  }
+
   if (item.type === "ORDER_CONFIRMATION_REVISION") {
     return null;
   }
@@ -1008,6 +1029,14 @@ function formatLatestMessage(latestPreview: InquiryLatestPreview | null) {
 
   if (event.type === "PAYMENT_COMPLETED") {
     return "결제가 완료되었습니다.";
+  }
+
+  if (event.type === "ORDER_REFUND_REQUESTED") {
+    return "취소 요청을 접수했습니다.";
+  }
+
+  if (event.type === "ORDER_REFUND_COMPLETED") {
+    return "취소 처리가 완료되었습니다.";
   }
 
   return "새 상담이 도착했습니다.";

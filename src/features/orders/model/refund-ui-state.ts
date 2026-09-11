@@ -94,8 +94,8 @@ export function getSellerRefundUiState(
 
   if (detail.order.status === "PAID") {
     return {
-      action: "REFUND",
-      actionLabel: "환불처리",
+      action: null,
+      actionLabel: null,
       kind: "AVAILABLE",
       message: null,
       showPickupAction: true,

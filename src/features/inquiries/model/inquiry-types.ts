@@ -9,7 +9,9 @@ export type InquiryTimelineItemType =
   | "ORDER_FORM_REVISION_REQUEST"
   | "ORDER_CONFIRMATION"
   | "ORDER_CONFIRMATION_REVISION"
-  | "PAYMENT_COMPLETED";
+  | "PAYMENT_COMPLETED"
+  | "ORDER_REFUND_REQUESTED"
+  | "ORDER_REFUND_COMPLETED";
 
 export type InquiryParticipant = {
   userId: string;
@@ -251,6 +253,21 @@ export type InquiryChatMessage =
       id: string;
       kind: "payment-complete";
       owner: "buyer";
+      sentAt: string;
+      amount: number | null;
+      orderId: string;
+    }
+  | {
+      id: string;
+      kind: "refund-request";
+      owner: "buyer";
+      sentAt: string;
+      orderId: string;
+    }
+  | {
+      id: string;
+      kind: "refund-complete";
+      owner: "seller";
       sentAt: string;
       amount: number | null;
       orderId: string;
