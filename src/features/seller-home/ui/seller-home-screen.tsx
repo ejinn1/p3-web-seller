@@ -282,7 +282,7 @@ export function SellerHomeScreen() {
                 router.push(getInquiryDetailHref(pickup.inquiryId, "chat"))
               }
               onConfirmation={(pickup) =>
-                router.push(`/seller/orders/${pickup.id}?view=selected`)
+                router.push(`/seller/orders/${pickup.id}?view=confirmation`)
               }
               onSelect={(id) => setState({ pickupId: id })}
             />
