@@ -55,3 +55,9 @@ export const refundSellerOrder = ({
     "POST",
     reason?.trim() ? { reason: reason.trim() } : undefined,
   );
+
+export const refreshSellerOrderRefund = (orderId: string) =>
+  sendJson<SellerOrderDetail>(
+    `/seller/orders/${orderId}/refund/refresh`,
+    "POST",
+  );

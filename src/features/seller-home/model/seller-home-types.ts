@@ -2,15 +2,12 @@ export type SellerHomeOrderStatus =
   | "PICKUP_READY"
   | "INQUIRY_WAITING"
   | "PAYMENT_COMPLETE"
-  | "REVISION_REQUESTED";
+  | "REVISION_REQUESTED"
+  | "REFUND_REQUESTED"
+  | "REFUNDED";
 
 export type SellerDashboardOrderStatus =
-  | "PAID"
-  | "PICKED_UP"
-  | "CANCEL_REQUESTED"
-  | "CANCELED"
-  | "REFUND_PROCESSING"
-  | "REFUNDED";
+  "PAID" | "PICKED_UP" | "REFUND_REQUESTED" | "REFUNDED";
 
 export type SellerDashboardTodayOrder = {
   orderId: string;

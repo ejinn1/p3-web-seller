@@ -14,8 +14,13 @@ import type {
 } from "@/features/inquiries/model/inquiry-types";
 import {
   useCompleteSellerOrderPickupMutation,
+  useRefreshSellerOrderRefundMutation,
   useRefundSellerOrderMutation,
 } from "@/features/orders/model/order-mutations";
+import {
+  getSellerRefundUiState,
+  type SellerRefundUiState,
+} from "@/features/orders/model/refund-ui-state";
 import {
   useSellerOrderConfirmationQuery,
   useSellerOrderInquiryQuery,
@@ -46,6 +51,7 @@ export function SellerOrderDetailScreen({ orderId }: { orderId: string }) {
   const query = useSellerOrderQuery(orderId);
   const pickupMutation = useCompleteSellerOrderPickupMutation(orderId);
   const refundMutation = useRefundSellerOrderMutation(orderId);
+  const refreshRefundMutation = useRefreshSellerOrderRefundMutation(orderId);
   const order = query.data?.order ?? null;
   const inquiryQuery = useSellerOrderInquiryQuery(order?.inquiryId ?? null);
   const confirmationQuery = useSellerOrderConfirmationQuery(
@@ -79,6 +85,8 @@ export function SellerOrderDetailScreen({ orderId }: { orderId: string }) {
       (inquiryQuery.isError ||
         confirmationQuery.isError ||
         submissionQuery.isError));
+  const refundState = query.data ? getSellerRefundUiState(query.data) : null;
+  const refundActionError = refundMutation.error ?? refreshRefundMutation.error;
 
   return (
     <SellerResponsiveFrame className="bg-surface-subtle">
@@ -126,39 +134,109 @@ export function SellerOrderDetailScreen({ orderId }: { orderId: string }) {
           </>
         ) : null}
         {!isLoading && !isError && view && !isConfirmationView ? (
-          <OrderDetailCard selected={isSelectedView} view={view} />
+          <>
+            <OrderDetailCard selected={isSelectedView} view={view} />
+            {refundState?.message ? (
+              <RefundStatusNotice state={refundState} />
+            ) : null}
+          </>
         ) : null}
       </section>
-      {isSelectedView &&
-      !isLoading &&
-      !isError &&
-      view?.order.status === "PAID" ? (
-        <div className="flex gap-2 bg-surface-subtle px-4 pt-4 pb-[34px]">
-          <Button
-            className="h-11 flex-1 rounded-seller-md border-border-default text-[15px] leading-5 font-semibold tracking-[-0.3px] !text-text-secondary"
-            data-qa="orders-refund-button"
-            disabled={refundMutation.isPending}
-            onClick={() => refundMutation.mutate(undefined)}
-            variant="outline"
-          >
-            환불처리
-          </Button>
-          <Button
-            className="h-11 flex-1 rounded-seller-md text-[15px] leading-5 font-semibold tracking-[-0.3px]"
-            data-qa="orders-pickup-button"
-            disabled={pickupMutation.isPending}
-            onClick={() => {
-              pickupMutation.mutate(undefined, {
-                onSuccess: () => router.push(`/seller/orders/${orderId}`),
-              });
-            }}
-          >
-            픽업 완료
-          </Button>
-        </div>
+      {!isConfirmationView && !isLoading && !isError && refundState ? (
+        <SellerOrderActions
+          error={refundActionError}
+          onPickup={() => {
+            pickupMutation.mutate(undefined, {
+              onSuccess: () => router.push(`/seller/orders/${orderId}`),
+            });
+          }}
+          onRefund={() => refundMutation.mutate(undefined)}
+          onRefresh={() => refreshRefundMutation.mutate()}
+          pending={
+            pickupMutation.isPending ||
+            refundMutation.isPending ||
+            refreshRefundMutation.isPending
+          }
+          state={refundState}
+        />
       ) : null}
       <SellerSidebar onOpenChange={setSidebarOpen} open={sidebarOpen} />
     </SellerResponsiveFrame>
+  );
+}
+
+function SellerOrderActions({
+  error,
+  onPickup,
+  onRefund,
+  onRefresh,
+  pending,
+  state,
+}: {
+  error: Error | null;
+  onPickup: () => void;
+  onRefund: () => void;
+  onRefresh: () => void;
+  pending: boolean;
+  state: SellerRefundUiState;
+}) {
+  if (!state.action && !state.showPickupAction) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-col gap-2 bg-surface-subtle px-4 pt-4 pb-[34px]">
+      <div className="flex gap-2">
+        {state.action ? (
+          <Button
+            className="h-11 flex-1 rounded-seller-md border-border-default text-[15px] leading-5 font-semibold tracking-[-0.3px] !text-text-secondary"
+            data-qa={
+              state.action === "REFRESH"
+                ? "orders-refund-refresh-button"
+                : "orders-refund-button"
+            }
+            disabled={pending}
+            onClick={state.action === "REFRESH" ? onRefresh : onRefund}
+            variant="outline"
+          >
+            {pending ? "처리 중" : state.actionLabel}
+          </Button>
+        ) : null}
+        {state.showPickupAction ? (
+          <Button
+            className="h-11 flex-1 rounded-seller-md text-[15px] leading-5 font-semibold tracking-[-0.3px]"
+            data-qa="orders-pickup-button"
+            disabled={pending}
+            onClick={onPickup}
+          >
+            픽업 완료
+          </Button>
+        ) : null}
+      </div>
+      {error ? (
+        <p className="text-center text-[13px] leading-[18px] text-text-error">
+          {error.message || "환불 요청을 처리하지 못했습니다."}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function RefundStatusNotice({ state }: { state: SellerRefundUiState }) {
+  const requiresAttention =
+    state.kind === "MANUAL_REQUIRED" || state.kind === "FAILED";
+
+  return (
+    <section
+      className={`rounded-seller-sm border px-4 py-3 text-[13px] leading-[18px] ${
+        requiresAttention
+          ? "border-status-error text-text-error"
+          : "border-border-default bg-surface-default text-text-secondary"
+      }`}
+      data-qa="orders-refund-status"
+    >
+      {state.message}
+    </section>
   );
 }
 
