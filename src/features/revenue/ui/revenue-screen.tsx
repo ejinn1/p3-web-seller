@@ -576,11 +576,7 @@ function formatCurrency(value: number) {
 
 function statusesForView(view: RevenueView): SellerOrderStatus[] | undefined {
   if (view === "cancellations" || view === "cancel-history") {
-    return ["CANCEL_REQUESTED", "CANCELED", "REFUND_PROCESSING", "REFUNDED"];
-  }
-
-  if (view === "payments") {
-    return ["PAID", "PICKED_UP"];
+    return ["REFUNDED"];
   }
 
   return undefined;
@@ -601,29 +597,24 @@ function toSummarySections(
   revenue: SellerRevenueResponse | undefined,
   orders: SellerOrderListItem[],
 ): RevenueSummarySection[] {
-  const payments = orders.filter(
-    (order) => order.status === "PAID" || order.status === "PICKED_UP",
-  );
-  const cancellations = orders.filter(
-    (order) =>
-      order.status === "CANCEL_REQUESTED" ||
-      order.status === "CANCELED" ||
-      order.status === "REFUND_PROCESSING" ||
-      order.status === "REFUNDED",
-  );
-  const paymentAmount = revenue?.netSalesAmount ?? sumOrders(payments);
-  const refundAmount =
-    revenue?.completedRefundAmount ?? Math.abs(sumOrders(cancellations));
+  const payments = orders;
+  const cancellations = orders.filter((order) => order.status === "REFUNDED");
+  const paymentRevenueAmount = revenue?.paymentRevenueAmount ?? sumOrders(payments);
+  const refundAmount = revenue?.completedRefundAmount ?? 0;
+  const netSalesAmount =
+    revenue?.netSalesAmount ?? paymentRevenueAmount - refundAmount;
 
   return [
     {
       id: "sales",
-      primary: { label: "실 매출", value: paymentAmount, unit: "원" },
+      primary: { label: "실 매출", value: netSalesAmount, unit: "원" },
       secondary: [
         {
           label: "평균 결제 금액",
           unit: "원",
-          value: payments.length ? Math.round(paymentAmount / payments.length) : 0,
+          value: payments.length
+            ? Math.round(paymentRevenueAmount / payments.length)
+            : 0,
         },
         { label: "결제 건수", value: payments.length, unit: "건" },
       ],
