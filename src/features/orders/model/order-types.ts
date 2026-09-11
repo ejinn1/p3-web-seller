@@ -85,6 +85,7 @@ export type Refund = {
   failureCode: string | null;
   failureMessage: string | null;
   failureDetails: string | null;
+  failedAt: string | null;
   createdAt: string;
   completedAt: string | null;
 };

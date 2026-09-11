@@ -138,7 +138,9 @@ function isCtaTimelineItem(item: InquiryTimelineItemResponse) {
     item.type === "ORDER_FORM_REVISION_REQUEST" ||
     item.type === "ORDER_CONFIRMATION" ||
     item.type === "ORDER_CONFIRMATION_REVISION" ||
-    item.type === "PAYMENT_COMPLETED"
+    item.type === "PAYMENT_COMPLETED" ||
+    item.type === "ORDER_REFUND_REQUESTED" ||
+    item.type === "ORDER_REFUND_COMPLETED"
   );
 }
 

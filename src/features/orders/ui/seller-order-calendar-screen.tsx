@@ -797,8 +797,8 @@ function CalendarOrderStatusBadge({
   const labels: Record<OrderCalendarItem["status"], string> = {
     PAID: "결제완료",
     PICKED_UP: "픽업완료",
-    REFUND_REQUESTED: "환불요청",
-    REFUNDED: "환불완료",
+    REFUND_REQUESTED: "취소요청",
+    REFUNDED: "취소완료",
   };
 
   return (
