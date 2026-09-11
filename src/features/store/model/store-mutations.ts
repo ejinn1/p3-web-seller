@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   createStore,
-  completeAccountRegistration,
   deleteStore,
   updateStoreBusinessHours,
   updateStoreDescription,
@@ -33,14 +32,6 @@ export function useUpdateStoreDescriptionMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: updateStoreDescription,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: storeKeys.all }),
-  });
-}
-
-export function useCompleteAccountRegistrationMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: completeAccountRegistration,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: storeKeys.all }),
   });
 }
