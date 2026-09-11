@@ -28,6 +28,8 @@ import { cn } from "@/lib/utils";
 
 type FilterPreset = "1개월" | "3개월" | "6개월" | "직접선택";
 type CustomDateStep = "start" | "end" | "done" | null;
+type DateRange = { end: string; start: string };
+type DraftDateRange = { end: string | null; start: string | null };
 
 const statusLabels: Record<SellerOrderStatus, string> = {
   PAID: "결제완료",
@@ -42,14 +44,19 @@ export function SellerOrdersScreen() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [customStep, setCustomStep] = useState<CustomDateStep>(null);
-  const [customDateSelected, setCustomDateSelected] = useState(false);
+  const [customRange, setCustomRange] = useState<DraftDateRange>({
+    end: null,
+    start: null,
+  });
+  const [calendarMonth, setCalendarMonth] = useState(() =>
+    startOfMonth(new Date()),
+  );
   const [selectedPreset, setSelectedPreset] = useState<FilterPreset | null>(
     null,
   );
-  const [selectedRange, setSelectedRange] = useState({
-    start: "2026.07.11",
-    end: "2026.08.11",
-  });
+  const [selectedRange, setSelectedRange] = useState<DateRange>(() =>
+    rangeForPreset("1개월"),
+  );
   const orderListParams = selectedPreset
     ? {
         dateBasis: "CREATED_AT" as const,
@@ -116,7 +123,7 @@ export function SellerOrdersScreen() {
                 className="-ml-4 flex size-12 items-center justify-center text-icon-default"
                 onClick={() => {
                   setSelectedPreset(null);
-                  setSelectedRange({ start: "2026.07.11", end: "2026.08.11" });
+                  setSelectedRange(rangeForPreset("1개월"));
                 }}
                 type="button"
               >
@@ -174,7 +181,16 @@ export function SellerOrdersScreen() {
         onClose={() => setFilterOpen(false)}
         onCustom={() => {
           setFilterOpen(false);
-          setCustomDateSelected(false);
+          const nextRange =
+            selectedPreset === "직접선택"
+              ? selectedRange
+              : { end: null, start: null };
+          setCustomRange(nextRange);
+          setCalendarMonth(
+            nextRange.start
+              ? startOfMonth(parseDisplayDate(nextRange.start))
+              : startOfMonth(new Date()),
+          );
           setCustomStep("start");
         }}
         onSelect={(preset) => {
@@ -187,6 +203,8 @@ export function SellerOrdersScreen() {
       />
 
       <CustomDateSheet
+        calendarMonth={calendarMonth}
+        dateRange={customRange}
         onBack={() => {
           if (customStep === "start") {
             setCustomStep(null);
@@ -194,29 +212,49 @@ export function SellerOrdersScreen() {
             return;
           }
 
-          setCustomStep(customStep === "end" ? "start" : "end");
+          const previousStep = customStep === "end" ? "start" : "end";
+          const previousDate =
+            previousStep === "start" ? customRange.start : customRange.end;
+          if (previousDate) {
+            setCalendarMonth(startOfMonth(parseDisplayDate(previousDate)));
+          }
+          setCustomStep(previousStep);
         }}
         onClose={() => setCustomStep(null)}
+        onMoveMonth={(amount) =>
+          setCalendarMonth((month) => moveMonth(month, amount))
+        }
         onNext={() => {
-          if (customStep === "start") {
-            setSelectedRange((range) => ({ ...range, start: "2026.08.18" }));
-            setCustomDateSelected(false);
+          if (customStep === "start" && customRange.start) {
             setCustomStep("end");
             return;
           }
 
-          if (customStep === "end") {
-            setSelectedRange((range) => ({ ...range, end: "2026.08.18" }));
+          if (customStep === "end" && customRange.end) {
             setCustomStep("done");
             return;
           }
 
+          if (!customRange.start || !customRange.end) {
+            return;
+          }
+
+          setSelectedRange({
+            end: customRange.end,
+            start: customRange.start,
+          });
           setSelectedPreset("직접선택");
           setCustomStep(null);
         }}
-        onSelectDate={() => setCustomDateSelected(true)}
+        onSelectDate={(date) => {
+          if (customStep === "start") {
+            setCustomRange({ end: null, start: date });
+            return;
+          }
+
+          setCustomRange((range) => ({ ...range, end: date }));
+        }}
         open={customStep !== null}
-        selected={customDateSelected}
         step={customStep ?? "start"}
       />
       <SellerSidebar onOpenChange={setSidebarOpen} open={sidebarOpen} />
@@ -403,26 +441,31 @@ function DateFilterSheet({
 }
 
 function CustomDateSheet({
+  calendarMonth,
+  dateRange,
   onBack,
   onClose,
+  onMoveMonth,
   onNext,
   onSelectDate,
   open,
-  selected,
   step,
 }: {
+  calendarMonth: Date;
+  dateRange: DraftDateRange;
   onBack: () => void;
   onClose: () => void;
+  onMoveMonth: (amount: number) => void;
   onNext: () => void;
-  onSelectDate: () => void;
+  onSelectDate: (date: string) => void;
   open: boolean;
-  selected: boolean;
   step: CustomDateStep;
 }) {
   const title =
     step === "end" ? "종료일" : step === "done" ? "종료일" : "시작일";
   const nextLabel = step === "done" ? "확인" : "다음";
-  const nextDisabled = step !== "done" && !selected;
+  const selectedDate = step === "start" ? dateRange.start : dateRange.end;
+  const nextDisabled = !selectedDate;
 
   return (
     <BottomSheet
@@ -439,21 +482,31 @@ function CustomDateSheet({
         </div>
         <div className="flex flex-col gap-4">
           <div className="flex h-6 items-center justify-center gap-4 overflow-hidden">
-            <ChevronLeft
-              aria-hidden="true"
-              className="size-6 text-icon-disabled"
-            />
+            <button
+              aria-label="이전 달"
+              className="flex size-6 items-center justify-center text-icon-default"
+              onClick={() => onMoveMonth(-1)}
+              type="button"
+            >
+              <ChevronLeft aria-hidden="true" className="size-6" />
+            </button>
             <p className="text-seller-heading-md leading-6 font-semibold tracking-[-0.54px] text-text-primary">
-              2026년 8월
+              {formatMonthLabel(calendarMonth)}
             </p>
-            <ChevronRight
-              aria-hidden="true"
-              className="size-6 text-icon-default"
-            />
+            <button
+              aria-label="다음 달"
+              className="flex size-6 items-center justify-center text-icon-default"
+              onClick={() => onMoveMonth(1)}
+              type="button"
+            >
+              <ChevronRight aria-hidden="true" className="size-6" />
+            </button>
           </div>
           <CalendarGrid
+            minDate={step === "start" ? null : dateRange.start}
+            month={calendarMonth}
             onSelect={onSelectDate}
-            selectedDay={selected || step === "done" ? 18 : null}
+            selectedDate={selectedDate}
           />
         </div>
         <div className="flex gap-2 pt-4">
@@ -543,17 +596,25 @@ function DateField({
 }
 
 function CalendarGrid({
+  minDate,
+  month,
   onSelect,
-  selectedDay,
+  selectedDate,
 }: {
-  onSelect: () => void;
-  selectedDay: number | null;
+  minDate: string | null;
+  month: Date;
+  onSelect: (date: string) => void;
+  selectedDate: string | null;
 }) {
   const days = ["일", "월", "화", "수", "목", "금", "토"];
+  const year = month.getFullYear();
+  const monthIndex = month.getMonth();
+  const firstDay = new Date(year, monthIndex, 1).getDay();
+  const dayCount = new Date(year, monthIndex + 1, 0).getDate();
   const cells = [
-    ...Array.from({ length: 6 }, () => null),
-    ...Array.from({ length: 31 }, (_, index) => index + 1),
-    ...Array.from({ length: 5 }, () => null),
+    ...Array.from({ length: firstDay }, () => null),
+    ...Array.from({ length: dayCount }, (_, index) => index + 1),
+    ...Array.from({ length: 42 - firstDay - dayCount }, () => null),
   ];
 
   return (
@@ -574,19 +635,25 @@ function CalendarGrid({
       <div className="grid grid-cols-7">
         {cells.map((day, index) => {
           const isSunday = index % 7 === 0;
-          const isSelected = day !== null && selectedDay === day;
+          const date = day
+            ? toDisplayDate(new Date(year, monthIndex, day))
+            : null;
+          const isSelected = date !== null && selectedDate === date;
+          const isDisabled =
+            date !== null && minDate !== null && date < minDate;
 
           return (
             <button
-              aria-label={day ? `${day}일` : undefined}
+              aria-label={date ? `${date} 선택` : undefined}
               className={cn(
                 "flex aspect-square items-center justify-center rounded-seller-sm text-[15px] leading-[22px] font-semibold tracking-[-0.15px] text-text-primary",
                 isSunday && "text-text-error",
                 isSelected && "bg-brand-primary text-text-inverse",
+                isDisabled && "text-text-unavailable",
               )}
-              disabled={!day}
+              disabled={!date || isDisabled}
               key={`${day ?? "empty"}-${index}`}
-              onClick={day ? onSelect : undefined}
+              onClick={date ? () => onSelect(date) : undefined}
               type="button"
             >
               {day}
@@ -712,6 +779,24 @@ function toDisplayDate(value: Date) {
   const day = `${value.getDate()}`.padStart(2, "0");
 
   return `${year}.${month}.${day}`;
+}
+
+function parseDisplayDate(value: string) {
+  const [year, month, day] = value.split(".").map(Number);
+
+  return new Date(year, month - 1, day);
+}
+
+function startOfMonth(value: Date) {
+  return new Date(value.getFullYear(), value.getMonth(), 1);
+}
+
+function moveMonth(value: Date, amount: number) {
+  return new Date(value.getFullYear(), value.getMonth() + amount, 1);
+}
+
+function formatMonthLabel(value: Date) {
+  return `${value.getFullYear()}년 ${value.getMonth() + 1}월`;
 }
 
 function rangeForPreset(preset: FilterPreset) {
