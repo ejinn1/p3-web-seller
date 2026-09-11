@@ -32,12 +32,16 @@ import {
   OrderStatusBadge,
   OrdersHeader,
 } from "@/features/orders/ui/seller-orders-screen";
-import { getSellerBackHref } from "@/lib/navigation/seller-back-routes";
+import {
+  getSellerBackHref,
+  SELLER_HOME_ROUTE,
+} from "@/lib/navigation/seller-back-routes";
 
 export function SellerOrderDetailScreen({ orderId }: { orderId: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isSelectedView = searchParams.get("view") === "selected";
+  const isConfirmationView = searchParams.get("view") === "confirmation";
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const query = useSellerOrderQuery(orderId);
   const pickupMutation = useCompleteSellerOrderPickupMutation(orderId);
@@ -60,18 +64,39 @@ export function SellerOrderDetailScreen({ orderId }: { orderId: string }) {
         submission: submissionQuery.data,
       })
     : null;
-  const isLoading = query.isLoading;
-  const isError = query.isError;
+  const isRelatedLoading =
+    isConfirmationView &&
+    Boolean(query.data) &&
+    (inquiryQuery.isLoading ||
+      confirmationQuery.isLoading ||
+      (Boolean(submissionId) && submissionQuery.isLoading));
+  const relatedError =
+    inquiryQuery.error ?? confirmationQuery.error ?? submissionQuery.error;
+  const isLoading = query.isLoading || isRelatedLoading;
+  const isError =
+    query.isError ||
+    (isConfirmationView &&
+      (inquiryQuery.isError ||
+        confirmationQuery.isError ||
+        submissionQuery.isError));
 
   return (
     <SellerResponsiveFrame className="bg-surface-subtle">
       <OrdersHeader
-        backHref={getSellerBackHref("orderDetail")}
+        backHref={
+          isConfirmationView
+            ? SELLER_HOME_ROUTE
+            : getSellerBackHref("orderDetail")
+        }
         onMenu={() => setSidebarOpen(true)}
-        showMenu
-        title="주문 내역"
+        showMenu={!isConfirmationView}
+        title={isConfirmationView ? "주문확인서" : "주문 내역"}
       />
-      <section className="flex flex-1 flex-col gap-8 overflow-y-auto px-4 pt-4 pb-[34px]">
+      <section
+        className={`flex flex-1 flex-col overflow-y-auto px-4 pb-[34px] ${
+          isConfirmationView ? "gap-4 pt-6" : "gap-8 pt-4"
+        }`}
+      >
         {isLoading ? (
           <DetailState message="주문 상세를 불러오고 있어요." />
         ) : null}
@@ -80,14 +105,27 @@ export function SellerOrderDetailScreen({ orderId }: { orderId: string }) {
             message={
               query.error instanceof Error
                 ? query.error.message
-                : "주문 상세를 불러오지 못했습니다."
+                : relatedError instanceof Error
+                  ? relatedError.message
+                  : "주문 상세를 불러오지 못했습니다."
             }
           />
         ) : null}
         {!isLoading && !isError && !view ? (
           <DetailState message="주문 상세 정보가 없습니다." />
         ) : null}
-        {!isLoading && !isError && view ? (
+        {!isLoading && !isError && view && isConfirmationView ? (
+          <>
+            <OrderConfirmationCard view={view} />
+            <Button
+              className="h-[52px] w-full rounded-seller-md bg-brand-disabled text-[18px] leading-6 font-semibold tracking-[-0.54px] text-text-inverse disabled:opacity-100"
+              disabled
+            >
+              결제 완료
+            </Button>
+          </>
+        ) : null}
+        {!isLoading && !isError && view && !isConfirmationView ? (
           <OrderDetailCard selected={isSelectedView} view={view} />
         ) : null}
       </section>
@@ -121,6 +159,75 @@ export function SellerOrderDetailScreen({ orderId }: { orderId: string }) {
       ) : null}
       <SellerSidebar onOpenChange={setSidebarOpen} open={sidebarOpen} />
     </SellerResponsiveFrame>
+  );
+}
+
+function OrderConfirmationCard({ view }: { view: DetailView }) {
+  const pickupAt = view.confirmation?.pickupAt ?? view.order.pickupAt;
+  const rows = view.viewModel.selectedRows ?? view.viewModel.detailRows;
+
+  return (
+    <article className="flex w-full flex-col gap-8 overflow-hidden rounded-seller-sm bg-surface-default px-4 py-8 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
+      <div className="flex w-full items-start justify-between text-seller-display-sm leading-[30px] font-bold tracking-[-0.66px] text-text-primary">
+        <p>{formatConfirmationDate(pickupAt)}</p>
+        <p>{formatTime(pickupAt)}</p>
+      </div>
+      <div className="flex flex-col gap-1">
+        <ConfirmationInfoRow
+          label="주문자"
+          value={view.inquiry?.participant.name ?? view.viewModel.buyerName}
+        />
+        <ConfirmationInfoRow
+          label="연락처"
+          value={view.inquiry?.participant.phoneNumber ?? "-"}
+        />
+      </div>
+      <div className="h-px w-full bg-surface-subtle opacity-90" />
+      <div className="flex flex-col gap-6">
+        {rows.map((row) => (
+          <div className="flex w-full flex-col gap-2" key={row.label}>
+            <p className="text-[13px] leading-4 font-medium tracking-[-0.13px] text-text-tertiary">
+              {row.label}
+            </p>
+            <div className="flex w-full items-start justify-between gap-3">
+              <p className="min-w-0 flex-1 text-seller-heading-md leading-6 font-semibold tracking-[-0.54px] text-text-primary">
+                {row.value}
+              </p>
+              {row.price !== null ? (
+                <p className="shrink-0 text-[15px] leading-[22px] font-semibold tracking-[-0.15px] text-text-primary">
+                  {row.priceText ?? formatOptionPrice(row.price)}
+                </p>
+              ) : null}
+            </div>
+            <OrderOptionAssetPreviewList assets={row.assetPreviews} />
+          </div>
+        ))}
+      </div>
+      <div className="h-px w-full bg-surface-subtle opacity-90" />
+      <div className="flex items-start justify-between text-seller-display-sm leading-[30px] font-bold tracking-[-0.66px] text-text-primary">
+        <p>최종 가격</p>
+        <p>{formatPrice(view.confirmation?.amount ?? view.order.paidAmount)}</p>
+      </div>
+    </article>
+  );
+}
+
+function ConfirmationInfoRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-center gap-2 whitespace-nowrap">
+      <p className="text-[13px] leading-4 font-medium tracking-[-0.13px] text-text-tertiary">
+        {label}
+      </p>
+      <p className="text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-primary">
+        {value}
+      </p>
+    </div>
   );
 }
 
@@ -262,7 +369,9 @@ function DetailState({ message }: { message: string }) {
 }
 
 type DetailView = {
+  confirmation: InquiryOrderConfirmationResponse | null;
   detail: SellerOrderDetail;
+  inquiry: InquiryChatDetailResponse | null;
   order: SellerOrderDetail["order"];
   viewModel: SellerOrderViewModel;
 };
@@ -284,7 +393,9 @@ function toDetailView(
     "스토어";
 
   return {
+    confirmation: relations.confirmation ?? null,
     detail,
+    inquiry: relations.inquiry ?? null,
     order: detail.order,
     viewModel: {
       ...detail.order,
@@ -297,6 +408,15 @@ function toDetailView(
       thumbnailUrl: null,
     },
   };
+}
+
+function formatConfirmationDate(value: string) {
+  return new Intl.DateTimeFormat("ko-KR", {
+    day: "numeric",
+    month: "long",
+    timeZone: "Asia/Seoul",
+    weekday: "long",
+  }).format(new Date(value));
 }
 
 function buildDetailRows(
