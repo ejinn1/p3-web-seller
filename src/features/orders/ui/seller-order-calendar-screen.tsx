@@ -23,14 +23,25 @@ import type {
   OrderCalendarItem,
   SellerOrderDetailResponse,
 } from "@/features/orders/model/order-calendar-types";
-import { useStoreQuery } from "@/features/store/model/store-queries";
+import {
+  useStoreBusinessHoursQuery,
+  useStoreQuery,
+  useStoreSettingsQuery,
+} from "@/features/store/model/store-queries";
+import type { DayOfWeek } from "@/features/store/model/store-types";
 import { getSellerBackHref } from "@/lib/navigation/seller-back-routes";
 import { cn } from "@/lib/utils";
 
-const defaultYear = 2026;
-const defaultMonth = 8;
-const defaultListDate = "2026-08-12";
 const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
+const dayOfWeekValues: DayOfWeek[] = [
+  "SUNDAY",
+  "MONDAY",
+  "TUESDAY",
+  "WEDNESDAY",
+  "THURSDAY",
+  "FRIDAY",
+  "SATURDAY",
+];
 
 type CalendarView = "calendar" | "list" | "detail";
 
@@ -49,22 +60,25 @@ export function SellerOrderCalendarScreen() {
   const view = (searchParams.get("view") as CalendarView | null) ?? "calendar";
   const selectedDateParts = parseCalendarDate(searchParams.get("date"));
   const selectedDate = selectedDateParts?.date ?? null;
+  const today = getKoreanToday();
   const parsedYear =
     parseCalendarYear(searchParams.get("year")) ??
     selectedDateParts?.year ??
-    defaultYear;
+    today.year;
   const parsedMonth =
     parseCalendarMonth(searchParams.get("month")) ??
     selectedDateParts?.month ??
-    defaultMonth;
+    today.month;
   const { month, year } = normalizeCalendarMonth(parsedYear, parsedMonth);
-  const activeDate = selectedDate ?? defaultListDate;
+  const activeDate = selectedDate ?? today.date;
   const isMonthPickerOpen = searchParams.get("monthPicker") === "1";
   const suppressListRedirectForDateRef = useRef<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const calendarQuery = useSellerOrderCalendarMonthQuery({ month, year });
   const storeQuery = useStoreQuery();
+  const businessHoursQuery = useStoreBusinessHoursQuery();
+  const storeSettingsQuery = useStoreSettingsQuery();
   const inquiriesQuery = useSellerInquiriesQuery();
   const calendar = calendarQuery.data;
   const inquiryById = useMemo(
@@ -75,7 +89,14 @@ export function SellerOrderCalendarScreen() {
     [inquiriesQuery.data],
   );
   const storeOpenedDate = getStoreOpenedDate(storeQuery.data?.createdAt);
-  const previousCalendarMonth = shiftCalendarMonth(year, month, -1);
+  const renderedCalendarDate = parseCalendarDate(calendar?.startDate ?? null);
+  const renderedYear = renderedCalendarDate?.year ?? year;
+  const renderedMonth = renderedCalendarDate?.month ?? month;
+  const previousCalendarMonth = shiftCalendarMonth(
+    renderedYear,
+    renderedMonth,
+    -1,
+  );
   const selectedDay = calendar?.days.find((day) => day.date === activeDate);
   const selectedOrderId =
     searchParams.get("orderId") ?? selectedDay?.orders[0]?.orderId ?? null;
@@ -199,30 +220,33 @@ export function SellerOrderCalendarScreen() {
             data-testid="calendar-summary-card"
           >
             <MonthPickerButton
+              isNavigationPending={calendarQuery.isPlaceholderData}
               isPreviousDisabled={isMonthBeforeStoreOpened(
                 previousCalendarMonth.year,
                 previousCalendarMonth.month,
                 storeOpenedDate,
               )}
-              month={month}
+              month={renderedMonth}
               onNext={() => moveMonth(1)}
               onOpen={() =>
                 updateParams({
-                  month: String(month),
+                  month: String(renderedMonth),
                   monthPicker: "1",
-                  year: String(year),
+                  year: String(renderedYear),
                 })
               }
               onPrevious={() => moveMonth(-1)}
-              year={year}
+              year={renderedYear}
             />
             <MonthlySummary days={calendar.days} />
           </div>
         </section>
         <OrderCalendarGrid
           days={calendar.days}
+          holidays={storeSettingsQuery.data?.holidays ?? []}
           minimumDate={storeOpenedDate}
-          month={month}
+          month={renderedMonth}
+          openDays={businessHoursQuery.data?.openDays ?? null}
           onSelectDate={(date, hasOrders) => {
             if (selectedDate === date && hasOrders) {
               updateParams({ date, view: "list" });
@@ -233,12 +257,12 @@ export function SellerOrderCalendarScreen() {
             updateParams({ date, view: null, orderId: null });
           }}
           selectedDate={selectedDate}
-          year={year}
+          year={renderedYear}
         />
       </SellerResponsiveFrame>
       <MonthSelectSheet
-        initialMonth={month}
-        initialYear={year}
+        initialMonth={renderedMonth}
+        initialYear={renderedYear}
         minimumDate={storeOpenedDate}
         onClose={() => updateParams({ monthPicker: null })}
         onConfirm={(nextYear, nextMonth) =>
@@ -306,6 +330,7 @@ function CalendarHeader({
 }
 
 function MonthPickerButton({
+  isNavigationPending,
   isPreviousDisabled,
   month,
   onNext,
@@ -313,6 +338,7 @@ function MonthPickerButton({
   onPrevious,
   year,
 }: {
+  isNavigationPending: boolean;
   isPreviousDisabled: boolean;
   month: number;
   onNext: () => void;
@@ -329,9 +355,11 @@ function MonthPickerButton({
         aria-label="이전 달"
         className={cn(
           "flex size-12 items-center justify-center",
-          isPreviousDisabled ? "text-icon-disabled" : "text-icon-default",
+          isPreviousDisabled || isNavigationPending
+            ? "text-icon-disabled"
+            : "text-icon-default",
         )}
-        disabled={isPreviousDisabled}
+        disabled={isPreviousDisabled || isNavigationPending}
         onClick={onPrevious}
         type="button"
       >
@@ -339,6 +367,7 @@ function MonthPickerButton({
       </button>
       <button
         className="flex h-6 items-center justify-center px-4 text-[18px] leading-6 font-semibold tracking-[-0.54px] text-text-primary"
+        disabled={isNavigationPending}
         onClick={onOpen}
         type="button"
       >
@@ -346,7 +375,11 @@ function MonthPickerButton({
       </button>
       <button
         aria-label="다음 달"
-        className="flex size-12 items-center justify-center text-icon-default"
+        className={cn(
+          "flex size-12 items-center justify-center",
+          isNavigationPending ? "text-icon-disabled" : "text-icon-default",
+        )}
+        disabled={isNavigationPending}
         onClick={onNext}
         type="button"
       >
@@ -419,15 +452,19 @@ function SummaryMetric({
 
 function OrderCalendarGrid({
   days,
+  holidays,
   minimumDate,
   month,
+  openDays,
   onSelectDate,
   selectedDate,
   year,
 }: {
   days: OrderCalendarDay[];
+  holidays: string[];
   minimumDate: string | null;
   month: number;
+  openDays: DayOfWeek[] | null;
   onSelectDate: (date: string, hasOrders: boolean) => void;
   selectedDate: string | null;
   year: number;
@@ -437,8 +474,8 @@ function OrderCalendarGrid({
     [days],
   );
   const gridDates = useMemo(
-    () => buildCalendarGrid(year, month, minimumDate),
-    [minimumDate, year, month],
+    () => buildCalendarGrid(year, month, minimumDate, openDays, holidays),
+    [holidays, minimumDate, month, openDays, year],
   );
 
   return (
@@ -1059,6 +1096,8 @@ function buildCalendarGrid(
   year: number,
   month: number,
   minimumDate: string | null = null,
+  openDays: DayOfWeek[] | null = null,
+  holidays: string[] = [],
 ): CalendarGridDate[] {
   const monthIndex = month - 1;
   const daysInMonth = new Date(year, month, 0).getDate();
@@ -1082,7 +1121,10 @@ function buildCalendarGrid(
     cells.push({
       date,
       day,
-      isDisabled: weekDay === 1 || isDateBeforeMinimum(date, minimumDate),
+      isDisabled:
+        isDateBeforeMinimum(date, minimumDate) ||
+        isClosedDay(weekDay, openDays) ||
+        holidays.includes(date),
       isOutsideMonth: false,
       weekDay,
     });
@@ -1211,8 +1253,33 @@ function getStoreOpenedDate(createdAt?: string) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
+function getKoreanToday() {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+  }).formatToParts(new Date());
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((item) => item.type === type)?.value;
+  const year = Number(part("year"));
+  const month = Number(part("month"));
+  const day = Number(part("day"));
+
+  return {
+    date: `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+    day,
+    month,
+    year,
+  };
+}
+
 function isDateBeforeMinimum(date: string, minimumDate: string | null) {
   return Boolean(minimumDate && date < minimumDate);
+}
+
+function isClosedDay(weekDay: number, openDays: DayOfWeek[] | null) {
+  return Boolean(openDays && !openDays.includes(dayOfWeekValues[weekDay]));
 }
 
 function isYearBeforeStoreOpened(year: number, minimumDate: string | null) {
@@ -1240,9 +1307,10 @@ function isMonthBeforeStoreOpened(
 }
 
 function normalizeMonth(month: number) {
+  const currentMonth = getKoreanToday().month;
   const normalizedMonth = Number.isFinite(month)
     ? Math.trunc(month)
-    : defaultMonth;
+    : currentMonth;
 
   return modulo(normalizedMonth - 1, 12) + 1;
 }
@@ -1252,10 +1320,11 @@ function shiftCalendarMonth(year: number, month: number, offset: number) {
 }
 
 function normalizeCalendarMonth(year: number, month: number) {
-  const normalizedYear = Number.isFinite(year) ? Math.trunc(year) : defaultYear;
+  const today = getKoreanToday();
+  const normalizedYear = Number.isFinite(year) ? Math.trunc(year) : today.year;
   const normalizedMonth = Number.isFinite(month)
     ? Math.trunc(month)
-    : defaultMonth;
+    : today.month;
   const zeroBasedMonth = normalizedMonth - 1;
 
   return {

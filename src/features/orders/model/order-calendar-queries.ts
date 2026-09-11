@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   getSellerOrderCalendarMonth,
   getSellerOrderDetail,
@@ -18,6 +18,7 @@ export function useSellerOrderCalendarMonthQuery({
   year: number;
 }) {
   return useQuery({
+    placeholderData: keepPreviousData,
     queryFn: () => getSellerOrderCalendarMonth({ month, status, year }),
     queryKey: orderCalendarKeys.month(year, month, status),
   });
