@@ -326,15 +326,23 @@ function OrderOptionAssetPreviewList({
     >
       {assets.map((asset, index) => (
         <div
-          className="size-16 shrink-0 overflow-hidden rounded-seller-sm bg-surface-subtle"
+          className="size-[100px] shrink-0 overflow-hidden rounded-seller-sm bg-surface-subtle"
           key={`${asset.assetId}-${index}`}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            alt="첨부 이미지 미리보기"
-            className="size-full object-cover"
-            src={asset.deliveryUrl}
-          />
+          {asset.deliveryUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              alt="첨부 이미지 미리보기"
+              className="size-full object-cover"
+              src={asset.deliveryUrl}
+            />
+          ) : (
+            <span className="flex size-full items-center justify-center px-2 text-center text-[11px] leading-4 text-text-tertiary">
+              {["PROCESSING", "UPLOADED"].includes(asset.status)
+                ? "이미지 처리 중"
+                : "이미지를 불러올 수 없어요"}
+            </span>
+          )}
         </div>
       ))}
     </div>

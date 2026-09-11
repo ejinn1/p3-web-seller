@@ -101,7 +101,8 @@ export type SellerOrderDetail = {
 export type SellerOrderOption = {
   assetPreviews?: Array<{
     assetId: string;
-    deliveryUrl: string;
+    deliveryUrl: string | null;
+    status: string;
   }>;
   label: string;
   price: number | null;
