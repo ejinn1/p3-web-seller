@@ -77,6 +77,14 @@ function toHomeOrderStatus(
     return "PAYMENT_COMPLETE";
   }
 
+  if (status === "REFUND_REQUESTED") {
+    return "REFUND_REQUESTED";
+  }
+
+  if (status === "REFUNDED") {
+    return "REFUNDED";
+  }
+
   return "REVISION_REQUESTED";
 }
 

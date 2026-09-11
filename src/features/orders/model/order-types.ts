@@ -1,12 +1,7 @@
 import type { AssetVariant } from "@/features/assets/model/asset-types";
 
 export type SellerOrderStatus =
-  | "PAID"
-  | "PICKED_UP"
-  | "CANCEL_REQUESTED"
-  | "CANCELED"
-  | "REFUND_PROCESSING"
-  | "REFUNDED";
+  "PAID" | "PICKED_UP" | "REFUND_REQUESTED" | "REFUNDED";
 
 export type PaymentAttemptStatus =
   | "READY"
@@ -17,6 +12,8 @@ export type PaymentAttemptStatus =
   | "CANCELED";
 
 export type RefundStatus = "REQUESTED" | "PROCESSING" | "COMPLETED" | "FAILED";
+export type RefundOutcome =
+  "COMPLETED" | "PROCESSING" | "RETRYABLE" | "MANUAL_REQUIRED" | "FAILED";
 
 export type OrderListDateBasis = "PAID_AT" | "PICKUP_AT" | "CREATED_AT";
 
@@ -50,8 +47,8 @@ export type SellerOrderListItem = {
   paidAmount: number;
   pickupAt: string;
   status: SellerOrderStatus | null;
-  cancelRequestedAt: string | null;
-  cancelReason: string | null;
+  refundRequestedAt: string | null;
+  refundReason: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -77,10 +74,17 @@ export type Refund = {
   refundId: string;
   orderId: string;
   paymentAttemptId: string;
-  requestedBy: string | null;
+  requestedBy: string;
   amount: number;
+  refundRate: number;
   reason: string | null;
   status: RefundStatus;
+  outcome: RefundOutcome;
+  retryable: boolean;
+  providerRefundId: string | null;
+  failureCode: string | null;
+  failureMessage: string | null;
+  failureDetails: string | null;
   createdAt: string;
   completedAt: string | null;
 };
