@@ -5,6 +5,7 @@ import {
   getSellerInquiries,
   getSellerInquiry,
   getSellerInquiryTimeline,
+  getSellerOrderConfirmationPreview,
 } from "@/features/inquiries/api/inquiries-api";
 import { inquiryKeys } from "@/features/inquiries/model/inquiry-keys";
 import type {
@@ -27,6 +28,24 @@ export function useSellerInquiryQuery(inquiryId: string) {
   return useQuery({
     queryFn: () => getSellerInquiry(inquiryId),
     queryKey: inquiryKeys.detail(inquiryId),
+  });
+}
+
+export function useSellerOrderConfirmationPreviewQuery(
+  inquiryId: string,
+  submissionId: string | null,
+  enabled: boolean,
+) {
+  return useQuery({
+    enabled: enabled && Boolean(submissionId),
+    queryFn: () => {
+      if (!submissionId) {
+        throw new Error("주문확인서 미리보기 대상 주문서가 없습니다.");
+      }
+
+      return getSellerOrderConfirmationPreview(inquiryId, submissionId);
+    },
+    queryKey: inquiryKeys.confirmationPreview(inquiryId, submissionId ?? ""),
   });
 }
 

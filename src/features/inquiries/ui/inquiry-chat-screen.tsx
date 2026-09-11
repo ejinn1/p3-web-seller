@@ -43,7 +43,6 @@ export function InquiryChatScreen({
   const previousOldestMessageIdRef = useRef(inquiry.messages.at(0)?.id);
   const prependSnapshotRef = useRef<{ scrollHeight: number; scrollTop: number } | null>(null);
   const loadRequestedRef = useRef(false);
-  const writeOrderConfirmationDisabled = inquiry.status === "WAITING";
 
   useLayoutEffect(() => {
     const scrollArea = scrollRef.current;
@@ -146,7 +145,6 @@ export function InquiryChatScreen({
               onOpenOrderConfirmation={onOpenOrderConfirmation}
               onOpenOrderForm={onOpenOrderForm}
               onOpenOrderHistory={onOpenOrderHistory}
-              writeOrderConfirmationDisabled={writeOrderConfirmationDisabled}
               onWriteOrderConfirmation={onWriteOrderConfirmation}
             />
           ))}

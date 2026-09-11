@@ -91,6 +91,10 @@ export function buildSendOrderConfirmationRequest(
   order: InquiryOrderConfirmation,
   priceDrafts: Record<string, number>,
 ): SendSellerOrderConfirmationRequest {
+  if (!order.orderFormSubmissionId) {
+    throw new Error("대상 주문서가 없어 결제 요청을 보낼 수 없습니다.");
+  }
+
   if (!order.pickupAt) {
     throw new Error("픽업 일시가 없어 결제 요청을 보낼 수 없습니다.");
   }

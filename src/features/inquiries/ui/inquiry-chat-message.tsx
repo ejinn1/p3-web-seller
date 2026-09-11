@@ -10,7 +10,6 @@ export function InquiryChatMessage({
   onOpenOrderConfirmation,
   onOpenOrderForm,
   onOpenOrderHistory,
-  writeOrderConfirmationDisabled = false,
   onWriteOrderConfirmation,
 }: {
   buyerProfileImageUrl: string | null;
@@ -18,7 +17,6 @@ export function InquiryChatMessage({
   onOpenOrderConfirmation: (confirmationId: string) => void;
   onOpenOrderForm: (submissionId: string) => void;
   onOpenOrderHistory: (orderId: string) => void;
-  writeOrderConfirmationDisabled?: boolean;
   onWriteOrderConfirmation: (submissionId: string) => void;
 }) {
   if (message.kind === "notice") {
@@ -65,9 +63,7 @@ export function InquiryChatMessage({
                 주문서 보기
               </ActionButton>
               <ActionButton
-                disabled={
-                  !message.submissionId || writeOrderConfirmationDisabled
-                }
+                disabled={!message.submissionId || !message.sellerViewed}
                 onClick={() => {
                   if (message.submissionId) {
                     onWriteOrderConfirmation(message.submissionId);

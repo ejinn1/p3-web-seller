@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-query";
 import {
   markSellerInquiryRead,
+  markSellerOrderFormSubmissionViewed,
   moveSellerInquiryToTrash,
   requestSellerOrderFormRevision,
   sendSellerOrderConfirmation,
@@ -68,6 +69,23 @@ export function useMarkSellerInquiryReadMutation(inquiryId: string) {
       void queryClient.invalidateQueries({
         queryKey: inquiryKeys.detail(inquiryId),
       });
+    },
+  });
+}
+
+export function useMarkSellerOrderFormSubmissionViewedMutation(
+  inquiryId: string,
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (submissionId: string) =>
+      markSellerOrderFormSubmissionViewed(inquiryId, submissionId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: inquiryKeys.detail(inquiryId),
+      });
+      void queryClient.invalidateQueries({ queryKey: inquiryKeys.all });
     },
   });
 }
