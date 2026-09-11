@@ -16,7 +16,6 @@ import {
   useCompleteSellerOrderPickupMutation,
   useRefundSellerOrderMutation,
 } from "@/features/orders/model/order-mutations";
-import { getReferenceAssetThumbnailUrl } from "@/features/orders/model/order-reference-assets";
 import {
   useSellerOrderConfirmationQuery,
   useSellerOrderInquiryQuery,
@@ -169,7 +168,6 @@ function OrderConfirmationCard({ view }: { view: DetailView }) {
 
   return (
     <article className="flex w-full flex-col gap-8 overflow-hidden rounded-seller-sm bg-surface-default px-4 py-8 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
-      <OrderReferenceImage imageUrl={view.viewModel.thumbnailUrl} />
       <div className="flex w-full items-start justify-between text-seller-display-sm leading-[30px] font-bold tracking-[-0.66px] text-text-primary">
         <p>{formatConfirmationDate(pickupAt)}</p>
         <p>{formatTime(pickupAt)}</p>
@@ -211,23 +209,6 @@ function OrderConfirmationCard({ view }: { view: DetailView }) {
         <p>{formatPrice(view.confirmation?.amount ?? view.order.paidAmount)}</p>
       </div>
     </article>
-  );
-}
-
-function OrderReferenceImage({ imageUrl }: { imageUrl: string | null }) {
-  if (!imageUrl) {
-    return null;
-  }
-
-  return (
-    <div className="size-[96px] overflow-hidden rounded-seller-sm bg-surface-subtle shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        alt="주문 참조 이미지"
-        className="size-full object-cover"
-        src={imageUrl}
-      />
-    </div>
   );
 }
 
@@ -345,15 +326,23 @@ function OrderOptionAssetPreviewList({
     >
       {assets.map((asset, index) => (
         <div
-          className="size-16 shrink-0 overflow-hidden rounded-seller-sm bg-surface-subtle"
+          className="size-[100px] shrink-0 overflow-hidden rounded-seller-sm bg-surface-subtle"
           key={`${asset.assetId}-${index}`}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            alt="첨부 이미지 미리보기"
-            className="size-full object-cover"
-            src={asset.deliveryUrl}
-          />
+          {asset.deliveryUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              alt="첨부 이미지 미리보기"
+              className="size-full object-cover"
+              src={asset.deliveryUrl}
+            />
+          ) : (
+            <span className="flex size-full items-center justify-center px-2 text-center text-[11px] leading-4 text-text-tertiary">
+              {["PROCESSING", "UPLOADED"].includes(asset.status)
+                ? "이미지 처리 중"
+                : "이미지를 불러올 수 없어요"}
+            </span>
+          )}
         </div>
       ))}
     </div>
@@ -424,9 +413,7 @@ function toDetailView(
       detailRows,
       selectedRows: detailRows,
       storeName,
-      thumbnailUrl:
-        getReferenceAssetThumbnailUrl(detail.order.referenceAssets) ??
-        getReferenceAssetThumbnailUrl(relations.submission?.referenceAssets),
+      thumbnailUrl: null,
     },
   };
 }

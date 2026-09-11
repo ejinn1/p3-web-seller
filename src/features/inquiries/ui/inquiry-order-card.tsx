@@ -31,9 +31,6 @@ export function InquiryOrderCard({
 
   return (
     <article className="w-full rounded-seller-sm bg-surface-default px-4 py-8 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
-      {!isConfirmationEditor ? (
-        <OrderReferenceImage imageUrl={order.imageUrl} />
-      ) : null}
       <div
         className={cn(
           "flex justify-between font-bold text-text-primary",
@@ -94,7 +91,6 @@ function OrderFormCard({
 }) {
   return (
     <article className="min-h-[696px] w-full rounded-seller-sm bg-surface-default px-4 pt-6 pb-6 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
-      <OrderReferenceImage imageUrl={order.imageUrl} />
       <div className="space-y-12">
         <OrderFormSection
           price={order.pickupTime}
@@ -207,8 +203,6 @@ function ConfirmationOptionRow({
   option: InquiryOrderOption;
 }) {
   const showPrice = !option.needsPrice || mode !== "confirmation-draft";
-  const isConfirmationEditor =
-    mode === "confirmation-draft" || mode === "confirmation-priced";
 
   return (
     <div className="space-y-2">
@@ -239,24 +233,7 @@ function ConfirmationOptionRow({
       </button>
       <ReferenceAssetPreviewList
         assets={option.assetPreviews}
-        size={isConfirmationEditor ? "lg" : "sm"}
-      />
-    </div>
-  );
-}
-
-function OrderReferenceImage({ imageUrl }: { imageUrl: string | null }) {
-  if (!imageUrl) {
-    return null;
-  }
-
-  return (
-    <div className="mb-8 size-[96px] overflow-hidden rounded-seller-sm bg-surface-subtle shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        alt="주문 참조 이미지"
-        className="size-full object-cover"
-        src={imageUrl}
+        size="lg"
       />
     </div>
   );
