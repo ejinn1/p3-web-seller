@@ -3,7 +3,13 @@
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Menu, SlidersHorizontal, X } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Menu,
+  SlidersHorizontal,
+  X,
+} from "lucide-react";
 import { SellerSidebar } from "@/components/widgets/seller-sidebar";
 import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
 import { revenueCancelHistory } from "@/features/revenue/model/revenue-fixtures";
@@ -13,6 +19,14 @@ import type {
   SellerOrderStatus,
 } from "@/features/orders/model/order-types";
 import { useSellerRevenueQuery } from "@/features/revenue/model/revenue-queries";
+import {
+  moveMonth,
+  parseIsoDate,
+  RevenueDateRangeSheet,
+  startOfMonth,
+  type RevenueDateRangeDraft,
+  type RevenueDateRangeStep,
+} from "@/features/revenue/ui/revenue-date-range-sheet";
 import type {
   RevenueCancelHistory,
   RevenueOrderLine,
@@ -53,6 +67,14 @@ export function RevenueScreen({ initialView }: RevenueScreenProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [customStep, setCustomStep] = useState<RevenueDateRangeStep | null>(
+    null,
+  );
+  const [customRangeDraft, setCustomRangeDraft] =
+    useState<RevenueDateRangeDraft>({ endDate: null, startDate: null });
+  const [calendarMonth, setCalendarMonth] = useState(() =>
+    startOfMonth(new Date()),
+  );
   const activePeriod = parsePeriod(searchParams.get("period"));
   const customRange = parseCustomRange(searchParams);
   const range = rangeForPeriod(activePeriod, customRange);
@@ -89,9 +111,23 @@ export function RevenueScreen({ initialView }: RevenueScreenProps) {
   };
 
   const selectPeriod = (period: RevenuePeriod) => {
+    if (period === "custom") {
+      const nextRange =
+        activePeriod === "custom" && customRange
+          ? customRange
+          : { endDate: null, startDate: null };
+      setCustomRangeDraft(nextRange);
+      setCalendarMonth(
+        nextRange.startDate
+          ? startOfMonth(parseIsoDate(nextRange.startDate))
+          : startOfMonth(new Date()),
+      );
+      setCustomStep("start");
+      return;
+    }
+
     router.push(
       buildRevenueHref({
-        customRange: period === "custom" ? range : undefined,
         period,
         view,
       }),
@@ -153,13 +189,41 @@ export function RevenueScreen({ initialView }: RevenueScreenProps) {
       />
       <section className="flex flex-col" data-node-id="1290:16176">
         <PeriodTabs activePeriod={activePeriod} onSelect={selectPeriod} />
-        <div className="mt-1 flex h-14 items-center px-4" data-node-id="1326:22954">
-          <h2
-            className="text-[18px] leading-[24px] font-semibold tracking-[-0.54px]"
-            data-typography="revenue-month-heading"
-          >
-            {formatRangeLabel(range.startDate, range.endDate)}
-          </h2>
+        <div
+          className="mt-1 flex min-h-14 items-center px-4"
+          data-node-id="1326:22954"
+        >
+          {activePeriod === "custom" && customRange ? (
+            <div
+              className="flex h-11 w-full items-center rounded-seller-sm bg-surface-subtle pl-4 text-text-secondary"
+              data-qa="revenue-custom-date-chip"
+            >
+              <button
+                className="min-w-0 flex-1 truncate text-left text-[15px] leading-5 font-semibold tracking-[-0.3px]"
+                onClick={() => selectPeriod("custom")}
+                type="button"
+              >
+                {formatRangeLabel(range.startDate, range.endDate)}
+              </button>
+              <button
+                aria-label="선택한 기간 삭제"
+                className="flex size-11 shrink-0 items-center justify-center text-icon-default"
+                onClick={() =>
+                  router.push(buildRevenueHref({ period: "today", view }))
+                }
+                type="button"
+              >
+                <X aria-hidden="true" className="size-4" strokeWidth={2} />
+              </button>
+            </div>
+          ) : (
+            <h2
+              className="text-[18px] leading-[24px] font-semibold tracking-[-0.54px]"
+              data-typography="revenue-month-heading"
+            >
+              {formatRangeLabel(range.startDate, range.endDate)}
+            </h2>
+          )}
         </div>
         <div
           className="flex flex-col gap-4 bg-surface-subtle px-4 pt-4 pb-[34px]"
@@ -179,6 +243,70 @@ export function RevenueScreen({ initialView }: RevenueScreenProps) {
           API revenue range: {revenue.startDate} - {revenue.endDate}
         </span>
       ) : null}
+      <RevenueDateRangeSheet
+        calendarMonth={calendarMonth}
+        dateRange={customRangeDraft}
+        onBack={() => {
+          if (customStep === "start") {
+            setCustomStep(null);
+            return;
+          }
+
+          const previousStep = customStep === "end" ? "start" : "end";
+          const previousDate =
+            previousStep === "start"
+              ? customRangeDraft.startDate
+              : customRangeDraft.endDate;
+          if (previousDate) {
+            setCalendarMonth(startOfMonth(parseIsoDate(previousDate)));
+          }
+          setCustomStep(previousStep);
+        }}
+        onClose={() => setCustomStep(null)}
+        onMoveMonth={(amount) =>
+          setCalendarMonth((month) => moveMonth(month, amount))
+        }
+        onNext={() => {
+          if (customStep === "start" && customRangeDraft.startDate) {
+            setCustomStep("end");
+            return;
+          }
+
+          if (customStep === "end" && customRangeDraft.endDate) {
+            setCustomStep("done");
+            return;
+          }
+
+          if (!customRangeDraft.startDate || !customRangeDraft.endDate) {
+            return;
+          }
+
+          router.push(
+            buildRevenueHref({
+              customRange: {
+                endDate: customRangeDraft.endDate,
+                startDate: customRangeDraft.startDate,
+              },
+              period: "custom",
+              view,
+            }),
+          );
+          setCustomStep(null);
+        }}
+        onSelectDate={(date) => {
+          if (customStep === "start") {
+            setCustomRangeDraft({ endDate: null, startDate: date });
+            return;
+          }
+
+          setCustomRangeDraft((rangeDraft) => ({
+            ...rangeDraft,
+            endDate: date,
+          }));
+        }}
+        open={customStep !== null}
+        step={customStep ?? "start"}
+      />
       <SellerSidebar onOpenChange={setSidebarOpen} open={sidebarOpen} />
     </SellerResponsiveFrame>
   );
