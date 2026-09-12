@@ -65,7 +65,6 @@ export function toInquiryDetail({
   status?: InquiryStatus;
   timeline: InquiryTimelineItemResponse[];
 }): InquiryDetail {
-  const latestSubmission = newestBy(submissions, "submittedAt");
   const latestConfirmation = newestBy(confirmations, "createdAt");
   const confirmationAmounts = new Map(
     confirmations.map((confirmation) => [
@@ -82,6 +81,9 @@ export function toInquiryDetail({
   const submissionsById = new Map(
     submissions.map((submission) => [submission.id, submission]),
   );
+  const latestSubmission = latestConfirmation
+    ? (submissionsById.get(latestConfirmation.orderFormSubmissionId) ?? null)
+    : newestBy(submissions, "submittedAt");
   const ordersBySubmissionId = Object.fromEntries(
     submissions.map((submission) => [
       submission.id,

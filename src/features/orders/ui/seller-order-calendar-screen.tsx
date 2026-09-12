@@ -98,8 +98,7 @@ export function SellerOrderCalendarScreen() {
     -1,
   );
   const selectedDay = calendar?.days.find((day) => day.date === activeDate);
-  const selectedOrderId =
-    searchParams.get("orderId") ?? selectedDay?.orders[0]?.orderId ?? null;
+  const selectedOrderId = searchParams.get("orderId");
   const detailQuery = useSellerOrderDetailQuery(
     view === "detail" ? selectedOrderId : null,
   );

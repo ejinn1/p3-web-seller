@@ -32,6 +32,10 @@ export function getSellerRefundUiState(
   detail: SellerOrderDetail,
 ): SellerRefundUiState {
   const latestRefund = getLatestRefund(detail.refunds);
+  const manualRequiredRefunds = detail.refunds.filter(
+    (refund) =>
+      refund.status === "FAILED" && refund.outcome === "MANUAL_REQUIRED",
+  );
 
   if (detail.order.status === "REFUNDED") {
     return {
@@ -69,11 +73,31 @@ export function getSellerRefundUiState(
     };
   }
 
-  if (latestRefund?.outcome === "MANUAL_REQUIRED") {
+  if (
+    detail.order.status === "REFUND_REQUESTED" &&
+    manualRequiredRefunds.length > 1
+  ) {
+    return {
+      action: null,
+      actionLabel: null,
+      actionRefundId: null,
+      kind: "FAILED",
+      message: "수동 환불 대상을 정확히 특정하지 못했습니다.",
+      showCompletedAction: false,
+      showPickupAction: false,
+    };
+  }
+
+  const manualRequiredRefund = manualRequiredRefunds[0] ?? null;
+
+  if (
+    detail.order.status === "REFUND_REQUESTED" &&
+    manualRequiredRefund !== null
+  ) {
     return {
       action: "MANUAL_COMPLETE",
       actionLabel: "환불 완료",
-      actionRefundId: latestRefund.refundId,
+      actionRefundId: manualRequiredRefund.refundId,
       kind: "MANUAL_REQUIRED",
       message: "자동 환불 가능 기간이 지나 수동 환불이 필요합니다.",
       showCompletedAction: false,
