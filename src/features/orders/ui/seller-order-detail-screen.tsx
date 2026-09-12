@@ -13,6 +13,7 @@ import type {
   InquiryReferenceAssetResponse,
 } from "@/features/inquiries/model/inquiry-types";
 import {
+  useCompleteSellerOrderManualRefundMutation,
   useCompleteSellerOrderPickupMutation,
   useRefreshSellerOrderRefundMutation,
   useRefundSellerOrderMutation,
@@ -52,6 +53,8 @@ export function SellerOrderDetailScreen({ orderId }: { orderId: string }) {
   const pickupMutation = useCompleteSellerOrderPickupMutation(orderId);
   const refundMutation = useRefundSellerOrderMutation(orderId);
   const refreshRefundMutation = useRefreshSellerOrderRefundMutation(orderId);
+  const manualRefundMutation =
+    useCompleteSellerOrderManualRefundMutation(orderId);
   const order = query.data?.order ?? null;
   const inquiryQuery = useSellerOrderInquiryQuery(order?.inquiryId ?? null);
   const confirmationQuery = useSellerOrderConfirmationQuery(
@@ -70,8 +73,14 @@ export function SellerOrderDetailScreen({ orderId }: { orderId: string }) {
         submission: submissionQuery.data,
       })
     : null;
+  const refundState = query.data ? getSellerRefundUiState(query.data) : null;
+  const isRefundFlowView =
+    refundState !== null &&
+    refundState.kind !== "AVAILABLE" &&
+    refundState.kind !== "UNAVAILABLE";
+  const showConfirmationView = isConfirmationView && !isRefundFlowView;
   const isRelatedLoading =
-    isConfirmationView &&
+    showConfirmationView &&
     Boolean(query.data) &&
     (inquiryQuery.isLoading ||
       confirmationQuery.isLoading ||
@@ -81,12 +90,14 @@ export function SellerOrderDetailScreen({ orderId }: { orderId: string }) {
   const isLoading = query.isLoading || isRelatedLoading;
   const isError =
     query.isError ||
-    (isConfirmationView &&
+    (showConfirmationView &&
       (inquiryQuery.isError ||
         confirmationQuery.isError ||
         submissionQuery.isError));
-  const refundState = query.data ? getSellerRefundUiState(query.data) : null;
-  const refundActionError = refundMutation.error ?? refreshRefundMutation.error;
+  const refundActionError =
+    refundMutation.error ??
+    refreshRefundMutation.error ??
+    manualRefundMutation.error;
 
   return (
     <SellerResponsiveFrame className="bg-surface-subtle">
@@ -97,12 +108,12 @@ export function SellerOrderDetailScreen({ orderId }: { orderId: string }) {
             : getSellerBackHref("orderDetail")
         }
         onMenu={() => setSidebarOpen(true)}
-        showMenu={!isConfirmationView}
-        title={isConfirmationView ? "주문확인서" : "주문 내역"}
+        showMenu={!showConfirmationView}
+        title={showConfirmationView ? "주문확인서" : "주문 내역"}
       />
       <section
         className={`flex flex-1 flex-col overflow-y-auto px-4 pb-[34px] ${
-          isConfirmationView ? "gap-4 pt-6" : "gap-8 pt-4"
+          showConfirmationView ? "gap-4 pt-6" : "gap-8 pt-4"
         }`}
       >
         {isLoading ? (
@@ -122,7 +133,7 @@ export function SellerOrderDetailScreen({ orderId }: { orderId: string }) {
         {!isLoading && !isError && !view ? (
           <DetailState message="주문 상세 정보가 없습니다." />
         ) : null}
-        {!isLoading && !isError && view && isConfirmationView ? (
+        {!isLoading && !isError && view && showConfirmationView ? (
           <>
             <OrderConfirmationCard view={view} />
             <Button
@@ -133,16 +144,18 @@ export function SellerOrderDetailScreen({ orderId }: { orderId: string }) {
             </Button>
           </>
         ) : null}
-        {!isLoading && !isError && view && !isConfirmationView ? (
+        {!isLoading && !isError && view && !showConfirmationView ? (
           <>
             <OrderDetailCard selected={isSelectedView} view={view} />
-            {refundState?.message ? (
+            {refundState?.message &&
+            refundState.kind !== "MANUAL_REQUIRED" &&
+            refundState.kind !== "COMPLETED" ? (
               <RefundStatusNotice state={refundState} />
             ) : null}
           </>
         ) : null}
       </section>
-      {!isConfirmationView && !isLoading && !isError && refundState ? (
+      {!showConfirmationView && !isLoading && !isError && refundState ? (
         <SellerOrderActions
           error={refundActionError}
           onPickup={() => {
@@ -152,10 +165,12 @@ export function SellerOrderDetailScreen({ orderId }: { orderId: string }) {
           }}
           onRefund={() => refundMutation.mutate(undefined)}
           onRefresh={() => refreshRefundMutation.mutate()}
+          onManualComplete={(refundId) => manualRefundMutation.mutate(refundId)}
           pending={
             pickupMutation.isPending ||
             refundMutation.isPending ||
-            refreshRefundMutation.isPending
+            refreshRefundMutation.isPending ||
+            manualRefundMutation.isPending
           }
           state={refundState}
         />
@@ -170,6 +185,7 @@ function SellerOrderActions({
   onPickup,
   onRefund,
   onRefresh,
+  onManualComplete,
   pending,
   state,
 }: {
@@ -177,17 +193,41 @@ function SellerOrderActions({
   onPickup: () => void;
   onRefund: () => void;
   onRefresh: () => void;
+  onManualComplete: (refundId: string) => void;
   pending: boolean;
   state: SellerRefundUiState;
 }) {
-  if (!state.action && !state.showPickupAction) {
+  if (!state.action && !state.showCompletedAction && !state.showPickupAction) {
     return null;
   }
 
   return (
     <div className="flex flex-col gap-2 bg-surface-subtle px-4 pt-4 pb-[34px]">
       <div className="flex gap-2">
-        {state.action ? (
+        {state.showCompletedAction ? (
+          <Button
+            className="h-[52px] w-full rounded-seller-md text-[18px] leading-6 font-semibold tracking-[-0.54px] disabled:bg-brand-disabled disabled:text-text-disabled disabled:opacity-100"
+            data-qa="orders-refund-completed-button"
+            disabled
+          >
+            환불완료
+          </Button>
+        ) : null}
+        {state.action === "MANUAL_COMPLETE" && state.actionRefundId ? (
+          <Button
+            className="h-[52px] w-full rounded-seller-md text-[18px] leading-6 font-semibold tracking-[-0.54px]"
+            data-qa="orders-manual-refund-complete-button"
+            disabled={pending}
+            onClick={() => {
+              if (state.actionRefundId) {
+                onManualComplete(state.actionRefundId);
+              }
+            }}
+          >
+            {pending ? "처리 중" : state.actionLabel}
+          </Button>
+        ) : null}
+        {state.action && state.action !== "MANUAL_COMPLETE" ? (
           <Button
             className="h-11 flex-1 rounded-seller-md border-border-default text-[15px] leading-5 font-semibold tracking-[-0.3px] !text-text-secondary"
             data-qa={

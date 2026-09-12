@@ -2,6 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
+  completeSellerOrderManualRefund,
   completeSellerOrderPickup,
   refreshSellerOrderRefund,
   refundSellerOrder,
@@ -15,7 +16,9 @@ export function useCompleteSellerOrderPickupMutation(orderId: string) {
     mutationFn: () => completeSellerOrderPickup(orderId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: orderKeys.all });
-      void queryClient.invalidateQueries({ queryKey: orderKeys.detail(orderId) });
+      void queryClient.invalidateQueries({
+        queryKey: orderKeys.detail(orderId),
+      });
     },
   });
 }
@@ -37,6 +40,19 @@ export function useRefreshSellerOrderRefundMutation(orderId: string) {
 
   return useMutation({
     mutationFn: () => refreshSellerOrderRefund(orderId),
+    onSuccess: (detail) => {
+      queryClient.setQueryData(orderKeys.detail(orderId), detail);
+      void queryClient.invalidateQueries({ queryKey: orderKeys.all });
+    },
+  });
+}
+
+export function useCompleteSellerOrderManualRefundMutation(orderId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (refundId: string) =>
+      completeSellerOrderManualRefund({ orderId, refundId }),
     onSuccess: (detail) => {
       queryClient.setQueryData(orderKeys.detail(orderId), detail);
       void queryClient.invalidateQueries({ queryKey: orderKeys.all });

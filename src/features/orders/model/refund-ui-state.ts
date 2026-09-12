@@ -3,11 +3,13 @@ import type {
   SellerOrderDetail,
 } from "@/features/orders/model/order-types";
 
-export type SellerRefundAction = "REFUND" | "REFRESH" | null;
+export type SellerRefundAction =
+  "REFUND" | "REFRESH" | "MANUAL_COMPLETE" | null;
 
 export type SellerRefundUiState = {
   action: SellerRefundAction;
   actionLabel: string | null;
+  actionRefundId: string | null;
   kind:
     | "AVAILABLE"
     | "REQUESTED"
@@ -18,6 +20,7 @@ export type SellerRefundUiState = {
     | "COMPLETED"
     | "UNAVAILABLE";
   message: string | null;
+  showCompletedAction: boolean;
   showPickupAction: boolean;
 };
 
@@ -34,8 +37,10 @@ export function getSellerRefundUiState(
     return {
       action: null,
       actionLabel: null,
+      actionRefundId: null,
       kind: "COMPLETED",
       message: "환불이 완료되었습니다.",
+      showCompletedAction: true,
       showPickupAction: false,
     };
   }
@@ -44,8 +49,10 @@ export function getSellerRefundUiState(
     return {
       action: "REFRESH",
       actionLabel: "상태 확인",
+      actionRefundId: null,
       kind: "PROCESSING",
       message: "환불 처리 결과를 확인 중입니다.",
+      showCompletedAction: false,
       showPickupAction: false,
     };
   }
@@ -54,18 +61,22 @@ export function getSellerRefundUiState(
     return {
       action: "REFUND",
       actionLabel: "환불 재시도",
+      actionRefundId: null,
       kind: "RETRYABLE",
       message: "현재 환불 처리 제한 시간입니다. 잠시 후 다시 시도해 주세요.",
+      showCompletedAction: false,
       showPickupAction: false,
     };
   }
 
   if (latestRefund?.outcome === "MANUAL_REQUIRED") {
     return {
-      action: null,
-      actionLabel: null,
+      action: "MANUAL_COMPLETE",
+      actionLabel: "환불 완료",
+      actionRefundId: latestRefund.refundId,
       kind: "MANUAL_REQUIRED",
       message: "자동 환불 가능 기간이 지나 수동 환불이 필요합니다.",
+      showCompletedAction: false,
       showPickupAction: false,
     };
   }
@@ -74,10 +85,12 @@ export function getSellerRefundUiState(
     return {
       action: latestRefund.retryable ? "REFUND" : null,
       actionLabel: latestRefund.retryable ? "환불 재시도" : null,
+      actionRefundId: null,
       kind: "FAILED",
       message: latestRefund.retryable
         ? "환불 처리에 실패했습니다. 다시 시도해 주세요."
         : "자동 환불에 실패했습니다. 관리자 확인이 필요합니다.",
+      showCompletedAction: false,
       showPickupAction: false,
     };
   }
@@ -86,8 +99,10 @@ export function getSellerRefundUiState(
     return {
       action: "REFUND",
       actionLabel: "환불처리",
+      actionRefundId: null,
       kind: "REQUESTED",
       message: "구매자가 환불을 요청했습니다. 환불 처리가 필요합니다.",
+      showCompletedAction: false,
       showPickupAction: false,
     };
   }
@@ -96,8 +111,10 @@ export function getSellerRefundUiState(
     return {
       action: null,
       actionLabel: null,
+      actionRefundId: null,
       kind: "AVAILABLE",
       message: null,
+      showCompletedAction: false,
       showPickupAction: true,
     };
   }
@@ -105,8 +122,10 @@ export function getSellerRefundUiState(
   return {
     action: null,
     actionLabel: null,
+    actionRefundId: null,
     kind: "UNAVAILABLE",
     message: null,
+    showCompletedAction: false,
     showPickupAction: false,
   };
 }
