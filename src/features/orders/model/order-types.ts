@@ -14,6 +14,7 @@ export type PaymentAttemptStatus =
 export type RefundStatus = "REQUESTED" | "PROCESSING" | "COMPLETED" | "FAILED";
 export type RefundOutcome =
   "COMPLETED" | "PROCESSING" | "RETRYABLE" | "MANUAL_REQUIRED" | "FAILED";
+export type RefundCompletionMethod = "AUTOMATIC" | "MANUAL" | "ZERO_AMOUNT";
 
 export type OrderListDateBasis = "PAID_AT" | "PICKUP_AT" | "CREATED_AT";
 
@@ -85,9 +86,11 @@ export type Refund = {
   failureCode: string | null;
   failureMessage: string | null;
   failureDetails: string | null;
-  failedAt: string | null;
   createdAt: string;
   completedAt: string | null;
+  completedBy: string | null;
+  completionMethod: RefundCompletionMethod | null;
+  failedAt: string | null;
 };
 
 export type OrderOptionRow = {

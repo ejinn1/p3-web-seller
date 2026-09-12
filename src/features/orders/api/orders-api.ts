@@ -61,3 +61,15 @@ export const refreshSellerOrderRefund = (orderId: string) =>
     `/seller/orders/${orderId}/refund/refresh`,
     "POST",
   );
+
+export const completeSellerOrderManualRefund = ({
+  orderId,
+  refundId,
+}: {
+  orderId: string;
+  refundId: string;
+}) =>
+  sendJson<SellerOrderDetail>(
+    `/seller/orders/${orderId}/refunds/${refundId}/manual-complete`,
+    "POST",
+  );

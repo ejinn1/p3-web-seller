@@ -144,7 +144,7 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
     [confirmationPreviewQuery.data, selectedSubmissionOrder],
   );
   const documentSourceOrder =
-    state === "confirmation-view" && selectedConfirmationId
+    state === "confirmation-view"
       ? selectedConfirmationOrder
       : usesSelectedSubmission
         ? selectedSubmissionOrderWithPreview
@@ -267,6 +267,10 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
     return <InquiryDetailState message="선택한 주문서 정보가 없습니다." />;
   }
 
+  if (state === "confirmation-view" && !selectedConfirmationId) {
+    return <InquiryDetailState message="선택한 주문확인서 정보가 없습니다." />;
+  }
+
   if (usesSelectedSubmission && !selectedSubmissionOrder) {
     return (
       <InquiryDetailState message="선택한 주문서를 불러오지 못했습니다." />
@@ -296,11 +300,7 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
     );
   }
 
-  if (
-    state === "confirmation-view" &&
-    selectedConfirmationId &&
-    !selectedConfirmationOrder
-  ) {
+  if (state === "confirmation-view" && !selectedConfirmationOrder) {
     return (
       <InquiryDetailState message="선택한 주문확인서를 불러오지 못했습니다." />
     );
