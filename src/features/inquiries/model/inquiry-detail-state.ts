@@ -7,6 +7,7 @@ export type InquiryScreenState =
   | "order-history";
 
 export type InquiryDocumentMode = Exclude<InquiryScreenState, "chat">;
+export type InquiryEntrySource = "seller-home";
 
 const states = new Set<InquiryScreenState>([
   "chat",
@@ -32,6 +33,7 @@ export function getInquiryDetailHref(
     confirmationId?: string;
     modal?: "payment-request";
     sheet?: "price";
+    source?: InquiryEntrySource;
     submissionId?: string;
   },
 ) {
@@ -52,9 +54,18 @@ export function getInquiryDetailHref(
   if (options?.modal) {
     params.set("modal", options.modal);
   }
+  if (options?.source) {
+    params.set("source", options.source);
+  }
 
   const query = params.toString();
   return `/seller/inquiries/${inquiryId}${query ? `?${query}` : ""}`;
+}
+
+export function parseInquiryEntrySource(
+  value: string | null,
+): InquiryEntrySource | null {
+  return value === "seller-home" ? value : null;
 }
 
 export function isInquiryDocumentState(state: InquiryScreenState) {

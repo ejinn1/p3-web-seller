@@ -310,7 +310,7 @@ function InquiryRow({
                     {inquiry.unreadCount}
                   </span>
                 ) : null}
-                {inquiry.hasOrderFormSubmission ? (
+                {inquiry.latestOrderFormSubmissionId ? (
                   <span className="rounded-seller-sm bg-brand-subtle px-1.5 py-0.5 text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-secondary">
                     주문서
                   </span>

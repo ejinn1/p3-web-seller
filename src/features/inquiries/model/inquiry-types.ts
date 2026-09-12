@@ -203,7 +203,7 @@ export type SellerInquiryListParams = {
 export type InquiryListItem = {
   id: string;
   buyerName: string;
-  hasOrderFormSubmission: boolean;
+  latestOrderFormSubmissionId: string | null;
   lastMessage: string;
   lastMessageAt: string;
   lastMessageTimeLabel: string;
