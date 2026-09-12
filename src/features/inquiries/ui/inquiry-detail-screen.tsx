@@ -7,6 +7,7 @@ import { useCurrentUserQuery } from "@/features/auth/model/auth-queries";
 import {
   getInquiryDetailHref,
   isInquiryDocumentState,
+  parseInquiryEntrySource,
   parseInquiryScreenState,
 } from "@/features/inquiries/model/inquiry-detail-state";
 import { useSellerInquiryListStomp } from "@/features/inquiries/model/inquiry-list-stomp";
@@ -53,6 +54,7 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
     Boolean(process.env.NEXT_PUBLIC_P3_API_BASE_URL),
   );
   const state = parseInquiryScreenState(searchParams.get("state"));
+  const source = parseInquiryEntrySource(searchParams.get("source"));
   const selectedConfirmationId = searchParams.get("confirmationId");
   const selectedSubmissionId = searchParams.get("submissionId");
   const sheet = searchParams.get("sheet");
@@ -166,6 +168,15 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
     nextState: Parameters<typeof getInquiryDetailHref>[1],
     options?: Parameters<typeof getInquiryDetailHref>[2],
   ) => router.push(getInquiryDetailHref(inquiryId, nextState, options));
+
+  const handleDocumentBack = () => {
+    if (state === "order-form" && source === "seller-home") {
+      router.push("/seller/home?tab=waiting");
+      return;
+    }
+
+    navigate("chat");
+  };
 
   useEffect(() => {
     if (
@@ -330,7 +341,7 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
       <>
         <InquiryOrderDocumentScreen
           mode={state}
-          onBack={() => navigate("chat")}
+          onBack={handleDocumentBack}
           onOpenPrice={
             state === "order-form"
               ? undefined

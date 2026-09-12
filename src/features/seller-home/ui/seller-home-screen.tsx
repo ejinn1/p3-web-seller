@@ -22,7 +22,6 @@ import { useSellerHomeDashboardQuery } from "@/features/seller-home/model/seller
 import type {
   SellerHomeDashboard,
   SellerHomeInquiry,
-  SellerHomeOrderForm,
   SellerHomePickup,
 } from "@/features/seller-home/model/seller-home-types";
 import { cn } from "@/lib/utils";
@@ -33,8 +32,7 @@ const useFixtures =
   !process.env.NEXT_PUBLIC_P3_API_BASE_URL;
 
 type SellerHomeTab = "pickup" | "selected-pickup" | "waiting";
-type SellerHomeView =
-  "home" | "confirmation" | "chat" | "order-form" | "revision-chat";
+type SellerHomeView = "home" | "confirmation" | "chat" | "revision-chat";
 
 export function SellerHomeScreen() {
   const router = useRouter();
@@ -157,29 +155,6 @@ export function SellerHomeScreen() {
     );
   }
 
-  if (view === "order-form") {
-    return (
-      <>
-        <OrderFormView
-          onMenu={() => setState({ sidebar: "open" })}
-          orderForm={dashboard.orderForm}
-          onBack={() => setState({ view: null })}
-          onRevision={() => setState({ modal: "revision" })}
-        />
-        {showRevisionModal ? (
-          <RevisionModal
-            onCancel={() => setState({ modal: null })}
-            onContinue={() => setState({ modal: null, view: "revision-chat" })}
-          />
-        ) : null}
-        <SellerSidebar
-          onOpenChange={(open) => setState({ sidebar: open ? "open" : null })}
-          open={showSidebar}
-        />
-      </>
-    );
-  }
-
   return (
     <SellerResponsiveFrame className="relative overflow-x-hidden">
       <HomeHeader onMenu={() => setState({ sidebar: "open" })} />
@@ -280,7 +255,16 @@ export function SellerHomeScreen() {
               onChat={(selectedInquiryId) =>
                 router.push(getInquiryDetailHref(selectedInquiryId, "chat"))
               }
-              onOrderForm={() => setState({ view: "order-form" })}
+              onOrderForm={(inquiry) => {
+                if (!inquiry.orderFormSubmissionId) return;
+
+                router.push(
+                  getInquiryDetailHref(inquiry.id, "order-form", {
+                    source: "seller-home",
+                    submissionId: inquiry.orderFormSubmissionId,
+                  }),
+                );
+              }}
               onSelect={(selectedInquiryId) =>
                 setState({ inquiryId: selectedInquiryId, inquiryState: null })
               }
@@ -863,7 +847,7 @@ function InquiryList({
 }: {
   inquiries: SellerHomeInquiry[];
   onChat: (inquiryId: string) => void;
-  onOrderForm: () => void;
+  onOrderForm: (inquiry: SellerHomeInquiry) => void;
   onSelect: (inquiryId: string) => void;
   selectedInquiryId: string | null;
 }) {
@@ -876,7 +860,7 @@ function InquiryList({
             inquiry={inquiry}
             key={inquiry.id}
             onChat={() => onChat(inquiry.id)}
-            onOrderForm={onOrderForm}
+            onOrderForm={() => onOrderForm(inquiry)}
             onSelect={() => onSelect(inquiry.id)}
             selected={selected}
           />
@@ -943,7 +927,7 @@ function InquiryRow({
           </Button>
           <Button
             className="h-11 flex-1 rounded-seller-md text-[15px] leading-5 font-semibold tracking-[-0.3px] disabled:bg-[#d0d0d2] disabled:text-text-disabled disabled:opacity-100"
-            disabled={!inquiry.hasOrderForm}
+            disabled={!inquiry.orderFormSubmissionId}
             onClick={onOrderForm}
           >
             주문서 보기
@@ -1071,99 +1055,6 @@ function ConfirmationLine({
         ) : null}
       </div>
     </div>
-  );
-}
-
-function OrderFormView({
-  onBack,
-  onMenu,
-  onRevision,
-  orderForm,
-}: {
-  onBack: () => void;
-  onMenu: () => void;
-  onRevision: () => void;
-  orderForm: SellerHomeOrderForm;
-}) {
-  return (
-    <SellerResponsiveFrame className="bg-surface-subtle">
-      <DetailHeader onBack={onBack} onMenu={onMenu} title="주문서" />
-      <section className="flex flex-1 flex-col gap-4 overflow-hidden px-4 pt-4 pb-[calc(94px+env(safe-area-inset-bottom))]">
-        <div className="flex w-full flex-col gap-12 rounded-seller-sm bg-surface-default px-4 py-6 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
-          <OrderFormSection
-            label="픽업 일시"
-            value={orderForm.pickupDateLabel}
-            priceLabel={orderForm.pickupTimeLabel}
-          />
-          {orderForm.items.map((item) => (
-            <OrderFormSection
-              key={item.id}
-              label={item.label}
-              priceLabel={item.priceLabel}
-              required={item.required}
-              value={item.value}
-            />
-          ))}
-        </div>
-      </section>
-      <div className="fixed right-0 bottom-0 left-0 mx-auto flex w-full gap-2 bg-surface-default px-4 pt-4 pb-[calc(34px+env(safe-area-inset-bottom))] max-w-[768px]">
-        <Button
-          className="h-11 flex-1 rounded-seller-md border-border-strong text-[15px] leading-5 font-semibold tracking-[-0.3px]"
-          onClick={onRevision}
-          variant="outline"
-        >
-          수정 요청
-        </Button>
-        <Button className="h-11 flex-1 rounded-seller-md text-[15px] leading-5 font-semibold tracking-[-0.3px]">
-          주문확인서 작성
-        </Button>
-      </div>
-    </SellerResponsiveFrame>
-  );
-}
-
-function OrderFormSection({
-  label,
-  priceLabel,
-  required,
-  value,
-}: {
-  label: string;
-  priceLabel?: string;
-  required?: boolean;
-  value: string;
-}) {
-  return (
-    <section className="flex w-full flex-col gap-4">
-      <h2 className="flex items-start gap-1 text-[20px] leading-7 font-bold tracking-[-0.6px] text-text-primary">
-        {label}
-        {required ? (
-          <span className="relative -top-1 text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-error">
-            *
-          </span>
-        ) : null}
-      </h2>
-      <div className="flex h-6 w-full items-center justify-between gap-3">
-        <div className="flex h-11 min-w-0 items-center">
-          <span className="mr-2 size-4 shrink-0 rounded-full border-2 border-border-default" />
-          <p className="truncate text-[16px] leading-6 font-normal tracking-[-0.32px] text-text-primary">
-            {value}
-          </p>
-        </div>
-        {priceLabel ? (
-          <p
-            className={cn(
-              "shrink-0 text-right text-[15px] font-semibold",
-              label === "픽업 일시"
-                ? "w-[194px] leading-5 tracking-[-0.3px] text-text-secondary"
-                : "w-[160px] leading-[22px] tracking-[-0.15px] text-text-primary",
-            )}
-          >
-            {priceLabel}
-          </p>
-        ) : null}
-      </div>
-    </section>
   );
 }
 

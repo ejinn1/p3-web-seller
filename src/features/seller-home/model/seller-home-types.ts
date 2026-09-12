@@ -62,7 +62,7 @@ export type SellerHomeInquiry = {
   previewMessage: string;
   sentAt: string;
   unreadCount: number;
-  hasOrderForm: boolean;
+  orderFormSubmissionId: string | null;
 };
 
 export type SellerHomeOrderFormItem = {
