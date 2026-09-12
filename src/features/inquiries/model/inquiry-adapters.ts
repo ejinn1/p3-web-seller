@@ -73,6 +73,12 @@ export function toInquiryDetail({
       confirmation.amount,
     ]),
   );
+  const confirmationSubmissionIds = new Map(
+    confirmations.map((confirmation) => [
+      confirmation.confirmationId,
+      confirmation.orderFormSubmissionId,
+    ]),
+  );
   const submissionsById = new Map(
     submissions.map((submission) => [submission.id, submission]),
   );
@@ -99,6 +105,9 @@ export function toInquiryDetail({
   );
   const timelineContext = {
     confirmationAmountsById: Object.fromEntries(confirmationAmounts),
+    confirmationSubmissionIdsById: Object.fromEntries(
+      confirmationSubmissionIds,
+    ),
     orderAmountsById: Object.fromEntries(
       orders.map((order) => [order.id, order.paidAmount]),
     ),
@@ -113,6 +122,8 @@ export function toInquiryDetail({
     chatInfo: "픽업 상담",
     messages: toInquiryChatMessages(timeline, {
       confirmationAmountsById: timelineContext.confirmationAmountsById,
+      confirmationSubmissionIdsById:
+        timelineContext.confirmationSubmissionIdsById,
       orderAmountsById: timelineContext.orderAmountsById,
       participantUserId: detail.participant.userId,
       startReferenceImageUrl: timelineContext.startReferenceImageUrl,
@@ -138,6 +149,7 @@ export function toInquiryChatMessages(
   timeline: InquiryTimelineItemResponse[],
   context: {
     confirmationAmountsById: Record<string, number>;
+    confirmationSubmissionIdsById: Record<string, string>;
     orderAmountsById: Record<string, number>;
     participantUserId: string | null;
     startReferenceImageUrl: string | null;
@@ -153,6 +165,7 @@ export function toInquiryChatMessages(
         context.orderAmountsById[item.referenceId ?? ""] ?? null,
         context.submissionsById[item.referenceId ?? ""] ?? null,
         context.startReferenceImageUrl,
+        context.confirmationSubmissionIdsById[item.referenceId ?? ""] ?? null,
       ),
     )
     .filter(isInquiryChatMessage);
@@ -164,6 +177,8 @@ export function appendTimelineItem(
 ): InquiryDetail {
   const message = toInquiryChatMessages([item], {
     confirmationAmountsById: inquiry.timelineContext.confirmationAmountsById,
+    confirmationSubmissionIdsById:
+      inquiry.timelineContext.confirmationSubmissionIdsById,
     orderAmountsById: inquiry.timelineContext.orderAmountsById,
     participantUserId: inquiry.participantUserId,
     startReferenceImageUrl: inquiry.timelineContext.startReferenceImageUrl,
@@ -196,6 +211,7 @@ function toChatMessage(
   orderAmount: number | null,
   submission: InquiryOrderFormSubmissionResponse | null = null,
   startReferenceImageUrl: string | null = null,
+  confirmationSubmissionId: string | null = null,
 ): InquiryChatMessage | null {
   const owner: "buyer" | "seller" =
     buyerUserId && item.senderUserId === buyerUserId ? "buyer" : "seller";
@@ -282,7 +298,14 @@ function toChatMessage(
   }
 
   if (item.type === "ORDER_CONFIRMATION_REVISION") {
-    return null;
+    return {
+      confirmationId: item.referenceId ?? "",
+      id: item.eventId,
+      kind: "order-confirmation-revision-request" as const,
+      owner: "buyer" as const,
+      sentAt,
+      submissionId: confirmationSubmissionId,
+    };
   }
 
   return {
@@ -375,6 +398,7 @@ function toInquiryOrderConfirmation(
     basePrice,
     buyerName: detail.participant.name,
     buyerPhone: detail.participant.phoneNumber ?? "",
+    confirmationId: confirmation?.confirmationId ?? null,
     confirmationTitle:
       confirmation?.confirmationTitle ??
       draftPreview?.confirmationTitle ??
@@ -402,6 +426,7 @@ function toInquiryOrderConfirmation(
       draftPreview?.fixedOrderSummary ??
       rows.map((row) => `${row.label}: ${row.value}`).join("\n") ??
       "주문확인서",
+    status: confirmation?.status ?? null,
     totalPrice: confirmation?.amount ?? basePrice,
   };
 }

@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { InquiryChatMessage as InquiryChatMessageType } from "@/features/inquiries/model/inquiry-types";
 import { formatInquiryPrice } from "@/features/inquiries/model/inquiry-order-confirmation";
 import { ProfileImage } from "@/features/inquiries/ui/inquiry-list-screen";
+import { InquiryOrderConfirmationRevisionRequestCard } from "@/features/inquiries/ui/inquiry-order-confirmation-revision-request-card";
 import { cn } from "@/lib/utils";
 
 export function InquiryChatMessage({
@@ -10,6 +11,7 @@ export function InquiryChatMessage({
   onOpenOrderConfirmation,
   onOpenOrderForm,
   onOpenOrderHistory,
+  onReviseOrderConfirmation,
   onWriteOrderConfirmation,
 }: {
   buyerProfileImageUrl: string | null;
@@ -17,6 +19,10 @@ export function InquiryChatMessage({
   onOpenOrderConfirmation: (confirmationId: string) => void;
   onOpenOrderForm: (submissionId: string) => void;
   onOpenOrderHistory: (orderId: string) => void;
+  onReviseOrderConfirmation: (
+    confirmationId: string,
+    submissionId: string,
+  ) => void;
   onWriteOrderConfirmation: (submissionId: string) => void;
 }) {
   if (message.kind === "notice") {
@@ -103,6 +109,28 @@ export function InquiryChatMessage({
             주문서 수정하기
           </ActionButton>
         </div>
+      </BubbleRow>
+    );
+  }
+
+  if (message.kind === "order-confirmation-revision-request") {
+    return (
+      <BubbleRow
+        buyerProfileImageUrl={buyerProfileImageUrl}
+        owner="buyer"
+        sentAt={message.sentAt}
+      >
+        <InquiryOrderConfirmationRevisionRequestCard
+          disabled={!message.confirmationId || !message.submissionId}
+          onEdit={() => {
+            if (message.confirmationId && message.submissionId) {
+              onReviseOrderConfirmation(
+                message.confirmationId,
+                message.submissionId,
+              );
+            }
+          }}
+        />
       </BubbleRow>
     );
   }
