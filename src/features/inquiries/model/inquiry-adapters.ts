@@ -36,7 +36,8 @@ export function toInquiryListItem(item: InquiryListApiItem): InquiryListItem {
   return {
     id: item.inquiryId,
     buyerName: item.participant.name,
-    hasOrderFormSubmission: Boolean(item.latestOrderFormSubmission),
+    latestOrderFormSubmissionId:
+      item.latestOrderFormSubmission?.submissionId ?? null,
     lastMessage: formatLatestMessage(latestPreview),
     lastMessageAt: latestAt,
     lastMessageTimeLabel: formatShortTime(latestAt),

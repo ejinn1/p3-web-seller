@@ -56,7 +56,7 @@ export const sellerHomeDashboardFixture = {
       previewMessage: "안녕하세요. 잘 부탁드립니다@",
       sentAt: "오후 4:52",
       unreadCount: 1,
-      hasOrderForm: true,
+      orderFormSubmissionId: "submission-1",
     },
     {
       id: "inquiry-2",
@@ -64,7 +64,7 @@ export const sellerHomeDashboardFixture = {
       previewMessage: "안녕하세요.4시 픽업 가능한가요?",
       sentAt: "오후 5:52",
       unreadCount: 1,
-      hasOrderForm: false,
+      orderFormSubmissionId: null,
     },
   ],
   orderForm: {

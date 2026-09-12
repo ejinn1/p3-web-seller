@@ -62,7 +62,7 @@ function toSellerHomeInquiry(inquiry: InquiryListItem): SellerHomeInquiry {
     previewMessage: inquiry.lastMessage,
     sentAt: inquiry.lastMessageTimeLabel,
     unreadCount: inquiry.unreadCount,
-    hasOrderForm: inquiry.hasOrderFormSubmission,
+    orderFormSubmissionId: inquiry.latestOrderFormSubmissionId,
   };
 }
 
