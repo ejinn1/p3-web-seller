@@ -80,7 +80,7 @@ export function applyPriceDrafts(
       ...option,
       amount,
       needsPrice: false,
-      priceText: amount > 0 ? `+ ${formatInquiryPrice(amount)}` : "",
+      priceText: `+ ${formatInquiryPrice(amount)}`,
     };
   });
 

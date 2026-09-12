@@ -671,9 +671,7 @@ function toInquiryOrderOption(
     priceText:
       row.amount === null
         ? (priceLabel ?? "")
-        : row.amount > 0
-          ? `+ ${formatPrice(row.amount)}`
-          : "",
+        : `+ ${formatPrice(row.amount)}`,
     required: row.required,
     value: row.value,
   };
