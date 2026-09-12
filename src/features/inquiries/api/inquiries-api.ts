@@ -150,6 +150,34 @@ export const requestSellerOrderFormRevision = (
     "POST",
   );
 
+export async function replaceSellerOrderConfirmation(
+  inquiryId: string,
+  confirmationId: string,
+  replacementConfirmationId: string,
+) {
+  try {
+    return await sendJson<InquiryOrderConfirmationResponse>(
+      `/seller/inquiries/${inquiryId}/confirmations/${confirmationId}/replacement`,
+      "PATCH",
+      { replacementConfirmationId },
+    );
+  } catch (error) {
+    const current = await getSellerOrderConfirmation(
+      inquiryId,
+      confirmationId,
+    ).catch(() => null);
+
+    if (
+      current?.status === "REPLACED" &&
+      current.replacedByConfirmationId === replacementConfirmationId
+    ) {
+      return current;
+    }
+
+    throw error;
+  }
+}
+
 export const moveSellerInquiryToTrash = (inquiryId: string) =>
   sendJson<void>(`/seller/inquiries/${inquiryId}/trash`, "PATCH");
 

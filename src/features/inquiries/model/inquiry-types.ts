@@ -234,6 +234,14 @@ export type InquiryChatMessage =
       submissionId: string;
     }
   | {
+      confirmationId: string;
+      id: string;
+      kind: "order-confirmation-revision-request";
+      owner: "buyer";
+      sentAt: string;
+      submissionId: string | null;
+    }
+  | {
       id: string;
       kind: "text";
       owner: "buyer" | "seller";
@@ -295,6 +303,7 @@ export type InquiryOrderConfirmation = {
   basePrice: number;
   buyerName: string;
   buyerPhone: string;
+  confirmationId: string | null;
   confirmationTitle: string;
   imageUrl: string | null;
   orderFormSubmissionId: string | null;
@@ -303,6 +312,7 @@ export type InquiryOrderConfirmation = {
   pickupDate: string;
   pickupTime: string;
   summaryText: string;
+  status: string | null;
   totalPrice: number;
 };
 
@@ -321,6 +331,7 @@ export type InquiryDetail = {
   ordersBySubmissionId: Record<string, InquiryOrderConfirmation>;
   timelineContext: {
     confirmationAmountsById: Record<string, number>;
+    confirmationSubmissionIdsById: Record<string, string>;
     orderAmountsById: Record<string, number>;
     startReferenceImageUrl: string | null;
     submissionsById: Record<string, InquiryOrderFormSubmissionResponse>;

@@ -19,6 +19,7 @@ export function InquiryChatScreen({
   onOpenOrderForm,
   onOpenOrderHistory,
   onLoadOlderMessages,
+  onReviseOrderConfirmation,
   onSend,
   onWriteOrderConfirmation,
 }: {
@@ -32,6 +33,10 @@ export function InquiryChatScreen({
   onOpenOrderForm: (submissionId: string) => void;
   onOpenOrderHistory: (orderId: string) => void;
   onLoadOlderMessages: () => void;
+  onReviseOrderConfirmation: (
+    confirmationId: string,
+    submissionId: string,
+  ) => void;
   onSend: (content: string) => void;
   onWriteOrderConfirmation: (submissionId: string) => void;
 }) {
@@ -41,7 +46,10 @@ export function InquiryChatScreen({
   const nearBottomRef = useRef(true);
   const previousLatestMessageIdRef = useRef(inquiry.messages.at(-1)?.id);
   const previousOldestMessageIdRef = useRef(inquiry.messages.at(0)?.id);
-  const prependSnapshotRef = useRef<{ scrollHeight: number; scrollTop: number } | null>(null);
+  const prependSnapshotRef = useRef<{
+    scrollHeight: number;
+    scrollTop: number;
+  } | null>(null);
   const loadRequestedRef = useRef(false);
 
   useLayoutEffect(() => {
@@ -98,14 +106,22 @@ export function InquiryChatScreen({
     };
     loadRequestedRef.current = true;
     onLoadOlderMessages();
-  }, [hasOlderMessages, inquiry.messages, isLoadingOlderMessages, onLoadOlderMessages]);
+  }, [
+    hasOlderMessages,
+    inquiry.messages,
+    isLoadingOlderMessages,
+    onLoadOlderMessages,
+  ]);
 
   const handleScroll = () => {
     const scrollArea = scrollRef.current;
     if (!scrollArea) return;
 
     nearBottomRef.current =
-      scrollArea.scrollHeight - scrollArea.scrollTop - scrollArea.clientHeight <= 80;
+      scrollArea.scrollHeight -
+        scrollArea.scrollTop -
+        scrollArea.clientHeight <=
+      80;
 
     if (
       scrollArea.scrollTop <= 80 &&
@@ -145,6 +161,7 @@ export function InquiryChatScreen({
               onOpenOrderConfirmation={onOpenOrderConfirmation}
               onOpenOrderForm={onOpenOrderForm}
               onOpenOrderHistory={onOpenOrderHistory}
+              onReviseOrderConfirmation={onReviseOrderConfirmation}
               onWriteOrderConfirmation={onWriteOrderConfirmation}
             />
           ))}

@@ -15,6 +15,7 @@ import {
   useMarkSellerInquiryReadMutation,
   useMarkSellerOrderFormSubmissionViewedMutation,
   useRequestSellerOrderFormRevisionMutation,
+  useReplaceSellerOrderConfirmationMutation,
   useSendSellerOrderConfirmationMutation,
 } from "@/features/inquiries/model/inquiry-mutations";
 import {
@@ -57,6 +58,7 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
   const source = parseInquiryEntrySource(searchParams.get("source"));
   const selectedConfirmationId = searchParams.get("confirmationId");
   const selectedSubmissionId = searchParams.get("submissionId");
+  const revisionConfirmationId = searchParams.get("revisionConfirmationId");
   const sheet = searchParams.get("sheet");
   const modal = searchParams.get("modal");
   const markedReadInquiryRef = useRef<string | null>(null);
@@ -70,6 +72,8 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
     useRequestSellerOrderFormRevisionMutation(inquiryId);
   const sendConfirmationMutation =
     useSendSellerOrderConfirmationMutation(inquiryId);
+  const replaceConfirmationMutation =
+    useReplaceSellerOrderConfirmationMutation(inquiryId);
   const [priceDraftState, setPriceDraftState] = useState<{
     drafts: Record<string, number>;
     inquiryId: string;
@@ -85,6 +89,10 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
     message: string | null;
     submissionId: string | null;
   }>({ inquiryId, message: null, submissionId: null });
+  const [pendingReplacement, setPendingReplacement] = useState<{
+    confirmationId: string;
+    replacementConfirmationId: string;
+  } | null>(null);
 
   const priceDrafts =
     priceDraftState.inquiryId === inquiryId &&
@@ -120,6 +128,10 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
   const selectedConfirmationOrder =
     selectedConfirmationId && inquiry
       ? (inquiry.confirmationsById[selectedConfirmationId] ?? null)
+      : null;
+  const revisionConfirmationOrder =
+    revisionConfirmationId && inquiry
+      ? (inquiry.confirmationsById[revisionConfirmationId] ?? null)
       : null;
   const selectedSubmissionOrderWithPreview = useMemo(
     () =>
@@ -163,11 +175,35 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
     priceCalculation.totalAmount > 0 &&
     priceCalculation.missingOptionIds.length === 0,
   );
+  const paymentRequestPending =
+    sendConfirmationMutation.isPending || replaceConfirmationMutation.isPending;
+  const canEditSelectedConfirmation = Boolean(
+    selectedConfirmationOrder?.orderFormSubmissionId &&
+    (selectedConfirmationOrder.status === "SENT" ||
+      selectedConfirmationOrder.status === "REVISION_REQUESTED"),
+  );
 
   const navigate = (
     nextState: Parameters<typeof getInquiryDetailHref>[1],
     options?: Parameters<typeof getInquiryDetailHref>[2],
   ) => router.push(getInquiryDetailHref(inquiryId, nextState, options));
+
+  const startOrderConfirmationDraft = (
+    submissionId: string,
+    revisionTargetId?: string,
+  ) => {
+    setPriceDraftState({ drafts: {}, inquiryId, submissionId });
+    setPaymentRequestErrorState({
+      inquiryId,
+      message: null,
+      submissionId,
+    });
+    setPendingReplacement(null);
+    navigate("confirmation-draft", {
+      revisionConfirmationId: revisionTargetId,
+      submissionId,
+    });
+  };
 
   const handleDocumentBack = () => {
     if (state === "order-form" && source === "seller-home") {
@@ -250,6 +286,17 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
   }
 
   if (
+    usesConfirmationDraft &&
+    revisionConfirmationId &&
+    (!revisionConfirmationOrder ||
+      revisionConfirmationOrder.orderFormSubmissionId !== selectedSubmissionId)
+  ) {
+    return (
+      <InquiryDetailState message="수정할 주문확인서 정보를 정확히 연결하지 못했습니다." />
+    );
+  }
+
+  if (
     state === "confirmation-view" &&
     selectedConfirmationId &&
     !selectedConfirmationOrder
@@ -267,8 +314,9 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
     timelineQuery.data?.pages.map((page) => page.items) ?? [],
   );
   const timelineMessages = toInquiryChatMessages(timelineItems, {
-    confirmationAmountsById:
-      inquiry.timelineContext.confirmationAmountsById,
+    confirmationAmountsById: inquiry.timelineContext.confirmationAmountsById,
+    confirmationSubmissionIdsById:
+      inquiry.timelineContext.confirmationSubmissionIdsById,
     orderAmountsById: inquiry.timelineContext.orderAmountsById,
     participantUserId: inquiry.participantUserId,
     startReferenceImageUrl: inquiry.timelineContext.startReferenceImageUrl,
@@ -281,7 +329,7 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
   };
 
   const handleSendPaymentRequest = async () => {
-    if (!canRequestPayment || sendConfirmationMutation.isPending) {
+    if (!canRequestPayment || paymentRequestPending) {
       return;
     }
 
@@ -291,18 +339,47 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
       submissionId: selectedSubmissionId,
     });
 
+    let confirmationWasSent = Boolean(
+      pendingReplacement?.confirmationId === revisionConfirmationId,
+    );
+
     try {
-      await sendConfirmationMutation.mutateAsync(
-        buildSendOrderConfirmationRequest(documentSourceOrder, priceDrafts),
-      );
+      let replacement =
+        pendingReplacement?.confirmationId === revisionConfirmationId
+          ? pendingReplacement
+          : null;
+
+      if (!replacement) {
+        const sentConfirmation = await sendConfirmationMutation.mutateAsync(
+          buildSendOrderConfirmationRequest(documentSourceOrder, priceDrafts),
+        );
+        confirmationWasSent = true;
+
+        if (
+          revisionConfirmationId &&
+          revisionConfirmationOrder?.status === "REVISION_REQUESTED"
+        ) {
+          replacement = {
+            confirmationId: revisionConfirmationId,
+            replacementConfirmationId: sentConfirmation.confirmationId,
+          };
+          setPendingReplacement(replacement);
+        }
+      }
+
+      if (replacement) {
+        await replaceConfirmationMutation.mutateAsync(replacement);
+        setPendingReplacement(null);
+      }
       navigate("chat");
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "알 수 없는 오류";
       setPaymentRequestErrorState({
         inquiryId,
-        message:
-          error instanceof Error
-            ? error.message
-            : "결제 요청을 처리하지 못했습니다.",
+        message: confirmationWasSent
+          ? `새 주문확인서는 발행됐지만 기존 주문확인서 연결을 완료하지 못했습니다. 다시 시도해주세요. (${errorMessage})`
+          : errorMessage,
         submissionId: selectedSubmissionId,
       });
     }
@@ -342,29 +419,48 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
         <InquiryOrderDocumentScreen
           mode={state}
           onBack={handleDocumentBack}
+          onEdit={
+            state === "confirmation-view" && canEditSelectedConfirmation
+              ? () => {
+                  if (
+                    selectedConfirmationId &&
+                    selectedConfirmationOrder?.orderFormSubmissionId
+                  ) {
+                    startOrderConfirmationDraft(
+                      selectedConfirmationOrder.orderFormSubmissionId,
+                      selectedConfirmationId,
+                    );
+                  }
+                }
+              : undefined
+          }
           onOpenPrice={
             state === "order-form"
               ? undefined
               : () =>
                   navigate("confirmation-draft", {
+                    revisionConfirmationId: revisionConfirmationId ?? undefined,
                     sheet: "price",
                     submissionId: selectedSubmissionId ?? undefined,
                   })
           }
           onPrimary={() => {
             if (state === "order-form") {
-              navigate("confirmation-draft", {
-                submissionId: selectedSubmissionId ?? undefined,
-              });
+              if (selectedSubmissionId) {
+                startOrderConfirmationDraft(selectedSubmissionId);
+              }
               return;
             }
             navigate("confirmation-priced", {
               modal: "payment-request",
+              revisionConfirmationId: revisionConfirmationId ?? undefined,
               submissionId: selectedSubmissionId ?? undefined,
             });
           }}
           onRevisionRequest={
-            state === "order-form" ? handleRequestOrderFormRevision : undefined
+            state === "confirmation-view"
+              ? undefined
+              : handleRequestOrderFormRevision
           }
           order={documentOrder}
           orderConfirmationWriteDisabled={
@@ -373,7 +469,7 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
               markSubmissionViewedMutation.isPending)
           }
           paymentRequestDisabled={!canRequestPayment}
-          paymentRequestPending={sendConfirmationMutation.isPending}
+          paymentRequestPending={paymentRequestPending}
           revisionRequestDisabled={!documentOrder.orderFormSubmissionId}
           revisionRequestPending={requestRevisionMutation.isPending}
         />
@@ -381,6 +477,7 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
           <InquiryPriceSheet
             onClose={() =>
               navigate("confirmation-draft", {
+                revisionConfirmationId: revisionConfirmationId ?? undefined,
                 submissionId: selectedSubmissionId ?? undefined,
               })
             }
@@ -396,6 +493,7 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
                 submissionId: selectedSubmissionId,
               });
               navigate("confirmation-priced", {
+                revisionConfirmationId: revisionConfirmationId ?? undefined,
                 submissionId: selectedSubmissionId ?? undefined,
               });
             }}
@@ -406,9 +504,10 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
         {modal === "payment-request" ? (
           <InquiryPaymentRequestModal
             errorMessage={paymentRequestError}
-            isPending={sendConfirmationMutation.isPending}
+            isPending={paymentRequestPending}
             onCancel={() =>
               navigate("confirmation-priced", {
+                revisionConfirmationId: revisionConfirmationId ?? undefined,
                 submissionId: selectedSubmissionId ?? undefined,
               })
             }
@@ -441,10 +540,13 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
       onOpenOrderHistory={(orderId) =>
         router.push(`/seller/orders/${encodeURIComponent(orderId)}`)
       }
+      onReviseOrderConfirmation={(confirmationId, submissionId) =>
+        startOrderConfirmationDraft(submissionId, confirmationId)
+      }
       onLoadOlderMessages={() => void timelineQuery.fetchNextPage()}
       onSend={stomp.sendMessage}
       onWriteOrderConfirmation={(submissionId) =>
-        navigate("confirmation-draft", { submissionId })
+        startOrderConfirmationDraft(submissionId)
       }
     />
   );
