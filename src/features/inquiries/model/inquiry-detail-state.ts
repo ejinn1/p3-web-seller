@@ -35,6 +35,7 @@ export function getInquiryDetailHref(
     sheet?: "price";
     source?: InquiryEntrySource;
     submissionId?: string;
+    revisionConfirmationId?: string;
   },
 ) {
   const params = new URLSearchParams();
@@ -47,6 +48,9 @@ export function getInquiryDetailHref(
   }
   if (options?.confirmationId) {
     params.set("confirmationId", options.confirmationId);
+  }
+  if (options?.revisionConfirmationId) {
+    params.set("revisionConfirmationId", options.revisionConfirmationId);
   }
   if (options?.sheet) {
     params.set("sheet", options.sheet);

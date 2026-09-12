@@ -10,6 +10,7 @@ import {
   markSellerOrderFormSubmissionViewed,
   moveSellerInquiryToTrash,
   requestSellerOrderFormRevision,
+  replaceSellerOrderConfirmation,
   sendSellerOrderConfirmation,
 } from "@/features/inquiries/api/inquiries-api";
 import { inquiryKeys } from "@/features/inquiries/model/inquiry-keys";
@@ -25,6 +26,31 @@ export function useSendSellerOrderConfirmationMutation(inquiryId: string) {
   return useMutation({
     mutationFn: (request: SendSellerOrderConfirmationRequest) =>
       sendSellerOrderConfirmation({ inquiryId, request }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: inquiryKeys.detail(inquiryId),
+      });
+      void queryClient.invalidateQueries({ queryKey: inquiryKeys.all });
+    },
+  });
+}
+
+export function useReplaceSellerOrderConfirmationMutation(inquiryId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      confirmationId,
+      replacementConfirmationId,
+    }: {
+      confirmationId: string;
+      replacementConfirmationId: string;
+    }) =>
+      replaceSellerOrderConfirmation(
+        inquiryId,
+        confirmationId,
+        replacementConfirmationId,
+      ),
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: inquiryKeys.detail(inquiryId),

@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 export function InquiryOrderDocumentScreen({
   mode,
   onBack,
+  onEdit,
   onOpenPrice,
   onPrimary,
   onRevisionRequest,
@@ -24,6 +25,7 @@ export function InquiryOrderDocumentScreen({
 }: {
   mode: InquiryDocumentMode;
   onBack: () => void;
+  onEdit?: () => void;
   onOpenPrice?: () => void;
   onPrimary?: () => void;
   onRevisionRequest?: () => void;
@@ -36,7 +38,7 @@ export function InquiryOrderDocumentScreen({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isOrderForm = mode === "order-form";
-  const isReadOnly = mode === "confirmation-view" || mode === "order-history";
+  const isReadOnly = mode === "order-history";
   const isPrimaryDisabled = isOrderForm
     ? orderConfirmationWriteDisabled
     : paymentRequestDisabled || paymentRequestPending;
@@ -57,10 +59,11 @@ export function InquiryOrderDocumentScreen({
       </section>
       {!isReadOnly ? (
         <DocumentActions
-          isOrderForm={isOrderForm}
+          mode={mode}
           isPrimaryDisabled={isPrimaryDisabled}
           isPrimaryPending={paymentRequestPending}
           onPrimary={onPrimary}
+          onEdit={onEdit}
           onRevisionRequest={onRevisionRequest}
           revisionRequestDisabled={revisionRequestDisabled}
           revisionRequestPending={revisionRequestPending}
@@ -121,22 +124,41 @@ function DocumentHeader({
 }
 
 function DocumentActions({
-  isOrderForm,
+  mode,
   isPrimaryDisabled,
   isPrimaryPending,
   onPrimary,
+  onEdit,
   onRevisionRequest,
   revisionRequestDisabled,
   revisionRequestPending,
 }: {
-  isOrderForm: boolean;
+  mode: InquiryDocumentMode;
   isPrimaryDisabled: boolean;
   isPrimaryPending: boolean;
   onPrimary?: () => void;
+  onEdit?: () => void;
   onRevisionRequest?: () => void;
   revisionRequestDisabled: boolean;
   revisionRequestPending: boolean;
 }) {
+  const isOrderForm = mode === "order-form";
+
+  if (mode === "confirmation-view") {
+    return (
+      <div className="shrink-0 bg-surface-subtle px-4 pt-4 pb-[calc(34px+env(safe-area-inset-bottom))]">
+        <button
+          className="h-11 w-full rounded-seller-md border border-border-default bg-surface-default text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-primary disabled:text-text-disabled"
+          disabled={!onEdit}
+          onClick={onEdit}
+          type="button"
+        >
+          수정하기
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(
@@ -152,7 +174,7 @@ function DocumentActions({
             "text-text-disabled",
         )}
         disabled={revisionRequestDisabled || revisionRequestPending}
-        onClick={isOrderForm ? onRevisionRequest : undefined}
+        onClick={onRevisionRequest}
         type="button"
       >
         {revisionRequestPending ? "요청 중" : "수정 요청"}
