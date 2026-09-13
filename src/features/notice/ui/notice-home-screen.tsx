@@ -34,7 +34,9 @@ export function NoticeHomeScreen() {
           {noticeCategories.map((category) => (
             <SettingRow
               completed={
-                itemsByType[category.type]?.some((item) => item.trim()) ?? false
+                itemsByType[category.type]?.some((item) =>
+                  item.content.trim(),
+                ) ?? false
               }
               href={`/seller/notice/${category.slug}`}
               key={category.type}
