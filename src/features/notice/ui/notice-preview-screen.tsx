@@ -10,7 +10,9 @@ export function NoticePreviewScreen() {
   const itemsByType = useNoticeDraftStore((state) => state.itemsByType);
   const previewCategories = noticeCategories.map((category) => ({
     ...category,
-    items: (itemsByType[category.type] ?? []).filter((item) => item.trim()),
+    items: (itemsByType[category.type] ?? [])
+      .filter((item) => item.content.trim())
+      .map((item) => item.content),
   }));
 
   return (

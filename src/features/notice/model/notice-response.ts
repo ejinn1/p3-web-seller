@@ -3,7 +3,10 @@ import type {
   NoticeCollection,
   UpdateNoticesInput,
 } from "@/features/notice/model/notice-api-types";
-import type { NoticeDraftState } from "@/features/notice/model/notice-draft";
+import {
+  createNoticeDraftItem,
+  type NoticeDraftState,
+} from "@/features/notice/model/notice-draft";
 
 export function toNoticeDraftSnapshot(
   notices: NoticeCollection,
@@ -18,7 +21,8 @@ export function toNoticeDraftSnapshot(
       .slice()
       .sort((left, right) => left.sortOrder - right.sortOrder)
       .map((item) => item.content)
-      .filter((content) => content.trim());
+      .filter((content) => content.trim())
+      .map(createNoticeDraftItem);
   }
 
   return itemsByType;
@@ -30,7 +34,7 @@ export function toUpdateNoticesInput(
   return {
     notices: noticeCategories.map((category) => ({
       items: (itemsByType[category.type] ?? [])
-        .map((content) => content.trim())
+        .map((item) => item.content.trim())
         .filter(Boolean)
         .map((content) => ({ content })),
       type: category.type,
