@@ -125,7 +125,7 @@ export function getSellerRefundUiState(
       actionLabel: "환불처리",
       actionRefundId: null,
       kind: "REQUESTED",
-      message: "구매자가 환불을 요청했습니다. 환불 처리가 필요합니다.",
+      message: null,
       showCompletedAction: false,
       showPickupAction: false,
     };
