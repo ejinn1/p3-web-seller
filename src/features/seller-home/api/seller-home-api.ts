@@ -23,7 +23,6 @@ export async function getSellerHomeDashboard(): Promise<SellerHomeDashboard> {
     getJson<SellerDashboardResponse>("/seller/dashboard"),
     getSellerInquiries({
       status: SELLER_HOME_WAITING_INQUIRY_STATUS,
-      unreadOnly: true,
     }),
   ]);
 

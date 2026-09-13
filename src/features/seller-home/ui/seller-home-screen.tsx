@@ -903,9 +903,11 @@ function InquiryRow({
               <p className="text-[18px] leading-6 font-semibold tracking-[-0.54px] text-text-primary">
                 {inquiry.customerMaskedName}
               </p>
-              <span className="flex size-4 items-center justify-center rounded-full bg-brand-destructive px-[3px] text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-inverse">
-                {inquiry.unreadCount}
-              </span>
+              {inquiry.unreadCount > 0 ? (
+                <span className="flex size-4 items-center justify-center rounded-full bg-brand-destructive px-[3px] text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-inverse">
+                  {inquiry.unreadCount}
+                </span>
+              ) : null}
             </div>
             <p className="w-full overflow-hidden text-[16px] leading-6 font-normal tracking-[-0.32px] text-ellipsis whitespace-nowrap text-text-secondary">
               {inquiry.previewMessage}
