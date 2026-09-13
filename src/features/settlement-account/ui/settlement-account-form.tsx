@@ -1,13 +1,13 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { ChevronDown } from "lucide-react";
+import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
-import { Button } from "@/components/common/button";
 import { Field } from "@/components/common/field";
 import { Input } from "@/components/common/input";
-import { Radio } from "@/components/common/radio";
-import { Select } from "@/components/common/select";
 import {
+  formatBusinessRegistrationNumber,
   onlyDigits,
   settlementAccountSchema,
   toSettlementAccountInput,
@@ -17,8 +17,8 @@ import type {
   SettlementAccount,
   SettlementAccountInput,
   SettlementBank,
-  SettlementAccountHolderType,
 } from "@/features/settlement-account/model/settlement-account-types";
+import { SettlementBankSheet } from "@/features/settlement-account/ui/settlement-bank-sheet";
 
 type SettlementAccountFormProps = {
   account?: SettlementAccount | null;
@@ -28,13 +28,8 @@ type SettlementAccountFormProps = {
   onSubmit: (input: SettlementAccountInput) => Promise<void>;
 };
 
-const holderTypeOptions: Array<{
-  label: string;
-  value: SettlementAccountHolderType;
-}> = [
-  { label: "개인", value: "PERSONAL" },
-  { label: "사업자", value: "BUSINESS" },
-];
+const fieldLabelClassName =
+  "text-seller-heading-md leading-6 font-semibold tracking-[-0.54px]";
 
 export function SettlementAccountForm({
   account,
@@ -43,6 +38,7 @@ export function SettlementAccountForm({
   isPending,
   onSubmit,
 }: SettlementAccountFormProps) {
+  const [isBankSheetOpen, setIsBankSheetOpen] = useState(false);
   const form = useForm<SettlementAccountFormValues>({
     resolver: zodResolver(settlementAccountSchema),
     mode: "onChange",
@@ -50,26 +46,11 @@ export function SettlementAccountForm({
       bankCode: account?.bankCode ?? "",
       accountNumber: "",
       accountHolderName: account?.accountHolderName ?? "",
-      holderType: account?.holderType ?? "PERSONAL",
-      birthDate: "",
       businessRegistrationNumber: "",
     },
   });
-  const holderType = useWatch({
-    control: form.control,
-    name: "holderType",
-  });
-
-  const selectHolderType = (nextType: SettlementAccountHolderType) => {
-    form.setValue("holderType", nextType, {
-      shouldDirty: true,
-      shouldValidate: true,
-    });
-    form.setValue("birthDate", "", { shouldValidate: true });
-    form.setValue("businessRegistrationNumber", "", {
-      shouldValidate: true,
-    });
-  };
+  const bankCode = useWatch({ control: form.control, name: "bankCode" });
+  const selectedBank = banks.find((bank) => bank.code === bankCode);
 
   const submit = form.handleSubmit(async (values) => {
     try {
@@ -81,184 +62,138 @@ export function SettlementAccountForm({
   });
 
   return (
-    <form className="flex min-h-0 flex-1 flex-col" onSubmit={submit}>
-      <section className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 pt-6 pb-4">
-        {account ? (
-          <div className="rounded-seller-sm bg-surface-subtle px-4 py-3 text-seller-body-md text-text-secondary">
-            변경할 계좌정보를 다시 입력해 주세요. 기존 계좌번호와 인증정보는
-            불러오지 않습니다.
-          </div>
-        ) : null}
-
-        <fieldset className="space-y-2">
-          <legend className="flex items-center gap-1 text-seller-heading-md font-semibold tracking-[-0.54px]">
-            예금주 유형
-            <span
-              aria-hidden="true"
-              className="relative -top-1 text-[15px] leading-5 text-text-error"
-            >
-              *
-            </span>
-          </legend>
-          <div className="grid grid-cols-2 gap-2">
-            {holderTypeOptions.map((option) => (
-              <label
-                className={`flex h-12 cursor-pointer items-center justify-center gap-1 rounded-seller-sm border text-seller-body-md font-semibold transition-colors ${
-                  holderType === option.value
-                    ? "border-border-strong bg-surface-subtle text-text-primary"
-                    : "border-border-default bg-surface-default text-text-secondary"
-                }`}
-                key={option.value}
-              >
-                <Radio
-                  checked={holderType === option.value}
-                  name="holderType"
-                  onChange={() => selectHolderType(option.value)}
-                  value={option.value}
-                />
-                {option.label}
-              </label>
-            ))}
-          </div>
-        </fieldset>
-
-        <Field
-          error={form.formState.errors.bankCode?.message}
-          htmlFor="settlement-bank"
-          label="은행"
-          labelClassName="text-seller-heading-md font-semibold tracking-[-0.54px]"
-          required
-        >
-          <Select
-            error={Boolean(form.formState.errors.bankCode)}
-            id="settlement-bank"
-            {...form.register("bankCode")}
-          >
-            <option value="">은행을 선택해 주세요</option>
-            {banks.map((bank) => (
-              <option key={bank.code} value={bank.code}>
-                {bank.name}
-              </option>
-            ))}
-          </Select>
-        </Field>
-
-        <Field
-          error={form.formState.errors.accountNumber?.message}
-          htmlFor="settlement-account-number"
-          label="계좌번호"
-          labelClassName="text-seller-heading-md font-semibold tracking-[-0.54px]"
-          required
-        >
-          <Input
-            autoComplete="off"
-            error={Boolean(form.formState.errors.accountNumber)}
-            id="settlement-account-number"
-            inputMode="numeric"
-            maxLength={16}
-            placeholder="계좌번호를 숫자로 입력해 주세요"
-            {...form.register("accountNumber", {
-              onChange: (event) => {
-                event.target.value = onlyDigits(event.target.value).slice(
-                  0,
-                  16,
-                );
-              },
-            })}
-          />
-        </Field>
-
-        <Field
-          error={form.formState.errors.accountHolderName?.message}
-          htmlFor="settlement-account-holder"
-          label="예금주명"
-          labelClassName="text-seller-heading-md font-semibold tracking-[-0.54px]"
-          required
-        >
-          <Input
-            autoComplete="off"
-            error={Boolean(form.formState.errors.accountHolderName)}
-            id="settlement-account-holder"
-            maxLength={50}
-            placeholder="예금주명을 입력해 주세요"
-            {...form.register("accountHolderName")}
-          />
-        </Field>
-
-        {holderType === "PERSONAL" ? (
+    <>
+      <form className="flex min-h-0 flex-1 flex-col" onSubmit={submit}>
+        <section className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pt-6 pb-4">
           <Field
-            error={form.formState.errors.birthDate?.message}
-            htmlFor="settlement-birth-date"
-            label="생년월일"
-            labelClassName="text-seller-heading-md font-semibold tracking-[-0.54px]"
+            error={form.formState.errors.bankCode?.message}
+            label="은행선택"
+            labelClassName={fieldLabelClassName}
             required
           >
-            <Input
-              autoComplete="bday"
-              error={Boolean(form.formState.errors.birthDate)}
-              id="settlement-birth-date"
-              max={localToday()}
-              type="date"
-              {...form.register("birthDate")}
-            />
+            <button
+              aria-haspopup="dialog"
+              className="flex h-11 w-full items-center gap-5 border-b border-border-default py-1 pl-4 text-left text-base leading-6 tracking-[-0.32px]"
+              onClick={() => setIsBankSheetOpen(true)}
+              type="button"
+            >
+              <span
+                className={
+                  selectedBank
+                    ? "flex-1 text-text-primary"
+                    : "flex-1 text-text-unavailable"
+                }
+              >
+                {selectedBank?.name ?? "은행을 선택해 주세요"}
+              </span>
+              <ChevronDown
+                aria-hidden="true"
+                className="size-12 shrink-0 p-3 text-icon-default"
+              />
+            </button>
           </Field>
-        ) : (
+
           <Field
-            error={form.formState.errors.businessRegistrationNumber?.message}
-            htmlFor="settlement-business-number"
-            label="사업자등록번호"
-            labelClassName="text-seller-heading-md font-semibold tracking-[-0.54px]"
+            error={form.formState.errors.accountNumber?.message}
+            htmlFor="settlement-account-number"
+            label="계좌번호"
+            labelClassName={fieldLabelClassName}
             required
           >
             <Input
               autoComplete="off"
-              error={Boolean(form.formState.errors.businessRegistrationNumber)}
-              id="settlement-business-number"
+              className="border-0 bg-surface-subtle px-4 text-base leading-6 tracking-[-0.32px] placeholder:text-text-unavailable focus:ring-2 focus:ring-brand-primary/20"
+              error={Boolean(form.formState.errors.accountNumber)}
+              id="settlement-account-number"
               inputMode="numeric"
-              maxLength={10}
-              placeholder="사업자등록번호 숫자 10자리"
-              {...form.register("businessRegistrationNumber", {
+              maxLength={16}
+              placeholder="계좌번호 숫자로 입력해 주세요"
+              {...form.register("accountNumber", {
                 onChange: (event) => {
                   event.target.value = onlyDigits(event.target.value).slice(
                     0,
-                    10,
+                    16,
                   );
                 },
               })}
             />
           </Field>
-        )}
 
-        <p className="rounded-seller-sm bg-surface-subtle px-4 py-3 text-seller-body-md text-text-secondary">
-          생년월일과 사업자등록번호는 계좌 인증에만 사용되며 저장되지 않습니다.
-        </p>
+          <Field
+            error={form.formState.errors.accountHolderName?.message}
+            htmlFor="settlement-account-holder"
+            label="예금주명"
+            labelClassName={fieldLabelClassName}
+            required
+          >
+            <Input
+              autoComplete="off"
+              className="border-0 bg-surface-subtle px-4 text-base leading-6 tracking-[-0.32px] placeholder:text-text-unavailable focus:ring-2 focus:ring-brand-primary/20"
+              error={Boolean(form.formState.errors.accountHolderName)}
+              id="settlement-account-holder"
+              maxLength={50}
+              placeholder="예금주명을 입력해 주세요"
+              {...form.register("accountHolderName")}
+            />
+          </Field>
 
-        {errorMessage ? (
-          <p aria-live="polite" className="text-sm text-text-error">
-            {errorMessage}
-          </p>
-        ) : null}
-      </section>
+          <Field
+            error={form.formState.errors.businessRegistrationNumber?.message}
+            htmlFor="settlement-business-number"
+            label="사업자등록번호"
+            labelClassName={fieldLabelClassName}
+            required
+          >
+            <Input
+              autoComplete="off"
+              className="border-0 bg-surface-subtle px-4 text-base leading-6 tracking-[-0.32px] placeholder:text-text-unavailable focus:ring-2 focus:ring-brand-primary/20"
+              error={Boolean(form.formState.errors.businessRegistrationNumber)}
+              id="settlement-business-number"
+              inputMode="numeric"
+              maxLength={12}
+              placeholder="사업자등록번호 숫자 10자리"
+              {...form.register("businessRegistrationNumber", {
+                onChange: (event) => {
+                  event.target.value = formatBusinessRegistrationNumber(
+                    event.target.value,
+                  );
+                },
+              })}
+            />
+          </Field>
 
-      <div className="px-4 pt-4 pb-[34px]">
-        <Button
-          className="h-11 rounded-seller-md text-[15px] font-semibold"
-          disabled={!form.formState.isValid || isPending}
-          fullWidth
-          size="md"
-          type="submit"
-        >
-          {isPending ? "인증 중..." : "계좌 인증 및 등록"}
-        </Button>
-      </div>
-    </form>
+          {errorMessage ? (
+            <p aria-live="polite" className="text-sm text-text-error">
+              {errorMessage}
+            </p>
+          ) : null}
+        </section>
+
+        <div className="px-4 pt-4 pb-[34px]">
+          <button
+            className="flex h-[52px] w-full items-center justify-center rounded-seller-md bg-brand-primary px-6 text-seller-heading-md leading-6 font-semibold tracking-[-0.54px] text-text-inverse disabled:bg-brand-disabled disabled:text-text-disabled"
+            disabled={!form.formState.isValid || isPending}
+            type="submit"
+          >
+            {isPending ? "등록 중..." : "다음"}
+          </button>
+        </div>
+      </form>
+
+      {isBankSheetOpen ? (
+        <SettlementBankSheet
+          banks={banks}
+          onConfirm={(nextBankCode) => {
+            form.setValue("bankCode", nextBankCode, {
+              shouldDirty: true,
+              shouldTouch: true,
+              shouldValidate: true,
+            });
+          }}
+          onOpenChange={setIsBankSheetOpen}
+          selectedBankCode={bankCode}
+        />
+      ) : null}
+    </>
   );
-}
-
-function localToday() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
 }
