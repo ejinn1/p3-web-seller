@@ -5,6 +5,8 @@ export const orderKeys = {
   confirmation: (inquiryId: string, confirmationId: string) =>
     [...orderKeys.all, "confirmation", inquiryId, confirmationId] as const,
   detail: (orderId: string) => [...orderKeys.all, "detail", orderId] as const,
+  refundQuote: (orderId: string) =>
+    [...orderKeys.all, "refund-quote", orderId] as const,
   inquiry: (inquiryId: string) =>
     [...orderKeys.all, "inquiry", inquiryId] as const,
   list: (params: SellerOrderListParams = {}) =>

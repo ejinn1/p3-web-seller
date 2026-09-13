@@ -3,6 +3,7 @@ import type {
   SellerOrderDetail,
   SellerOrderListItem,
   SellerOrderListParams,
+  SellerOrderRefundQuoteResponse,
   SellerOrder,
 } from "@/features/orders/model/order-types";
 
@@ -39,6 +40,11 @@ export const getSellerOrders = (params: SellerOrderListParams = {}) => {
 export const getSellerOrder = (orderId: string) => {
   return getJson<SellerOrderDetail>(`/seller/orders/${orderId}`);
 };
+
+export const getSellerOrderRefundQuote = (orderId: string) =>
+  getJson<SellerOrderRefundQuoteResponse>(
+    `/seller/orders/${orderId}/refund-quote`,
+  );
 
 export const completeSellerOrderPickup = (orderId: string) =>
   sendJson<SellerOrder>(`/seller/orders/${orderId}/pickup`, "PATCH");

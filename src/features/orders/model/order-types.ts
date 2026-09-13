@@ -15,6 +15,7 @@ export type RefundStatus = "REQUESTED" | "PROCESSING" | "COMPLETED" | "FAILED";
 export type RefundOutcome =
   "COMPLETED" | "PROCESSING" | "RETRYABLE" | "MANUAL_REQUIRED" | "FAILED";
 export type RefundCompletionMethod = "AUTOMATIC" | "MANUAL" | "ZERO_AMOUNT";
+export type RefundCalculationBasis = "REFUND_REQUESTED_AT" | "CURRENT_TIME";
 
 export type OrderListDateBasis = "PAID_AT" | "PICKUP_AT" | "CREATED_AT";
 
@@ -32,6 +33,15 @@ export type SellerOrderListParams = {
   endDate?: string;
   startDate?: string;
   status?: SellerOrderStatus | SellerOrderStatus[];
+};
+
+export type SellerOrderRefundQuoteResponse = {
+  orderId: string;
+  paidAmount: number;
+  refundAmount: number;
+  refundRate: number;
+  calculationBaseAt: string;
+  calculationBasis: RefundCalculationBasis;
 };
 
 export type SellerOrderListItem = {

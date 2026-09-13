@@ -6,6 +6,7 @@ import {
 } from "@/features/inquiries/api/inquiries-api";
 import {
   getSellerOrder,
+  getSellerOrderRefundQuote,
   getSellerOrders,
 } from "@/features/orders/api/orders-api";
 import { orderKeys } from "@/features/orders/model/order-keys";
@@ -27,6 +28,17 @@ export function useSellerOrderQuery(orderId: string, enabled = true) {
     enabled,
     queryFn: () => getSellerOrder(orderId),
     queryKey: orderKeys.detail(orderId),
+  });
+}
+
+export function useSellerOrderRefundQuoteQuery(
+  orderId: string,
+  enabled = true,
+) {
+  return useQuery({
+    enabled: enabled && Boolean(orderId),
+    queryFn: () => getSellerOrderRefundQuote(orderId),
+    queryKey: orderKeys.refundQuote(orderId),
   });
 }
 
