@@ -37,6 +37,10 @@ function splitPrice(option: OrderFormDraftOption) {
     return { price: null, priceLabel: null };
   }
 
+  if (option.type === "IMAGE" && option.priceMode === "INQUIRY") {
+    return { price: null, priceLabel: "문의필요" };
+  }
+
   const trimmedPrice = option.price.trim();
   const normalizedPrice = trimmedPrice.replace(/,/g, "");
 

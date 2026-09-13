@@ -12,7 +12,7 @@ export function GalleryPhotoUploadField({
 }: GalleryPhotoUploadFieldProps) {
   return (
     <label
-      aria-label="갤러리 사진 업로드 영역"
+      aria-label="BEST 케이크 사진 업로드 영역"
       className="flex aspect-square w-full cursor-pointer items-center justify-center overflow-hidden rounded-seller-sm bg-surface-subtle has-disabled:cursor-not-allowed has-disabled:opacity-40"
     >
       <input

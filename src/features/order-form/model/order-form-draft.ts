@@ -4,12 +4,15 @@ import type { OrderFormCategorySlug } from "@/features/order-form/model/order-fo
 
 export type OrderFormDraftOptionType =
   "SELECT" | "SELECT_WITH_TEXT" | "IMAGE" | "TEXTAREA";
+export type OrderFormDraftPriceMode = "FIXED" | "INQUIRY";
 
 export type OrderFormDraftOption = {
   description: string;
   example: string;
+  id: string;
   label: string;
   price: string;
+  priceMode: OrderFormDraftPriceMode;
   type: OrderFormDraftOptionType;
 };
 
@@ -26,10 +29,13 @@ type OrderFormDraftState = {
     optionsByCategory: OrderFormDraftState["optionsByCategory"],
   ) => void;
   resetDraft: () => void;
-  removeOption: (category: OrderFormCategorySlug, index: number) => void;
+  removeOptions: (
+    category: OrderFormCategorySlug,
+    optionIds: ReadonlySet<string>,
+  ) => void;
   updateOption: (
     category: OrderFormCategorySlug,
-    index: number,
+    optionId: string,
     option: OrderFormDraftOption,
   ) => void;
   templateId: string | null;
@@ -49,22 +55,22 @@ export const useOrderFormDraftStore = create<OrderFormDraftState>()(
       replaceDraft: (templateId, optionsByCategory) =>
         set({ optionsByCategory, templateId }),
       resetDraft: () => set({ optionsByCategory: {}, templateId: null }),
-      removeOption: (category, index) =>
+      removeOptions: (category, optionIds) =>
         set((state) => ({
           optionsByCategory: {
             ...state.optionsByCategory,
             [category]: (state.optionsByCategory[category] ?? []).filter(
-              (_, optionIndex) => optionIndex !== index,
+              (option) => !optionIds.has(option.id),
             ),
           },
         })),
-      updateOption: (category, index, option) =>
+      updateOption: (category, optionId, option) =>
         set((state) => ({
           optionsByCategory: {
             ...state.optionsByCategory,
             [category]: (state.optionsByCategory[category] ?? []).map(
-              (currentOption, optionIndex) =>
-                optionIndex === index ? option : currentOption,
+              (currentOption) =>
+                currentOption.id === optionId ? option : currentOption,
             ),
           },
         })),
@@ -73,6 +79,31 @@ export const useOrderFormDraftStore = create<OrderFormDraftState>()(
     {
       name: "seller-order-form-draft",
       storage: createJSONStorage(() => sessionStorage),
+      version: 1,
+      migrate: (persistedState, version) => {
+        if (version >= 1) return persistedState as OrderFormDraftState;
+
+        const state = persistedState as OrderFormDraftState;
+        return {
+          ...state,
+          optionsByCategory: Object.fromEntries(
+            Object.entries(state.optionsByCategory ?? {}).map(
+              ([category, options]) => [
+                category,
+                options?.map((option) => ({
+                  ...option,
+                  id: option.id || crypto.randomUUID(),
+                  priceMode:
+                    option.type === "IMAGE" &&
+                    !/^\d+$/.test(option.price.replace(/,/g, ""))
+                      ? "INQUIRY"
+                      : "FIXED",
+                })),
+              ],
+            ),
+          ),
+        } as OrderFormDraftState;
+      },
     },
   ),
 );

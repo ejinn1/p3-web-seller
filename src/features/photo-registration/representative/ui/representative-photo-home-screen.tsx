@@ -380,7 +380,7 @@ export function RepresentativePhotoHomeScreen() {
           size="md"
           variant="outline"
         >
-          갤러리 등록하기
+          BEST 케이크 보기
         </Button>
         <Button
           className="h-11 flex-1 rounded-seller-md text-[15px] font-semibold"
