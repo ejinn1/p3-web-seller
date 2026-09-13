@@ -3,6 +3,7 @@ import type { InquiryChatMessage as InquiryChatMessageType } from "@/features/in
 import { formatInquiryPrice } from "@/features/inquiries/model/inquiry-order-confirmation";
 import { ProfileImage } from "@/features/inquiries/ui/inquiry-list-screen";
 import { InquiryOrderConfirmationRevisionRequestCard } from "@/features/inquiries/ui/inquiry-order-confirmation-revision-request-card";
+import { useSellerOrderRefundQuoteQuery } from "@/features/orders/model/order-queries";
 import { cn } from "@/lib/utils";
 
 export function InquiryChatMessage({
@@ -209,26 +210,10 @@ export function InquiryChatMessage({
         owner="buyer"
         sentAt={message.sentAt}
       >
-        <div className="flex w-60 shrink-0 flex-col gap-4 rounded-seller-lg bg-surface-default p-4">
-          <div className="space-y-2">
-            <p className="text-[13px] leading-4 font-medium tracking-[-0.13px] text-text-secondary">
-              취소 요청
-            </p>
-            <p className="text-[22px] leading-[30px] font-bold tracking-[-0.66px] text-text-primary">
-              취소 요청을 접수했어요
-            </p>
-            <p className="text-[13px] leading-4 font-medium tracking-[-0.13px] text-text-disabled">
-              주문 내역에서 환불 처리를 진행해주세요
-            </p>
-          </div>
-          <ActionButton
-            disabled={!message.orderId}
-            onClick={() => onOpenOrderHistory(message.orderId)}
-            variant="outline"
-          >
-            주문내역 보기
-          </ActionButton>
-        </div>
+        <RefundRequestCard
+          onOpenOrderHistory={onOpenOrderHistory}
+          orderId={message.orderId}
+        />
       </BubbleRow>
     );
   }
@@ -284,6 +269,53 @@ export function InquiryChatMessage({
         {message.text}
       </p>
     </BubbleRow>
+  );
+}
+
+function RefundRequestCard({
+  onOpenOrderHistory,
+  orderId,
+}: {
+  onOpenOrderHistory: (orderId: string) => void;
+  orderId: string;
+}) {
+  const refundQuoteQuery = useSellerOrderRefundQuoteQuery(orderId);
+  const refundAmountLabel = refundQuoteQuery.data
+    ? formatInquiryPrice(refundQuoteQuery.data.refundAmount)
+    : refundQuoteQuery.isError
+      ? "확인 필요"
+      : "금액 확인 중";
+
+  return (
+    <div
+      className="flex w-60 shrink-0 flex-col gap-4 rounded-seller-lg bg-surface-default p-4"
+      data-ui="refund-request-card"
+    >
+      <div className="flex w-[208px] flex-col gap-2">
+        <p className="text-[13px] leading-4 font-medium tracking-[-0.13px] text-text-secondary">
+          취소 요청
+        </p>
+        <div className="flex items-center justify-between text-[22px] leading-[30px] font-bold tracking-[-0.66px] whitespace-nowrap text-text-primary">
+          <p>환불 가격</p>
+          <p>{refundAmountLabel}</p>
+        </div>
+        <p className="text-[13px] leading-4 font-medium tracking-[-0.13px] text-text-tertiary">
+          취소 요청을 접수했어요
+        </p>
+      </div>
+      <div className="flex h-11 w-full items-center justify-center overflow-hidden">
+        <ActionButton
+          disabled={!orderId}
+          onClick={() => onOpenOrderHistory(orderId)}
+          variant="outline"
+        >
+          주문내역 보기
+        </ActionButton>
+      </div>
+      {refundQuoteQuery.isError ? (
+        <p className="sr-only">환불 금액을 불러오지 못했습니다.</p>
+      ) : null}
+    </div>
   );
 }
 
