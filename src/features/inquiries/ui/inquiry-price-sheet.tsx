@@ -121,7 +121,7 @@ function PriceInput({
       <span className="flex h-11 items-start gap-2">
         <input
           className={cn(
-            "h-11 min-w-0 flex-1 border-b border-border-default py-1 outline-none",
+            "h-11 min-w-0 flex-1 border-b border-border-default px-4 py-1 text-left outline-none",
             isFilled
               ? "text-[22px] leading-[30px] font-bold tracking-[-0.66px] text-text-primary"
               : "text-[16px] leading-6 font-normal tracking-[-0.32px] text-text-disabled",

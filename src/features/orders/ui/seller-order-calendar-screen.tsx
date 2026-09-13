@@ -796,8 +796,8 @@ function CalendarOrderStatusBadge({
   const labels: Record<OrderCalendarItem["status"], string> = {
     PAID: "결제완료",
     PICKED_UP: "픽업완료",
-    REFUND_REQUESTED: "취소요청",
-    REFUNDED: "취소완료",
+    REFUND_REQUESTED: "환불요청",
+    REFUNDED: "환불 완료",
   };
 
   return (
@@ -807,7 +807,7 @@ function CalendarOrderStatusBadge({
         status === "PAID" && "bg-status-success-bg text-status-success",
         status === "PICKED_UP" && "bg-status-info-bg text-status-info",
         (status === "REFUND_REQUESTED" || status === "REFUNDED") &&
-          "bg-status-warning-bg text-status-warning",
+          "bg-surface-subtle text-text-secondary",
       )}
       data-testid="calendar-paid-badge"
     >

@@ -34,8 +34,8 @@ type DraftDateRange = { end: string | null; start: string | null };
 const statusLabels: Record<SellerOrderStatus, string> = {
   PAID: "결제완료",
   PICKED_UP: "픽업완료",
-  REFUND_REQUESTED: "취소요청",
-  REFUNDED: "취소완료",
+  REFUND_REQUESTED: "환불요청",
+  REFUNDED: "환불 완료",
 };
 
 export function SellerOrdersScreen() {
@@ -673,7 +673,7 @@ function OrderStatusBadge({ status }: { status: SellerOrderStatus | null }) {
       className={cn(
         "inline-flex h-6 shrink-0 items-center justify-center rounded-seller-sm px-2 py-1 text-[13px] leading-4 font-medium tracking-[-0.13px]",
         isPaid && "bg-status-success-bg text-status-success",
-        isRefund && "bg-status-warning-bg text-status-warning",
+        isRefund && "bg-surface-subtle text-text-secondary",
         !status && "bg-surface-subtle text-text-tertiary",
         status === "PICKED_UP" && "bg-status-info-bg text-status-info",
       )}
