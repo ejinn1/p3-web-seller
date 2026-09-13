@@ -13,6 +13,7 @@ type InlineSelectOption = {
 type InlineSelectProps = {
   ariaLabel: string;
   className?: string;
+  disabled?: boolean;
   onValueChange: (value: string) => void;
   options: InlineSelectOption[];
   placeholder: string;
@@ -26,6 +27,7 @@ const VISIBLE_OPTION_COUNT = 5;
 export function InlineSelect({
   ariaLabel,
   className,
+  disabled = false,
   onValueChange,
   options,
   placeholder,
@@ -80,10 +82,11 @@ export function InlineSelect({
     <div className={cn("relative min-w-0", className)} ref={containerRef}>
       <button
         aria-controls={listId}
-        aria-expanded={isOpen}
+        aria-expanded={isOpen && !disabled}
         aria-haspopup="listbox"
         aria-label={ariaLabel}
         className="relative flex h-11 w-full items-center border-b border-border-default px-2 pr-9 text-left outline-none focus-visible:border-border-focus"
+        disabled={disabled}
         onClick={() => setIsOpen((open) => !open)}
         type="button"
       >
@@ -105,7 +108,7 @@ export function InlineSelect({
           strokeWidth={1.8}
         />
       </button>
-      {isOpen ? (
+      {isOpen && !disabled ? (
         <div
           className="absolute top-full right-0 left-0 z-20 overflow-y-auto overscroll-contain rounded-b-seller-sm bg-surface-default py-1 shadow-lg"
           id={listId}

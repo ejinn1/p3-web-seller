@@ -19,7 +19,7 @@ export function GalleryPhotoDetailSheet({
 }: GalleryPhotoDetailSheetProps) {
   return (
     <PhotoDetailSheet
-      alt="선택한 갤러리 사진 상세 보기"
+      alt="선택한 BEST 케이크 사진 상세 보기"
       isSubmitting={isSubmitting}
       onClose={onClose}
       onDelete={onDelete}
