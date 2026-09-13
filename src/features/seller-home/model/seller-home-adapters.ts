@@ -22,23 +22,29 @@ export function toSellerHomeDashboard(
   inquiries: InquiryListItem[],
 ): SellerHomeDashboard {
   const todayPickups = response.todayOrders.map(toSellerHomePickup);
+  const waitingOrderFormInquiries = inquiries.filter(
+    isSellerHomeWaitingOrderFormInquiry,
+  );
 
   return {
     ...sellerHomeDashboardFixture,
     dateLabel: formatKoreanDate(response.today),
     dateCells: buildWeekDateCells(response.weekStartDate, response.today),
     todayPickupCount: response.todayOrderCount,
-    waitingInquiryCount: response.unansweredInquiryCount,
+    // TODO(api-contract): unansweredInquiryCount는 상태와 무관한 미읽음 문의방 수다.
+    // 백엔드에 명시적인 주문서 접수대기 건수가 추가되기 전까지 목록과 같은 기준으로 계산한다.
+    waitingInquiryCount: waitingOrderFormInquiries.length,
     weekDays: weekdays,
     pickups: todayPickups,
-    inquiries: inquiries
-      .filter(isSellerHomeWaitingInquiry)
-      .map(toSellerHomeInquiry),
+    inquiries: waitingOrderFormInquiries.map(toSellerHomeInquiry),
   };
 }
 
-export function isSellerHomeWaitingInquiry(inquiry: InquiryListItem) {
-  return inquiry.status === SELLER_HOME_WAITING_INQUIRY_STATUS;
+export function isSellerHomeWaitingOrderFormInquiry(inquiry: InquiryListItem) {
+  return (
+    inquiry.status === SELLER_HOME_WAITING_INQUIRY_STATUS &&
+    inquiry.latestOrderFormSubmissionId !== null
+  );
 }
 
 function toSellerHomePickup(order: SellerDashboardTodayOrder): SellerHomePickup {
