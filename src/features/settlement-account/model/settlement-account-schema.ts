@@ -15,31 +15,11 @@ export const settlementAccountSchema = z
         "계좌번호는 숫자 16자리 이내로 입력해 주세요.",
       ),
     accountHolderName: z.string().trim().min(1, "예금주명을 입력해 주세요."),
-    holderType: z.enum(["PERSONAL", "BUSINESS"]),
-    birthDate: z.string(),
-    businessRegistrationNumber: z.string(),
+    businessRegistrationNumber: z
+      .string()
+      .min(1, "사업자등록번호를 입력해 주세요."),
   })
   .superRefine((values, context) => {
-    if (values.holderType === "PERSONAL") {
-      if (!values.birthDate) {
-        context.addIssue({
-          code: "custom",
-          message: "생년월일을 입력해 주세요.",
-          path: ["birthDate"],
-        });
-        return;
-      }
-
-      if (values.birthDate >= today()) {
-        context.addIssue({
-          code: "custom",
-          message: "과거 생년월일을 입력해 주세요.",
-          path: ["birthDate"],
-        });
-      }
-      return;
-    }
-
     if (
       !businessRegistrationNumberPattern.test(
         onlyDigits(values.businessRegistrationNumber),
@@ -60,23 +40,10 @@ export type SettlementAccountFormValues = z.infer<
 export function toSettlementAccountInput(
   values: SettlementAccountFormValues,
 ): SettlementAccountInput {
-  const common = {
+  return {
     bankCode: values.bankCode,
     accountNumber: onlyDigits(values.accountNumber),
     accountHolderName: values.accountHolderName.trim(),
-  };
-
-  if (values.holderType === "PERSONAL") {
-    return {
-      ...common,
-      holderType: "PERSONAL",
-      birthDate: values.birthDate,
-    };
-  }
-
-  return {
-    ...common,
-    holderType: "BUSINESS",
     businessRegistrationNumber: onlyDigits(values.businessRegistrationNumber),
   };
 }
@@ -85,10 +52,13 @@ export function onlyDigits(value: string) {
   return value.replace(/\D/g, "");
 }
 
-function today() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+export function formatBusinessRegistrationNumber(value: string) {
+  const digits = onlyDigits(value).slice(0, 10);
+  if (digits.length <= 3) {
+    return digits;
+  }
+  if (digits.length <= 5) {
+    return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  }
+  return `${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5)}`;
 }
