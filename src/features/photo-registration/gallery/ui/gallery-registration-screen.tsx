@@ -325,7 +325,7 @@ export function GalleryRegistrationScreen() {
       <section className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 pt-4">
         <div className="space-y-2">
           <h1 className="text-seller-display-lg font-bold tracking-[-0.84px] whitespace-pre-line">
-            {`‘${storeName}’의 Best 케이크\n사진을 등록해주세요`}
+            {`‘${storeName}’의 BEST 케이크\n사진을 등록해주세요`}
           </h1>
           <p className="text-seller-body-md tracking-[-0.32px] whitespace-pre-line text-text-secondary">
             {
@@ -361,7 +361,7 @@ export function GalleryRegistrationScreen() {
         </p>
         {hasProcessingPhotos ? (
           <p className="text-sm text-text-secondary">
-            이미지를 처리 중입니다. 처리 완료 후 갤러리를 업데이트할 수 있어요.
+            이미지를 처리 중입니다. 처리 완료 후 BEST 케이크를 등록할 수 있어요.
           </p>
         ) : null}
         {hasFailedPhoto ? (
@@ -378,11 +378,11 @@ export function GalleryRegistrationScreen() {
       <div className="flex gap-2 px-4 pt-4 pb-[34px]">
         <Button
           className="h-11 flex-1 rounded-seller-md text-[15px] font-semibold"
-          onClick={() => router.push(getSellerBackHref("photoRepresentative"))}
+          onClick={() => router.push(getSellerBackHref("photoGallery"))}
           size="md"
           variant="outline"
         >
-          다음에 하기
+          대표사진 등록하기
         </Button>
         <Button
           className="h-11 flex-1 rounded-seller-md text-[15px] font-semibold"
@@ -395,14 +395,14 @@ export function GalleryRegistrationScreen() {
           onClick={handleUpdate}
           size="md"
         >
-          갤러리 업데이트
+          BEST 케이크 등록하기
         </Button>
       </div>
       {error ? (
         <p aria-live="polite" className="px-4 pb-4 text-sm text-text-error">
           {error instanceof Error
             ? error.message
-            : "갤러리 사진을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요."}
+            : "BEST 케이크 사진을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요."}
         </p>
       ) : null}
       {selectedPhoto?.detailUrl ? (

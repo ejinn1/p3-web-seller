@@ -8,6 +8,7 @@ import { Input } from "@/components/common/input";
 import { Textarea } from "@/components/common/textarea";
 import type {
   OrderFormDraftOption,
+  OrderFormDraftPriceMode,
   OrderFormDraftOptionType,
 } from "@/features/order-form/model/order-form-draft";
 import { cn } from "@/lib/utils";
@@ -26,6 +27,37 @@ const optionTypes: { label: string; type: OrderFormDraftOptionType }[] = [
   { label: "기타설명", type: "TEXTAREA" },
 ];
 
+function PriceToggle({
+  checked,
+  onClick,
+}: {
+  checked: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      aria-checked={checked}
+      aria-label={`직접 가격 입력 ${checked ? "사용" : "미사용"}`}
+      className={cn(
+        "flex h-[26px] w-[43px] items-center rounded-full p-[3px]",
+        checked
+          ? "justify-end bg-surface-inverse"
+          : "justify-start bg-brand-disabled",
+      )}
+      onClick={onClick}
+      role="switch"
+      type="button"
+    >
+      <span className="size-5 rounded-full bg-surface-default" />
+    </button>
+  );
+}
+
+function formatNumericPrice(value: string) {
+  const digits = value.replace(/\D/g, "").slice(0, 15);
+  return digits ? digits.replace(/\B(?=(\d{3})+(?!\d))/g, ",") : "";
+}
+
 export function OrderFormOptionSheet({
   initialOption,
   onComplete,
@@ -34,6 +66,9 @@ export function OrderFormOptionSheet({
 }: OrderFormOptionSheetProps) {
   const [label, setLabel] = useState(initialOption?.label ?? "");
   const [price, setPrice] = useState(initialOption?.price ?? "");
+  const [priceMode, setPriceMode] = useState<OrderFormDraftPriceMode>(
+    initialOption?.priceMode ?? "FIXED",
+  );
   const [description, setDescription] = useState(
     initialOption?.description ?? "",
   );
@@ -41,19 +76,31 @@ export function OrderFormOptionSheet({
   const [type, setType] = useState<OrderFormDraftOptionType>(
     initialOption?.type ?? "SELECT",
   );
+  const normalizedPrice = Number(price.replace(/,/g, ""));
+  const hasValidFixedPrice =
+    /^\d+$/.test(price.replace(/,/g, "")) &&
+    Number.isSafeInteger(normalizedPrice) &&
+    normalizedPrice >= 0;
+  const isCompleteDisabled =
+    type === "TEXTAREA"
+      ? !example.trim()
+      : !label.trim() ||
+        (type === "IMAGE"
+          ? priceMode === "FIXED" && !hasValidFixedPrice
+          : !price.trim());
 
   const completeOption = () => {
-    if (
-      type === "TEXTAREA" ? !example.trim() : !label.trim() || !price.trim()
-    ) {
+    if (isCompleteDisabled) {
       return;
     }
 
     onComplete({
       description: description.trim(),
       example: example.trim(),
+      id: initialOption?.id ?? crypto.randomUUID(),
       label: label.trim(),
-      price,
+      price: type === "IMAGE" && priceMode === "INQUIRY" ? "" : price,
+      priceMode,
       type,
     });
     onOpenChange(false);
@@ -86,7 +133,16 @@ export function OrderFormOptionSheet({
                     : "bg-surface-subtle text-text-secondary",
                 )}
                 key={optionType.type}
-                onClick={() => setType(optionType.type)}
+                onClick={() => {
+                  if (optionType.type === type) return;
+                  setType(optionType.type);
+                  if (optionType.type === "IMAGE") {
+                    setPrice("");
+                    setPriceMode("INQUIRY");
+                  } else {
+                    setPriceMode("FIXED");
+                  }
+                }}
                 type="button"
               >
                 {optionType.label}
@@ -198,27 +254,45 @@ export function OrderFormOptionSheet({
                     </span>
                   </span>
                 </label>
-                <label className="flex flex-col gap-2">
-                  <span className="flex items-center gap-1 text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-tertiary">
-                    가격
-                    <span className="relative -top-1 text-[15px] leading-4 font-semibold text-text-error">
-                      *
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-start gap-4">
+                    <div className="flex w-[43px] shrink-0 flex-col gap-4">
+                      <span className="text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-tertiary">
+                        가격
+                      </span>
+                      <PriceToggle
+                        checked={priceMode === "FIXED"}
+                        onClick={() => {
+                          setPrice("");
+                          setPriceMode((currentMode) =>
+                            currentMode === "FIXED" ? "INQUIRY" : "FIXED",
+                          );
+                        }}
+                      />
+                    </div>
+                    <span className="flex min-w-0 flex-1 flex-col items-end gap-1 pt-6">
+                      <Input
+                        className="border-0 bg-surface-subtle px-4 placeholder:text-text-unavailable"
+                        disabled={priceMode === "INQUIRY"}
+                        inputMode="numeric"
+                        maxLength={100}
+                        onChange={(event) =>
+                          setPrice(formatNumericPrice(event.target.value))
+                        }
+                        placeholder={
+                          priceMode === "INQUIRY" ? "문의필요" : "2,000"
+                        }
+                        value={priceMode === "INQUIRY" ? "" : price}
+                      />
+                      <span className="text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-unavailable">
+                        {priceMode === "INQUIRY" ? 0 : price.length}/100
+                      </span>
                     </span>
-                  </span>
-                  <span className="flex flex-col items-end gap-1">
-                    <Input
-                      className="border-0 bg-surface-subtle px-4 placeholder:text-text-unavailable"
-                      inputMode="numeric"
-                      maxLength={100}
-                      onChange={(event) => setPrice(event.target.value)}
-                      placeholder="문의필요"
-                      value={price}
-                    />
-                    <span className="text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-unavailable">
-                      {price.length}/100
-                    </span>
-                  </span>
-                </label>
+                  </div>
+                  <p className="text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-unavailable">
+                    토글이 비활성화 된 상태는 나중에 가격을 기입해야해요
+                  </p>
+                </div>
                 <label className="flex flex-col gap-2">
                   <span className="text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-tertiary">
                     서브 설명
@@ -339,11 +413,7 @@ export function OrderFormOptionSheet({
           </div>
           <Button
             className="h-[52px] w-full rounded-seller-md text-seller-heading-md font-semibold"
-            disabled={
-              type === "TEXTAREA"
-                ? !example.trim()
-                : !label.trim() || !price.trim()
-            }
+            disabled={isCompleteDisabled}
             onClick={completeOption}
             size="md"
           >

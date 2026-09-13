@@ -3,9 +3,9 @@ import type { OrderFormDraftOption } from "@/features/order-form/model/order-for
 import { cn } from "@/lib/utils";
 
 type OrderFormConfiguredOptionCardProps = OrderFormDraftOption & {
+  className?: string;
   index: number;
-  onSelect: () => void;
-  selected: boolean;
+  onClick: () => void;
 };
 
 function formatPrice(price: string) {
@@ -20,23 +20,24 @@ function formatPrice(price: string) {
 }
 
 export function OrderFormConfiguredOptionCard({
+  className,
   description,
   example,
   index,
   label,
-  onSelect,
+  onClick,
   price,
-  selected,
+  priceMode,
   type,
 }: OrderFormConfiguredOptionCardProps) {
   return (
     <button
-      aria-pressed={selected}
       className={cn(
         "flex w-full flex-col gap-2 rounded-seller-md bg-surface-default p-4 text-left outline-none",
         "focus-visible:ring-2 focus-visible:ring-seller-primary focus-visible:ring-offset-2",
+        className,
       )}
-      onClick={onSelect}
+      onClick={onClick}
       type="button"
     >
       <p className="text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-tertiary">
@@ -69,7 +70,7 @@ export function OrderFormConfiguredOptionCard({
           <div className="flex items-start justify-between gap-4 text-seller-heading-md font-semibold tracking-[-0.54px]">
             <p>{label || "사진첨부"}</p>
             <p className="shrink-0 text-[15px] leading-5 font-medium tracking-[-0.3px] text-text-tertiary">
-              {price || "문의필요"}
+              {priceMode === "INQUIRY" ? "문의필요" : formatPrice(price)}
             </p>
           </div>
           <div

@@ -1,5 +1,5 @@
-import Image from "next/image";
 import { ChevronRight } from "lucide-react";
+import { RadioIndicator } from "@/components/common/radio";
 import type { InquiryDocumentMode } from "@/features/inquiries/model/inquiry-detail-state";
 import { formatInquiryPrice } from "@/features/inquiries/model/inquiry-order-confirmation";
 import type {
@@ -31,14 +31,7 @@ export function InquiryOrderCard({
 
   return (
     <article className="w-full rounded-seller-sm bg-surface-default px-4 py-8 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
-      <div
-        className={cn(
-          "flex justify-between font-bold text-text-primary",
-          isConfirmationEditor
-            ? "text-[16px] leading-6 tracking-[-0.32px]"
-            : "text-[22px] leading-[30px] tracking-[-0.66px]",
-        )}
-      >
+      <div className="flex justify-between text-[22px] leading-[30px] font-bold tracking-[-0.66px] text-text-primary">
         <p>{order.pickupDate}</p>
         <p>{order.pickupTime}</p>
       </div>
@@ -61,18 +54,8 @@ export function InquiryOrderCard({
       </div>
       {showFinalTotal ? (
         <>
-          <div
-            className={cn(
-              "h-px bg-surface-subtle opacity-90",
-              isConfirmationEditor && "mt-8",
-            )}
-          />
-          <div
-            className={cn(
-              "flex items-center justify-between text-[22px] leading-[30px] font-bold tracking-[-0.66px] text-text-primary",
-              isConfirmationEditor && "pt-8",
-            )}
-          >
+          <div className="mt-8 h-px bg-surface-subtle opacity-90" />
+          <div className="flex items-center justify-between pt-8 text-[22px] leading-[30px] font-bold tracking-[-0.66px] text-text-primary">
             <p>최종 가격</p>
             <p>{formatInquiryPrice(order.totalPrice)}</p>
           </div>
@@ -147,17 +130,7 @@ function OrderFormSection({
         type="button"
       >
         <span className="flex h-11 min-w-0 shrink items-center justify-end">
-          {showRadio ? (
-            <span className="relative size-8 shrink-0" aria-hidden="true">
-              <Image
-                alt=""
-                className="absolute top-[7px] left-0 size-[18px]"
-                height={18}
-                src="/order-form/radio-checked.svg"
-                width={18}
-              />
-            </span>
-          ) : null}
+          {showRadio ? <RadioIndicator checked disabled /> : null}
           <span className="min-w-0 truncate text-[16px] leading-6 font-normal tracking-[-0.32px] text-text-primary">
             {value}
           </span>
@@ -203,6 +176,7 @@ function ConfirmationOptionRow({
   option: InquiryOrderOption;
 }) {
   const showPrice = !option.needsPrice || mode !== "confirmation-draft";
+  const isPriceDisabled = mode === "confirmation-draft";
 
   return (
     <div className="space-y-2">
@@ -219,7 +193,12 @@ function ConfirmationOptionRow({
           {option.value}
         </span>
         {showPrice ? (
-          <span className="text-[15px] leading-[22px] font-semibold tracking-[-0.15px] text-text-disabled">
+          <span
+            className={cn(
+              "text-[15px] leading-[22px] font-semibold tracking-[-0.15px]",
+              isPriceDisabled ? "text-text-disabled" : "text-text-primary",
+            )}
+          >
             {option.priceText}
           </span>
         ) : (

@@ -48,17 +48,21 @@ function toDraftOption(option: OrderFormOption): OrderFormDraftOption {
   }
 
   const settings = parseSettings(option.settings);
+  const isInquiryPrice = option.inputType === "IMAGE" && option.price === null;
 
   return {
     description:
       typeof settings.helperText === "string" ? settings.helperText : "",
     example:
       typeof settings.placeholder === "string" ? settings.placeholder : "",
+    id: option.id,
     label: option.label,
-    price:
-      option.price === null
+    price: isInquiryPrice
+      ? ""
+      : option.price === null
         ? (option.priceLabel ?? "")
         : option.price.toLocaleString("ko-KR"),
+    priceMode: isInquiryPrice ? "INQUIRY" : "FIXED",
     type: option.inputType,
   };
 }

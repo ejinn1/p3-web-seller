@@ -1,9 +1,10 @@
 "use client";
 
-import { Plus, X } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/common/button";
+import { SelectionCheckbox } from "@/components/common/selection-checkbox";
 import { SellerMenuHeader } from "@/components/widgets/seller-menu-header";
 import { useUpdateStoreRefundPolicyMutation } from "@/features/store/model/store-mutations";
 import { useStoreRefundPolicyQuery } from "@/features/store/model/store-queries";
@@ -61,13 +62,17 @@ function RefundRuleFields({
   rule,
   rules,
   onChange,
-  onDelete,
+  isDeleteMode,
+  isSelected,
+  onToggleSelection,
 }: {
   index: number;
   rule: RefundRule;
   rules: RefundRule[];
   onChange: (nextRule: RefundRule) => void;
-  onDelete: () => void;
+  isDeleteMode: boolean;
+  isSelected: boolean;
+  onToggleSelection: () => void;
 }) {
   const previousPercentage =
     index === 0 ? Number.POSITIVE_INFINITY : rules[index - 1].percentage;
@@ -98,44 +103,46 @@ function RefundRuleFields({
           픽업 일 기준
         </p>
       ) : null}
-      <div className="flex items-start gap-2">
-        <InlineSelect
-          ariaLabel={`환불 비율 ${index + 1}`}
-          className="w-28 shrink-0"
-          onValueChange={(value) =>
-            onChange({ ...rule, percentage: Number(value) })
-          }
-          options={selectablePercentages.map((percentage) => ({
-            label: `${percentage}%`,
-            value: String(percentage),
-          }))}
-          placeholder={`${rule.percentage}%`}
-          value={String(rule.percentage)}
-          valueClassName="text-seller-display-sm font-bold tracking-[-0.66px]"
-        />
-        <InlineSelect
-          ariaLabel={`환불 기간 ${index + 1}`}
-          className="min-w-0 flex-1"
-          onValueChange={(value) =>
-            onChange({ ...rule, daysBefore: Number(value) })
-          }
-          options={selectableDays.map((day) => ({
-            label: `${day}일 전`,
-            value: String(day),
-          }))}
-          placeholder={`${placeholderDay}일 전`}
-          value={hasValue ? String(rule.daysBefore) : null}
-        />
-        {rules.length > 1 ? (
-          <button
-            aria-label={`환불 기간 ${index + 1} 삭제`}
-            className="flex size-11 shrink-0 items-center justify-center text-icon-default outline-none hover:text-text-error focus-visible:text-text-error"
-            onClick={onDelete}
-            type="button"
-          >
-            <X aria-hidden="true" className="size-3.5" strokeWidth={2} />
-          </button>
+      <div className="flex items-start">
+        {isDeleteMode ? (
+          <SelectionCheckbox
+            ariaLabel={`환불 기간 ${index + 1} 삭제 선택`}
+            checked={isSelected}
+            className="-ml-3"
+            onChange={onToggleSelection}
+          />
         ) : null}
+        <div className="flex min-w-0 flex-1 gap-2">
+          <InlineSelect
+            ariaLabel={`환불 비율 ${index + 1}`}
+            className="w-[100px] shrink-0"
+            disabled={isDeleteMode}
+            onValueChange={(value) =>
+              onChange({ ...rule, percentage: Number(value) })
+            }
+            options={selectablePercentages.map((percentage) => ({
+              label: `${percentage}%`,
+              value: String(percentage),
+            }))}
+            placeholder={`${rule.percentage}%`}
+            value={String(rule.percentage)}
+            valueClassName="text-seller-display-sm font-bold tracking-[-0.66px]"
+          />
+          <InlineSelect
+            ariaLabel={`환불 기간 ${index + 1}`}
+            className="min-w-0 flex-1"
+            disabled={isDeleteMode}
+            onValueChange={(value) =>
+              onChange({ ...rule, daysBefore: Number(value) })
+            }
+            options={selectableDays.map((day) => ({
+              label: `${day}일 전`,
+              value: String(day),
+            }))}
+            placeholder={`${placeholderDay}일 전`}
+            value={hasValue ? String(rule.daysBefore) : null}
+          />
+        </div>
       </div>
     </div>
   );
@@ -161,6 +168,10 @@ function StoreRefundPeriodForm({
         }))
       : [{ daysBefore: null, id: 1, percentage: 100 }],
   );
+  const [isDeleteMode, setIsDeleteMode] = useState(false);
+  const [selectedRuleIds, setSelectedRuleIds] = useState<Set<number>>(
+    () => new Set(),
+  );
 
   const isOrdered = rules.every((rule, index) => {
     if (index === 0) {
@@ -181,11 +192,13 @@ function StoreRefundPeriodForm({
     rules.every((rule) => isSelectableRefundDay(rule.daysBefore)) &&
     isOrdered;
   const nextPercentage =
-    rules.length < refundDays.length
-      ? refundPercentages.find(
-          (percentage) => percentage < rules.at(-1)!.percentage,
-        )
-      : undefined;
+    rules.length === 0
+      ? 100
+      : rules.length < refundDays.length
+        ? refundPercentages.find(
+            (percentage) => percentage < rules.at(-1)!.percentage,
+          )
+        : undefined;
 
   const updateRule = (nextRule: RefundRule) => {
     setRules((currentRules) =>
@@ -193,10 +206,27 @@ function StoreRefundPeriodForm({
     );
   };
 
-  const deleteRule = (ruleId: number) => {
+  const toggleDeleteMode = () => {
+    setIsDeleteMode((currentMode) => !currentMode);
+    setSelectedRuleIds(new Set());
+  };
+
+  const toggleSelectedRule = (ruleId: number) => {
+    setSelectedRuleIds((currentIds) => {
+      const nextIds = new Set(currentIds);
+      if (nextIds.has(ruleId)) nextIds.delete(ruleId);
+      else nextIds.add(ruleId);
+      return nextIds;
+    });
+  };
+
+  const deleteSelectedRules = () => {
+    if (selectedRuleIds.size === 0) return;
     setRules((currentRules) =>
-      currentRules.filter((rule) => rule.id !== ruleId),
+      currentRules.filter((rule) => !selectedRuleIds.has(rule.id)),
     );
+    setSelectedRuleIds(new Set());
+    setIsDeleteMode(false);
   };
 
   const addRule = () => {
@@ -208,7 +238,7 @@ function StoreRefundPeriodForm({
       ...currentRules,
       {
         daysBefore: null,
-        id: Math.max(...currentRules.map((rule) => rule.id)) + 1,
+        id: Math.max(0, ...currentRules.map((rule) => rule.id)) + 1,
         percentage: nextPercentage,
       },
     ]);
@@ -243,22 +273,35 @@ function StoreRefundPeriodForm({
         title="환불기간"
       />
       <section className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 pt-6 pb-4">
-        <p className="flex text-seller-heading-md font-semibold tracking-[-0.54px]">
-          환불정책
-          <span
-            aria-hidden="true"
-            className="relative -top-1 text-[15px] text-text-error"
-          >
-            *
-          </span>
-        </p>
+        <div className="flex h-4 items-center justify-between">
+          <p className="flex text-seller-heading-md font-semibold tracking-[-0.54px]">
+            환불정책
+            <span
+              aria-hidden="true"
+              className="relative -top-1 text-[15px] text-text-error"
+            >
+              *
+            </span>
+          </p>
+          {rules.length > 0 ? (
+            <button
+              className="flex size-10 items-center justify-center text-[11px] leading-4 font-medium tracking-[-0.11px]"
+              onClick={toggleDeleteMode}
+              type="button"
+            >
+              {isDeleteMode ? "선택취소" : "선택삭제"}
+            </button>
+          ) : null}
+        </div>
         <div className="flex flex-col gap-4">
           {rules.map((rule, index) => (
             <RefundRuleFields
               index={index}
+              isDeleteMode={isDeleteMode}
+              isSelected={selectedRuleIds.has(rule.id)}
               key={rule.id}
               onChange={updateRule}
-              onDelete={() => deleteRule(rule.id)}
+              onToggleSelection={() => toggleSelectedRule(rule.id)}
               rule={rule}
               rules={rules}
             />
@@ -281,7 +324,7 @@ function StoreRefundPeriodForm({
         ) : null}
         <button
           className="flex h-11 w-fit items-center justify-center rounded-seller-md bg-surface-inverse pr-4 text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-inverse disabled:opacity-40"
-          disabled={nextPercentage === undefined}
+          disabled={isDeleteMode || nextPercentage === undefined}
           onClick={addRule}
           type="button"
         >
@@ -292,15 +335,27 @@ function StoreRefundPeriodForm({
         </button>
       </section>
       <div className="px-4 pt-4 pb-[34px]">
-        <Button
-          className="h-11 rounded-seller-md text-[15px] font-semibold"
-          disabled={!canSave || isSaving}
-          fullWidth
-          onClick={() => void handleConfirm()}
-          size="md"
-        >
-          {isSaving ? "저장 중..." : "다음"}
-        </Button>
+        {isDeleteMode ? (
+          <Button
+            className="h-[52px] rounded-seller-md text-seller-heading-md font-semibold"
+            disabled={selectedRuleIds.size === 0}
+            fullWidth
+            onClick={deleteSelectedRules}
+            size="md"
+          >
+            삭제하기
+          </Button>
+        ) : (
+          <Button
+            className="h-11 rounded-seller-md text-[15px] font-semibold"
+            disabled={!canSave || isSaving}
+            fullWidth
+            onClick={() => void handleConfirm()}
+            size="md"
+          >
+            {isSaving ? "저장 중..." : "다음"}
+          </Button>
+        )}
       </div>
     </main>
   );
