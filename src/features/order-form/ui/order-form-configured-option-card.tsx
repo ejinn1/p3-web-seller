@@ -46,7 +46,9 @@ export function OrderFormConfiguredOptionCard({
       {type === "SELECT" || type === "SELECT_WITH_TEXT" ? (
         <div className="flex items-start justify-between gap-4 text-seller-heading-md font-semibold tracking-[-0.54px]">
           <p>{label}</p>
-          <p className="shrink-0">{formatPrice(price)}</p>
+          <p className="shrink-0">
+            {priceMode === "INQUIRY" ? "문의필요" : formatPrice(price)}
+          </p>
         </div>
       ) : null}
       {type === "SELECT" && description ? (
