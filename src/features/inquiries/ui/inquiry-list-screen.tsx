@@ -9,7 +9,10 @@ import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-fr
 import { useCurrentUserQuery } from "@/features/auth/model/auth-queries";
 import { toInquiryStatusLabel } from "@/features/inquiries/model/inquiry-adapters";
 import { useSellerInquiryListStomp } from "@/features/inquiries/model/inquiry-list-stomp";
-import { useMoveSellerInquiryToTrashMutation } from "@/features/inquiries/model/inquiry-mutations";
+import {
+  useMoveSellerInquiryToTrashMutation,
+  useRestoreSellerInquiryFromTrashMutation,
+} from "@/features/inquiries/model/inquiry-mutations";
 import { useSellerInquiriesQuery } from "@/features/inquiries/model/inquiry-queries";
 import type {
   InquiryListItem,
@@ -43,6 +46,7 @@ export function InquiryListScreen() {
     unreadOnly,
   });
   const moveToTrashMutation = useMoveSellerInquiryToTrashMutation();
+  const restoreFromTrashMutation = useRestoreSellerInquiryFromTrashMutation();
   const currentUserQuery = useCurrentUserQuery(
     Boolean(process.env.NEXT_PUBLIC_P3_API_BASE_URL),
   );
@@ -53,8 +57,14 @@ export function InquiryListScreen() {
     router.push(`/seller/inquiries/${inquiryId}`);
   };
 
-  const leaveInquiry = (inquiryId: string) => {
+  const handleInquiryAction = (inquiryId: string) => {
     setOpenInquiryId(null);
+
+    if (activeStatus === "TRASH") {
+      restoreFromTrashMutation.mutate(inquiryId);
+      return;
+    }
+
     moveToTrashMutation.mutate(inquiryId);
   };
 
@@ -109,14 +119,17 @@ export function InquiryListScreen() {
         <div>
           {inquiries.map((inquiry, index) => (
             <InquiryRow
+              action={activeStatus === "TRASH" ? "restore" : "leave"}
               inquiry={inquiry}
-              isLeaving={
-                moveToTrashMutation.isPending &&
-                moveToTrashMutation.variables === inquiry.id
+              isActionPending={
+                (moveToTrashMutation.isPending &&
+                  moveToTrashMutation.variables === inquiry.id) ||
+                (restoreFromTrashMutation.isPending &&
+                  restoreFromTrashMutation.variables === inquiry.id)
               }
               key={inquiry.id}
+              onAction={() => handleInquiryAction(inquiry.id)}
               onConsult={() => openInquiry(inquiry.id)}
-              onLeave={() => leaveInquiry(inquiry.id)}
               onOpenChange={(open) =>
                 setOpenInquiryId(open ? inquiry.id : null)
               }
@@ -132,18 +145,20 @@ export function InquiryListScreen() {
 }
 
 function InquiryRow({
+  action,
   inquiry,
-  isLeaving,
+  isActionPending,
+  onAction,
   onConsult,
-  onLeave,
   onOpenChange,
   open,
   pressed,
 }: {
+  action: "leave" | "restore";
   inquiry: InquiryListItem;
-  isLeaving: boolean;
+  isActionPending: boolean;
+  onAction: () => void;
   onConsult: () => void;
-  onLeave: () => void;
   onOpenChange: (open: boolean) => void;
   open: boolean;
   pressed?: boolean;
@@ -270,14 +285,17 @@ function InquiryRow({
         data-qa="inquiry-swipe-actions"
       >
         <button
-          className="flex size-[72px] items-center justify-center rounded-seller-md bg-brand-destructive text-center text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-inverse disabled:opacity-40"
-          data-qa="inquiry-leave-action"
-          disabled={isLeaving}
-          onClick={onLeave}
+          className={cn(
+            "flex size-[72px] items-center justify-center rounded-seller-md text-center text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-inverse disabled:opacity-40",
+            action === "restore" ? "bg-brand-primary" : "bg-brand-destructive",
+          )}
+          data-qa={`inquiry-${action}-action`}
+          disabled={isActionPending}
+          onClick={onAction}
           tabIndex={open ? 0 : -1}
           type="button"
         >
-          나가기
+          {action === "restore" ? "복구하기" : "나가기"}
         </button>
       </div>
       <button
