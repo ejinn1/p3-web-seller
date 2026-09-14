@@ -11,6 +11,7 @@ import {
   moveSellerInquiryToTrash,
   requestSellerOrderFormRevision,
   replaceSellerOrderConfirmation,
+  restoreSellerInquiryFromTrash,
   sendSellerOrderConfirmation,
 } from "@/features/inquiries/api/inquiries-api";
 import { inquiryKeys } from "@/features/inquiries/model/inquiry-keys";
@@ -19,6 +20,7 @@ import type {
   SellerInquiryListParams,
   SendSellerOrderConfirmationRequest,
 } from "@/features/inquiries/model/inquiry-types";
+import { sellerHomeKeys } from "@/features/seller-home/model/seller-home-keys";
 
 export function useSendSellerOrderConfirmationMutation(inquiryId: string) {
   const queryClient = useQueryClient();
@@ -176,6 +178,23 @@ export function useMoveSellerInquiryToTrashMutation() {
     mutationFn: moveSellerInquiryToTrash,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: inquiryKeys.all });
+      void queryClient.invalidateQueries({
+        queryKey: sellerHomeKeys.dashboard(),
+      });
+    },
+  });
+}
+
+export function useRestoreSellerInquiryFromTrashMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: restoreSellerInquiryFromTrash,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: inquiryKeys.all });
+      void queryClient.invalidateQueries({
+        queryKey: sellerHomeKeys.dashboard(),
+      });
     },
   });
 }
