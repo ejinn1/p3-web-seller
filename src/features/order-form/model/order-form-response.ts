@@ -48,7 +48,8 @@ function toDraftOption(option: OrderFormOption): OrderFormDraftOption {
   }
 
   const settings = parseSettings(option.settings);
-  const isInquiryPrice = option.inputType === "IMAGE" && option.price === null;
+  const isInquiryPrice =
+    option.inputType !== "TEXTAREA" && option.price === null;
 
   return {
     description:
