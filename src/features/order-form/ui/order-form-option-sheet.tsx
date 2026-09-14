@@ -210,7 +210,7 @@ export function OrderFormOptionSheet({
                 <label className="flex flex-col gap-2">
                   <span className="flex items-center gap-1 text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-tertiary">
                     옵션명
-                    <span className="relative -top-1 text-[15px] leading-4 font-semibold text-text-error">
+                    <span className="relative -top-2 -left-0.5 text-[15px] leading-4 font-semibold text-text-error">
                       *
                     </span>
                   </span>
@@ -274,7 +274,7 @@ export function OrderFormOptionSheet({
                 <label className="flex flex-col gap-2">
                   <span className="flex items-center gap-1 text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-tertiary">
                     옵션명
-                    <span className="relative -top-1 text-[15px] leading-4 font-semibold text-text-error">
+                    <span className="relative -top-2 -left-0.5 text-[15px] leading-4 font-semibold text-text-error">
                       *
                     </span>
                   </span>
@@ -358,7 +358,7 @@ export function OrderFormOptionSheet({
                 <label className="flex flex-col gap-2">
                   <span className="flex items-center gap-1 text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-tertiary">
                     옵션명
-                    <span className="relative -top-1 text-[15px] leading-4 font-semibold text-text-error">
+                    <span className="relative -top-2 -left-0.5 text-[15px] leading-4 font-semibold text-text-error">
                       *
                     </span>
                   </span>
