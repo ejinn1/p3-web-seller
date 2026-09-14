@@ -237,6 +237,7 @@ export function RepresentativePhotoHomeScreen() {
 
       pendingPhotos.forEach((photo) => revokePreviewUrl(photo.localPreviewUrl));
       setUploadedPhotos([]);
+      router.push("/seller/photo-registration/gallery");
     } catch {
       // The mutation state is rendered on the current screen.
     }
