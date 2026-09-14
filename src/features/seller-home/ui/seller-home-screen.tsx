@@ -460,7 +460,7 @@ function TabButton({
   return (
     <button
       className={cn(
-        "flex h-11 min-w-0 flex-1 items-center justify-center whitespace-nowrap rounded-seller-sm px-3 py-2 text-[15px] leading-5 font-semibold tracking-[-0.3px]",
+        "flex h-11 shrink-0 items-center justify-center rounded-seller-sm px-4 py-2 text-[15px] leading-5 font-semibold tracking-[-0.3px] whitespace-nowrap",
         active
           ? "bg-surface-inverse text-text-inverse"
           : "bg-surface-subtle text-text-secondary",
