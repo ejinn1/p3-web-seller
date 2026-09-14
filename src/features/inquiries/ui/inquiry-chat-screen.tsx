@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ChevronLeft, Menu } from "lucide-react";
 import { SellerResponsiveFrame } from "@/components/widgets/seller-responsive-frame";
 import { SellerSidebar } from "@/components/widgets/seller-sidebar";
+import { useInquiryChatKeyboardViewport } from "@/features/inquiries/model/use-inquiry-chat-keyboard-viewport";
 import type { InquiryDetail } from "@/features/inquiries/model/inquiry-types";
 import { InquiryChatComposer } from "@/features/inquiries/ui/inquiry-chat-composer";
 import { InquiryChatMessage } from "@/features/inquiries/ui/inquiry-chat-message";
@@ -42,6 +43,7 @@ export function InquiryChatScreen({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const scrollRef = useRef<HTMLElement>(null);
+  const { isComposerFocused, stageRef } = useInquiryChatKeyboardViewport();
   const initializedRef = useRef(false);
   const nearBottomRef = useRef(true);
   const previousLatestMessageIdRef = useRef(inquiry.messages.at(-1)?.id);
@@ -87,6 +89,26 @@ export function InquiryChatScreen({
       loadRequestedRef.current = false;
     }
   }, [isLoadingOlderMessages]);
+
+  useLayoutEffect(() => {
+    const scrollArea = scrollRef.current;
+    if (!scrollArea) return;
+
+    let previousClientHeight = scrollArea.clientHeight;
+    const observer = new ResizeObserver(() => {
+      const nextClientHeight = scrollArea.clientHeight;
+
+      if (nextClientHeight !== previousClientHeight && nearBottomRef.current) {
+        scrollArea.scrollTop = scrollArea.scrollHeight;
+      }
+
+      previousClientHeight = nextClientHeight;
+    });
+
+    observer.observe(scrollArea);
+
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const scrollArea = scrollRef.current;
@@ -145,29 +167,39 @@ export function InquiryChatScreen({
         onBack={onBack}
         onMenu={() => setSidebarOpen(true)}
       />
-      <section
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-surface-subtle pb-6"
-        data-qa="chat-scroll-area"
-        onScroll={handleScroll}
-        ref={scrollRef}
+      <div
+        className="flex min-h-0 flex-1 flex-col overflow-hidden"
+        data-qa="chat-keyboard-stage"
+        ref={stageRef}
       >
-        <ChatDate createdAt={inquiry.createdAt} />
-        <div className="flex flex-col gap-8">
-          {inquiry.messages.map((message) => (
-            <InquiryChatMessage
-              buyerProfileImageUrl={inquiry.profileImageUrl}
-              key={message.id}
-              message={message}
-              onOpenOrderConfirmation={onOpenOrderConfirmation}
-              onOpenOrderForm={onOpenOrderForm}
-              onOpenOrderHistory={onOpenOrderHistory}
-              onReviseOrderConfirmation={onReviseOrderConfirmation}
-              onWriteOrderConfirmation={onWriteOrderConfirmation}
-            />
-          ))}
-        </div>
-      </section>
-      <InquiryChatComposer disabled={!isConnected} onSend={onSend} />
+        <section
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-surface-subtle pb-6"
+          data-qa="chat-scroll-area"
+          onScroll={handleScroll}
+          ref={scrollRef}
+        >
+          <ChatDate createdAt={inquiry.createdAt} />
+          <div className="flex flex-col gap-8">
+            {inquiry.messages.map((message) => (
+              <InquiryChatMessage
+                buyerProfileImageUrl={inquiry.profileImageUrl}
+                key={message.id}
+                message={message}
+                onOpenOrderConfirmation={onOpenOrderConfirmation}
+                onOpenOrderForm={onOpenOrderForm}
+                onOpenOrderHistory={onOpenOrderHistory}
+                onReviseOrderConfirmation={onReviseOrderConfirmation}
+                onWriteOrderConfirmation={onWriteOrderConfirmation}
+              />
+            ))}
+          </div>
+        </section>
+        <InquiryChatComposer
+          compactBottomInset={isComposerFocused}
+          disabled={!isConnected}
+          onSend={onSend}
+        />
+      </div>
       {connectionError ? (
         <p className="sr-only">채팅 연결 오류: {connectionError}</p>
       ) : null}
