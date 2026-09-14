@@ -131,6 +131,27 @@ export function clearCognitoSession() {
   setAccessTokenProvider();
 }
 
+export function startCognitoSignOut(logoutTo = "/seller") {
+  clearCognitoSession();
+  clearLoginRequest();
+
+  const domain = process.env.NEXT_PUBLIC_COGNITO_DOMAIN;
+  const clientId = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID;
+
+  if (!domain || !clientId) {
+    window.location.replace(logoutTo);
+    return;
+  }
+
+  const url = new URL("/logout", domain.endsWith("/") ? domain : `${domain}/`);
+  url.search = new URLSearchParams({
+    client_id: clientId,
+    logout_uri: new URL(logoutTo, window.location.origin).toString(),
+  }).toString();
+
+  window.location.assign(url.toString());
+}
+
 export function hasCognitoSession() {
   return readSession() !== null;
 }
