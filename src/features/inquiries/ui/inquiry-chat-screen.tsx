@@ -139,7 +139,7 @@ export function InquiryChatScreen({
   };
 
   return (
-    <SellerResponsiveFrame className="h-dvh bg-surface-subtle">
+    <SellerResponsiveFrame className="h-dvh overflow-hidden bg-surface-subtle">
       <ChatHeader
         inquiry={inquiry}
         onBack={onBack}
