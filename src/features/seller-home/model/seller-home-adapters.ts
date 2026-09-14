@@ -43,7 +43,7 @@ export function toSellerHomeDashboard(
 export function isSellerHomeWaitingOrderFormInquiry(inquiry: InquiryListItem) {
   return (
     inquiry.status === SELLER_HOME_WAITING_INQUIRY_STATUS &&
-    inquiry.latestOrderFormSubmissionId !== null
+    inquiry.currentOrderFormSubmissionId !== null
   );
 }
 
@@ -68,7 +68,7 @@ function toSellerHomeInquiry(inquiry: InquiryListItem): SellerHomeInquiry {
     previewMessage: inquiry.lastMessage,
     sentAt: inquiry.lastMessageTimeLabel,
     unreadCount: inquiry.unreadCount,
-    orderFormSubmissionId: inquiry.latestOrderFormSubmissionId,
+    orderFormSubmissionId: inquiry.currentOrderFormSubmissionId,
   };
 }
 

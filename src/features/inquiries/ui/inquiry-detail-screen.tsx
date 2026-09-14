@@ -240,7 +240,6 @@ export function InquiryDetailScreen({ inquiryId }: { inquiryId: string }) {
     if (
       !selectedSubmissionId ||
       !selectedSubmission ||
-      selectedSubmission.sellerViewed ||
       viewedSubmissionAttemptRef.current === selectedSubmissionId
     ) {
       return;

@@ -61,6 +61,8 @@ export function useSellerInquiryListStomp(userId?: string, enabled = true) {
                               status: message.status,
                               statusLabel: toInquiryStatusLabel(message.status),
                               unreadCount: message.unreadCount,
+                              currentOrderFormSubmissionId:
+                                message.currentOrderFormSubmissionId,
                             }
                           : item,
                       )
@@ -77,6 +79,8 @@ export function useSellerInquiryListStomp(userId?: string, enabled = true) {
                       ...current,
                       status: message.status,
                       statusLabel: toInquiryStatusLabel(message.status),
+                      currentOrderFormSubmissionId:
+                        message.currentOrderFormSubmissionId,
                     }
                   : current,
             );

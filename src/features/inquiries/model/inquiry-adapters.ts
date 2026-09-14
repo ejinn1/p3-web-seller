@@ -36,6 +36,7 @@ export function toInquiryListItem(item: InquiryListApiItem): InquiryListItem {
   return {
     id: item.inquiryId,
     buyerName: item.participant.name,
+    currentOrderFormSubmissionId: item.currentOrderFormSubmissionId,
     latestOrderFormSubmissionId:
       item.latestOrderFormSubmission?.submissionId ?? null,
     lastMessage: formatLatestMessage(latestPreview),
@@ -65,7 +66,6 @@ export function toInquiryDetail({
   status?: InquiryStatus;
   timeline: InquiryTimelineItemResponse[];
 }): InquiryDetail {
-  const latestConfirmation = newestBy(confirmations, "createdAt");
   const confirmationAmounts = new Map(
     confirmations.map((confirmation) => [
       confirmation.confirmationId,
@@ -81,9 +81,22 @@ export function toInquiryDetail({
   const submissionsById = new Map(
     submissions.map((submission) => [submission.id, submission]),
   );
-  const latestSubmission = latestConfirmation
-    ? (submissionsById.get(latestConfirmation.orderFormSubmissionId) ?? null)
-    : newestBy(submissions, "submittedAt");
+  const currentOrderFormSubmissionId =
+    detail.currentOrderFormSubmissionId ??
+    submissions.find((submission) => submission.current)?.id ??
+    null;
+  const currentSubmission = currentOrderFormSubmissionId
+    ? (submissionsById.get(currentOrderFormSubmissionId) ?? null)
+    : null;
+  const currentConfirmation = currentSubmission
+    ? newestBy(
+        confirmations.filter(
+          (confirmation) =>
+            confirmation.orderFormSubmissionId === currentSubmission.id,
+        ),
+        "createdAt",
+      )
+    : null;
   const ordersBySubmissionId = Object.fromEntries(
     submissions.map((submission) => [
       submission.id,
@@ -119,6 +132,7 @@ export function toInquiryDetail({
 
   return {
     createdAt: detail.createdAt,
+    currentOrderFormSubmissionId,
     id: detail.inquiryId,
     buyerName: detail.participant.name,
     chatInfo: "픽업 상담",
@@ -133,8 +147,8 @@ export function toInquiryDetail({
     }),
     order: toInquiryOrderConfirmation(
       detail,
-      latestSubmission,
-      latestConfirmation,
+      currentSubmission,
+      currentConfirmation,
       preview,
     ),
     confirmationsById,
