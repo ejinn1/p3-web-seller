@@ -21,6 +21,7 @@ type OrderFormDraftState = {
     category: OrderFormCategorySlug,
     option: OrderFormDraftOption,
   ) => void;
+  isDirty: boolean;
   optionsByCategory: Partial<
     Record<OrderFormCategorySlug, OrderFormDraftOption[]>
   >;
@@ -46,17 +47,21 @@ export const useOrderFormDraftStore = create<OrderFormDraftState>()(
     (set) => ({
       addOption: (category, option) =>
         set((state) => ({
+          isDirty: true,
           optionsByCategory: {
             ...state.optionsByCategory,
             [category]: [...(state.optionsByCategory[category] ?? []), option],
           },
         })),
+      isDirty: false,
       optionsByCategory: {},
       replaceDraft: (templateId, optionsByCategory) =>
-        set({ optionsByCategory, templateId }),
-      resetDraft: () => set({ optionsByCategory: {}, templateId: null }),
+        set({ isDirty: false, optionsByCategory, templateId }),
+      resetDraft: () =>
+        set({ isDirty: false, optionsByCategory: {}, templateId: null }),
       removeOptions: (category, optionIds) =>
         set((state) => ({
+          isDirty: true,
           optionsByCategory: {
             ...state.optionsByCategory,
             [category]: (state.optionsByCategory[category] ?? []).filter(
@@ -66,6 +71,7 @@ export const useOrderFormDraftStore = create<OrderFormDraftState>()(
         })),
       updateOption: (category, optionId, option) =>
         set((state) => ({
+          isDirty: true,
           optionsByCategory: {
             ...state.optionsByCategory,
             [category]: (state.optionsByCategory[category] ?? []).map(
@@ -79,13 +85,14 @@ export const useOrderFormDraftStore = create<OrderFormDraftState>()(
     {
       name: "seller-order-form-draft",
       storage: createJSONStorage(() => sessionStorage),
-      version: 1,
+      version: 2,
       migrate: (persistedState, version) => {
-        if (version >= 1) return persistedState as OrderFormDraftState;
+        if (version >= 2) return persistedState as OrderFormDraftState;
 
         const state = persistedState as OrderFormDraftState;
         return {
           ...state,
+          isDirty: false,
           optionsByCategory: Object.fromEntries(
             Object.entries(state.optionsByCategory ?? {}).map(
               ([category, options]) => [

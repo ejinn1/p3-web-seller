@@ -11,20 +11,44 @@ type OrderFormInitializerProps = {
 
 export function OrderFormInitializer({ children }: OrderFormInitializerProps) {
   const activeOrderFormQuery = useActiveOrderFormQuery();
+  const isDirty = useOrderFormDraftStore((state) => state.isDirty);
   const replaceDraft = useOrderFormDraftStore((state) => state.replaceDraft);
+  const resetDraft = useOrderFormDraftStore((state) => state.resetDraft);
   const initialized = useRef(false);
+  const shouldClearDraftOnUnmount = useRef(false);
   const [draftReady, setDraftReady] = useState(false);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      shouldClearDraftOnUnmount.current = true;
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+
+      if (shouldClearDraftOnUnmount.current) {
+        resetDraft();
+      }
+    };
+  }, [resetDraft]);
 
   useEffect(() => {
     if (initialized.current || !activeOrderFormQuery.isSuccess) return;
 
-    replaceDraft(
-      activeOrderFormQuery.data.templateId,
-      activeOrderFormQuery.data.optionsByCategory,
-    );
+    if (!isDirty) {
+      replaceDraft(
+        activeOrderFormQuery.data.templateId,
+        activeOrderFormQuery.data.optionsByCategory,
+      );
+    }
     initialized.current = true;
     setDraftReady(true);
-  }, [activeOrderFormQuery.data, activeOrderFormQuery.isSuccess, replaceDraft]);
+  }, [
+    activeOrderFormQuery.data,
+    activeOrderFormQuery.isSuccess,
+    isDirty,
+    replaceDraft,
+  ]);
 
   if (activeOrderFormQuery.isError) {
     return (
