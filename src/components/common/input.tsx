@@ -17,7 +17,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         aria-invalid={error || undefined}
         className={cn(
           "h-11 w-full rounded-seller-control border bg-surface-default px-3 outline-none placeholder:text-seller-muted focus:border-seller-primary focus:ring-2 focus:ring-seller-primary/10 disabled:cursor-not-allowed disabled:bg-seller-secondary",
-          !hasTextSizeClass && "text-seller-body",
+          !hasTextSizeClass && "text-base",
           error ? "border-seller-danger" : "border-seller-border",
           className,
         )}
