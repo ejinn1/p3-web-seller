@@ -57,6 +57,8 @@ const weekdays: { label: string; value: DayOfWeek }[] = [
   { label: "일요일", value: "SUNDAY" },
 ];
 
+const DEFAULT_BUSINESS_START_TIME = "08:00";
+
 function normalizeTime(time: string) {
   return time.slice(0, 5);
 }
@@ -119,7 +121,9 @@ function StoreBusinessHoursForm({
     businessHours?.startTime && businessHours.endTime,
   );
   const [businessStart, setBusinessStart] = useState(
-    businessHours?.startTime ? normalizeTime(businessHours.startTime) : null,
+    businessHours?.startTime
+      ? normalizeTime(businessHours.startTime)
+      : DEFAULT_BUSINESS_START_TIME,
   );
   const [businessEnd, setBusinessEnd] = useState(
     businessHours?.endTime ? normalizeTime(businessHours.endTime) : null,
