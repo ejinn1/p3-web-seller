@@ -114,6 +114,9 @@ export function useMarkSellerOrderFormSubmissionViewedMutation(
         queryKey: inquiryKeys.detail(inquiryId),
       });
       void queryClient.invalidateQueries({ queryKey: inquiryKeys.all });
+      void queryClient.invalidateQueries({
+        queryKey: sellerHomeKeys.dashboard(),
+      });
     },
   });
 }
