@@ -45,6 +45,7 @@ export type InquiryListApiItem = {
   latestEventAt: string | null;
   latestEvent: InquiryLatestEvent | null;
   latestOrderFormSubmission: InquiryLatestOrderFormSubmission | null;
+  currentOrderFormSubmissionId: string | null;
   myLastReadAt: string | null;
   createdAt: string;
 };
@@ -55,6 +56,7 @@ export type InquiryListRealtimePayload = {
   unreadCount: number;
   latestEventAt: string | null;
   status: InquiryStatus;
+  currentOrderFormSubmissionId: string | null;
 };
 
 export type InquiryChatDetailResponse = {
@@ -68,6 +70,7 @@ export type InquiryChatDetailResponse = {
     source: string;
     deliveryUrl: string | null;
   } | null;
+  currentOrderFormSubmissionId: string | null;
   myLastReadAt: string | null;
   participantLastReadAt: string | null;
   createdAt: string;
@@ -128,6 +131,7 @@ export type InquiryOrderFormSubmissionResponse = {
   cancellationRefundAgreed: boolean;
   sellerViewedAt: string | null;
   sellerViewed: boolean;
+  current: boolean;
   submittedAt: string;
 };
 
@@ -204,6 +208,7 @@ export type InquiryListItem = {
   id: string;
   buyerName: string;
   latestOrderFormSubmissionId: string | null;
+  currentOrderFormSubmissionId: string | null;
   lastMessage: string;
   lastMessageAt: string;
   lastMessageTimeLabel: string;
@@ -319,6 +324,7 @@ export type InquiryOrderConfirmation = {
 export type InquiryDetail = {
   createdAt: string;
   id: string;
+  currentOrderFormSubmissionId: string | null;
   buyerName: string;
   chatInfo: string;
   participantUserId: string | null;
