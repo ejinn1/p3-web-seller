@@ -35,8 +35,8 @@ type StoreBusinessHoursFormProps = {
   onSave: (input: StoreBusinessHoursInput) => Promise<void>;
 };
 
-const timeOptions = Array.from({ length: 48 }, (_, index) => {
-  const hour = Math.floor(index / 2);
+const timeOptions = Array.from({ length: 32 }, (_, index) => {
+  const hour = 8 + Math.floor(index / 2);
   const minute = index % 2 === 0 ? "00" : "30";
   const period = hour < 12 ? "오전" : "오후";
   const displayHour = hour % 12 || 12;
