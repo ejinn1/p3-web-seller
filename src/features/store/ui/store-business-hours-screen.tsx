@@ -35,8 +35,8 @@ type StoreBusinessHoursFormProps = {
   onSave: (input: StoreBusinessHoursInput) => Promise<void>;
 };
 
-const timeOptions = Array.from({ length: 48 }, (_, index) => {
-  const hour = Math.floor(index / 2);
+const timeOptions = Array.from({ length: 32 }, (_, index) => {
+  const hour = 8 + Math.floor(index / 2);
   const minute = index % 2 === 0 ? "00" : "30";
   const period = hour < 12 ? "오전" : "오후";
   const displayHour = hour % 12 || 12;
@@ -56,8 +56,6 @@ const weekdays: { label: string; value: DayOfWeek }[] = [
   { label: "토요일", value: "SATURDAY" },
   { label: "일요일", value: "SUNDAY" },
 ];
-
-const DEFAULT_BUSINESS_START_TIME = "08:00";
 
 function normalizeTime(time: string) {
   return time.slice(0, 5);
@@ -121,9 +119,7 @@ function StoreBusinessHoursForm({
     businessHours?.startTime && businessHours.endTime,
   );
   const [businessStart, setBusinessStart] = useState(
-    businessHours?.startTime
-      ? normalizeTime(businessHours.startTime)
-      : DEFAULT_BUSINESS_START_TIME,
+    businessHours?.startTime ? normalizeTime(businessHours.startTime) : null,
   );
   const [businessEnd, setBusinessEnd] = useState(
     businessHours?.endTime ? normalizeTime(businessHours.endTime) : null,
