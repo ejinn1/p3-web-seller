@@ -37,7 +37,7 @@ function splitPrice(option: OrderFormDraftOption) {
     return { price: null, priceLabel: null };
   }
 
-  if (option.type === "IMAGE" && option.priceMode === "INQUIRY") {
+  if (option.priceMode === "INQUIRY") {
     return { price: null, priceLabel: "문의필요" };
   }
 

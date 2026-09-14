@@ -23,9 +23,7 @@ function formatPrice(price: string) {
 
 function OptionHeader({ groupName, option }: OrderFormPreviewOptionProps) {
   const priceText =
-    option.type === "IMAGE" && option.priceMode === "INQUIRY"
-      ? "문의필요"
-      : formatPrice(option.price);
+    option.priceMode === "INQUIRY" ? "문의필요" : formatPrice(option.price);
 
   return (
     <label className="flex min-h-6 w-full cursor-pointer items-start justify-between gap-3">

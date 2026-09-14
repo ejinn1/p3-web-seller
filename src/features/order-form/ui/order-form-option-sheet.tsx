@@ -58,6 +58,54 @@ function formatNumericPrice(value: string) {
   return digits ? digits.replace(/\B(?=(\d{3})+(?!\d))/g, ",") : "";
 }
 
+function PriceField({
+  onPriceChange,
+  onToggle,
+  placeholder,
+  price,
+  priceMode,
+}: {
+  onPriceChange: (price: string) => void;
+  onToggle: () => void;
+  placeholder: string;
+  price: string;
+  priceMode: OrderFormDraftPriceMode;
+}) {
+  const isInquiryPrice = priceMode === "INQUIRY";
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-start gap-4">
+        <div className="flex w-[43px] shrink-0 flex-col gap-4">
+          <span className="text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-tertiary">
+            가격
+          </span>
+          <PriceToggle checked={!isInquiryPrice} onClick={onToggle} />
+        </div>
+        <span className="flex min-w-0 flex-1 flex-col items-end gap-1 pt-6">
+          <Input
+            className="border-0 bg-surface-subtle px-4 placeholder:text-text-unavailable"
+            disabled={isInquiryPrice}
+            inputMode="numeric"
+            maxLength={100}
+            onChange={(event) =>
+              onPriceChange(formatNumericPrice(event.target.value))
+            }
+            placeholder={isInquiryPrice ? "문의필요" : placeholder}
+            value={isInquiryPrice ? "" : price}
+          />
+          <span className="text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-unavailable">
+            {isInquiryPrice ? 0 : price.length}/100
+          </span>
+        </span>
+      </div>
+      <p className="text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-unavailable">
+        토글이 비활성화 된 상태는 나중에 가격을 기입해야해요
+      </p>
+    </div>
+  );
+}
+
 export function OrderFormOptionSheet({
   initialOption,
   onComplete,
@@ -84,10 +132,13 @@ export function OrderFormOptionSheet({
   const isCompleteDisabled =
     type === "TEXTAREA"
       ? !example.trim()
-      : !label.trim() ||
-        (type === "IMAGE"
-          ? priceMode === "FIXED" && !hasValidFixedPrice
-          : !price.trim());
+      : !label.trim() || (priceMode === "FIXED" && !hasValidFixedPrice);
+  const togglePriceMode = () => {
+    setPrice("");
+    setPriceMode((currentMode) =>
+      currentMode === "FIXED" ? "INQUIRY" : "FIXED",
+    );
+  };
 
   const completeOption = () => {
     if (isCompleteDisabled) {
@@ -99,7 +150,7 @@ export function OrderFormOptionSheet({
       example: example.trim(),
       id: initialOption?.id ?? crypto.randomUUID(),
       label: label.trim(),
-      price: type === "IMAGE" && priceMode === "INQUIRY" ? "" : price,
+      price: type !== "TEXTAREA" && priceMode === "INQUIRY" ? "" : price,
       priceMode,
       type,
     });
@@ -154,49 +205,33 @@ export function OrderFormOptionSheet({
           <div className="flex flex-col gap-4">
             {type === "SELECT_WITH_TEXT" ? (
               <>
-                <div className="flex items-start gap-4">
-                  <label className="flex min-w-0 flex-1 flex-col gap-2">
-                    <span className="flex items-center gap-1 text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-tertiary">
-                      옵션명
-                      <span className="relative -top-1 text-[15px] leading-4 font-semibold text-text-error">
-                        *
-                      </span>
+                <label className="flex flex-col gap-2">
+                  <span className="flex items-center gap-1 text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-tertiary">
+                    옵션명
+                    <span className="relative -top-1 text-[15px] leading-4 font-semibold text-text-error">
+                      *
                     </span>
-                    <span className="flex flex-col items-end gap-1">
-                      <Input
-                        className="border-0 bg-surface-subtle px-4 placeholder:text-text-unavailable"
-                        maxLength={100}
-                        onChange={(event) => setLabel(event.target.value)}
-                        placeholder="옵션 1"
-                        value={label}
-                      />
-                      <span className="text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-unavailable">
-                        {label.length}/100
-                      </span>
+                  </span>
+                  <span className="flex flex-col items-end gap-1">
+                    <Input
+                      className="border-0 bg-surface-subtle px-4 placeholder:text-text-unavailable"
+                      maxLength={100}
+                      onChange={(event) => setLabel(event.target.value)}
+                      placeholder="옵션 1"
+                      value={label}
+                    />
+                    <span className="text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-unavailable">
+                      {label.length}/100
                     </span>
-                  </label>
-                  <label className="flex w-[100px] shrink-0 flex-col gap-2">
-                    <span className="flex items-center gap-1 text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-tertiary">
-                      가격
-                      <span className="relative -top-1 text-[15px] leading-4 font-semibold text-text-error">
-                        *
-                      </span>
-                    </span>
-                    <span className="flex flex-col items-end gap-1">
-                      <Input
-                        className="border-0 bg-surface-subtle px-4 placeholder:text-text-unavailable"
-                        inputMode="numeric"
-                        maxLength={100}
-                        onChange={(event) => setPrice(event.target.value)}
-                        placeholder="1,000"
-                        value={price}
-                      />
-                      <span className="text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-unavailable">
-                        {price.length}/100
-                      </span>
-                    </span>
-                  </label>
-                </div>
+                  </span>
+                </label>
+                <PriceField
+                  onPriceChange={setPrice}
+                  onToggle={togglePriceMode}
+                  placeholder="1,000"
+                  price={price}
+                  priceMode={priceMode}
+                />
                 <label className="flex flex-col gap-2">
                   <span className="text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-tertiary">
                     서브 설명
@@ -254,45 +289,13 @@ export function OrderFormOptionSheet({
                     </span>
                   </span>
                 </label>
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-start gap-4">
-                    <div className="flex w-[43px] shrink-0 flex-col gap-4">
-                      <span className="text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-tertiary">
-                        가격
-                      </span>
-                      <PriceToggle
-                        checked={priceMode === "FIXED"}
-                        onClick={() => {
-                          setPrice("");
-                          setPriceMode((currentMode) =>
-                            currentMode === "FIXED" ? "INQUIRY" : "FIXED",
-                          );
-                        }}
-                      />
-                    </div>
-                    <span className="flex min-w-0 flex-1 flex-col items-end gap-1 pt-6">
-                      <Input
-                        className="border-0 bg-surface-subtle px-4 placeholder:text-text-unavailable"
-                        disabled={priceMode === "INQUIRY"}
-                        inputMode="numeric"
-                        maxLength={100}
-                        onChange={(event) =>
-                          setPrice(formatNumericPrice(event.target.value))
-                        }
-                        placeholder={
-                          priceMode === "INQUIRY" ? "문의필요" : "2,000"
-                        }
-                        value={priceMode === "INQUIRY" ? "" : price}
-                      />
-                      <span className="text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-unavailable">
-                        {priceMode === "INQUIRY" ? 0 : price.length}/100
-                      </span>
-                    </span>
-                  </div>
-                  <p className="text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-unavailable">
-                    토글이 비활성화 된 상태는 나중에 가격을 기입해야해요
-                  </p>
-                </div>
+                <PriceField
+                  onPriceChange={setPrice}
+                  onToggle={togglePriceMode}
+                  placeholder="2,000"
+                  price={price}
+                  priceMode={priceMode}
+                />
                 <label className="flex flex-col gap-2">
                   <span className="text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-tertiary">
                     서브 설명
@@ -370,27 +373,13 @@ export function OrderFormOptionSheet({
                     </span>
                   </span>
                 </label>
-                <label className="flex flex-col gap-2">
-                  <span className="flex items-center gap-1 text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-tertiary">
-                    가격
-                    <span className="relative -top-1 text-[15px] leading-4 font-semibold text-text-error">
-                      *
-                    </span>
-                  </span>
-                  <span className="flex flex-col items-end gap-1">
-                    <Input
-                      className="border-0 bg-surface-subtle px-4 placeholder:text-text-unavailable"
-                      inputMode="numeric"
-                      maxLength={100}
-                      onChange={(event) => setPrice(event.target.value)}
-                      placeholder="38,000"
-                      value={price}
-                    />
-                    <span className="text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-unavailable">
-                      {price.length}/100
-                    </span>
-                  </span>
-                </label>
+                <PriceField
+                  onPriceChange={setPrice}
+                  onToggle={togglePriceMode}
+                  placeholder="38,000"
+                  price={price}
+                  priceMode={priceMode}
+                />
                 <label className="flex flex-col gap-2">
                   <span className="text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-tertiary">
                     서브 설명
