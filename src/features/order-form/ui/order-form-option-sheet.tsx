@@ -82,7 +82,7 @@ function PriceField({
           </span>
           <PriceToggle checked={!isInquiryPrice} onClick={onToggle} />
         </div>
-        <span className="flex min-w-0 flex-1 flex-col items-end gap-1 pt-6">
+        <span className="flex min-w-0 flex-1 pt-6">
           <Input
             className="border-0 bg-surface-subtle px-4 placeholder:text-text-unavailable"
             disabled={isInquiryPrice}
@@ -94,14 +94,16 @@ function PriceField({
             placeholder={isInquiryPrice ? "문의필요" : placeholder}
             value={isInquiryPrice ? "" : price}
           />
-          <span className="text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-unavailable">
-            {isInquiryPrice ? 0 : price.length}/100
-          </span>
         </span>
       </div>
-      <p className="text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-unavailable">
-        토글이 비활성화 된 상태는 나중에 가격을 기입해야해요
-      </p>
+      <div className="flex items-center justify-between gap-4">
+        <p className="min-w-0 text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-unavailable">
+          토글이 비활성화 된 상태는 나중에 가격을 기입해야해요
+        </p>
+        <span className="shrink-0 text-[11px] leading-4 font-medium tracking-[-0.11px] text-text-unavailable">
+          {isInquiryPrice ? 0 : price.length}/100
+        </span>
+      </div>
     </div>
   );
 }
