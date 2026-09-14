@@ -9,7 +9,7 @@ import { AccountSettingsProfileImage } from "@/features/account-settings/ui/acco
 import { useUploadAssetMutation } from "@/features/assets/model/asset-mutations";
 import { getImageUploadError } from "@/features/assets/model/image-upload";
 import { useCurrentUserQuery } from "@/features/auth/model/auth-queries";
-import { clearCognitoSession } from "@/features/auth/model/cognito";
+import { startCognitoSignOut } from "@/features/auth/model/cognito";
 import type { SignupProvider } from "@/features/auth/model/types";
 import { useUpdateSellerProfileImageMutation } from "@/features/store/model/store-mutations";
 import { getSellerBackHref } from "@/lib/navigation/seller-back-routes";
@@ -78,8 +78,7 @@ export function AccountSettingsScreen() {
   };
 
   const handleLogout = () => {
-    clearCognitoSession();
-    window.location.replace("/seller");
+    startCognitoSignOut();
   };
 
   return (
