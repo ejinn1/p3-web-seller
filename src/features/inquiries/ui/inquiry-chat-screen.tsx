@@ -146,7 +146,7 @@ export function InquiryChatScreen({
         onMenu={() => setSidebarOpen(true)}
       />
       <section
-        className="min-h-0 flex-1 overflow-y-auto bg-surface-subtle pb-6"
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-surface-subtle pb-6"
         data-qa="chat-scroll-area"
         onScroll={handleScroll}
         ref={scrollRef}
