@@ -19,7 +19,7 @@ export function OrderFormPreviewCategory({
       <h2 className="flex items-center gap-1 text-seller-heading-lg font-bold tracking-[-0.6px]">
         {title}
         {required ? (
-          <span className="relative -top-1 text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-error">
+          <span className="relative -top-2 -left-0.5 text-[15px] leading-5 font-semibold tracking-[-0.3px] text-text-error">
             *
           </span>
         ) : null}
