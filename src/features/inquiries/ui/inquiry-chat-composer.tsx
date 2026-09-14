@@ -5,9 +5,11 @@ import { LoaderCircle, Plus, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function InquiryChatComposer({
+  compactBottomInset = false,
   disabled,
   onSend,
 }: {
+  compactBottomInset?: boolean;
   disabled: boolean;
   onSend: (content: string) => Promise<void> | void;
 }) {
@@ -36,7 +38,13 @@ export function InquiryChatComposer({
 
   return (
     <form
-      className="shrink-0 bg-surface-elevated px-4 pt-4 pb-[calc(34px+env(safe-area-inset-bottom))] shadow-[0_-12px_12px_rgba(0,0,0,0.04)]"
+      className={cn(
+        "shrink-0 bg-surface-elevated px-4 shadow-[0_-12px_12px_rgba(0,0,0,0.04)]",
+        compactBottomInset
+          ? "py-2"
+          : "pt-4 pb-[calc(34px+env(safe-area-inset-bottom))]",
+      )}
+      data-qa="chat-composer"
       onSubmit={handleSubmit}
     >
       <label className="sr-only" htmlFor="seller-chat-message">
