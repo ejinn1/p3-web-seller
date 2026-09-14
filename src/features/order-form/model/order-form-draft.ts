@@ -21,19 +21,23 @@ type OrderFormDraftState = {
     category: OrderFormCategorySlug,
     option: OrderFormDraftOption,
   ) => void;
+  draftStoreId: string | null;
+  initializeDraft: (
+    storeId: string,
+    templateId: string | null,
+    optionsByCategory: OrderFormDraftState["optionsByCategory"],
+  ) => void;
+  isHydrated: boolean;
   isDirty: boolean;
   optionsByCategory: Partial<
     Record<OrderFormCategorySlug, OrderFormDraftOption[]>
   >;
-  replaceDraft: (
-    templateId: string | null,
-    optionsByCategory: OrderFormDraftState["optionsByCategory"],
-  ) => void;
   resetDraft: () => void;
   removeOptions: (
     category: OrderFormCategorySlug,
     optionIds: ReadonlySet<string>,
   ) => void;
+  setHydrated: () => void;
   updateOption: (
     category: OrderFormCategorySlug,
     optionId: string,
@@ -41,6 +45,11 @@ type OrderFormDraftState = {
   ) => void;
   templateId: string | null;
 };
+
+type PersistedOrderFormDraftState = Pick<
+  OrderFormDraftState,
+  "draftStoreId" | "isDirty" | "optionsByCategory" | "templateId"
+>;
 
 export const useOrderFormDraftStore = create<OrderFormDraftState>()(
   persist(
@@ -53,12 +62,34 @@ export const useOrderFormDraftStore = create<OrderFormDraftState>()(
             [category]: [...(state.optionsByCategory[category] ?? []), option],
           },
         })),
+      draftStoreId: null,
+      initializeDraft: (storeId, templateId, optionsByCategory) =>
+        set((state) => {
+          if (
+            state.isDirty &&
+            state.draftStoreId === storeId &&
+            state.templateId === templateId
+          ) {
+            return state;
+          }
+
+          return {
+            draftStoreId: storeId,
+            isDirty: false,
+            optionsByCategory,
+            templateId,
+          };
+        }),
+      isHydrated: false,
       isDirty: false,
       optionsByCategory: {},
-      replaceDraft: (templateId, optionsByCategory) =>
-        set({ isDirty: false, optionsByCategory, templateId }),
       resetDraft: () =>
-        set({ isDirty: false, optionsByCategory: {}, templateId: null }),
+        set({
+          draftStoreId: null,
+          isDirty: false,
+          optionsByCategory: {},
+          templateId: null,
+        }),
       removeOptions: (category, optionIds) =>
         set((state) => ({
           isDirty: true,
@@ -69,6 +100,7 @@ export const useOrderFormDraftStore = create<OrderFormDraftState>()(
             ),
           },
         })),
+      setHydrated: () => set({ isHydrated: true }),
       updateOption: (category, optionId, option) =>
         set((state) => ({
           isDirty: true,
@@ -85,32 +117,45 @@ export const useOrderFormDraftStore = create<OrderFormDraftState>()(
     {
       name: "seller-order-form-draft",
       storage: createJSONStorage(() => sessionStorage),
-      version: 2,
+      version: 3,
       migrate: (persistedState, version) => {
-        if (version >= 2) return persistedState as OrderFormDraftState;
+        const state = persistedState as PersistedOrderFormDraftState;
+        if (version >= 3) return state;
 
-        const state = persistedState as OrderFormDraftState;
         return {
           ...state,
+          draftStoreId: null,
           isDirty: false,
-          optionsByCategory: Object.fromEntries(
-            Object.entries(state.optionsByCategory ?? {}).map(
-              ([category, options]) => [
-                category,
-                options?.map((option) => ({
-                  ...option,
-                  id: option.id || crypto.randomUUID(),
-                  priceMode:
-                    option.type === "IMAGE" &&
-                    !/^\d+$/.test(option.price.replace(/,/g, ""))
-                      ? "INQUIRY"
-                      : "FIXED",
-                })),
-              ],
-            ),
-          ),
-        } as OrderFormDraftState;
+          optionsByCategory:
+            version >= 1
+              ? state.optionsByCategory
+              : Object.fromEntries(
+                  Object.entries(state.optionsByCategory ?? {}).map(
+                    ([category, options]) => [
+                      category,
+                      options?.map((option) => ({
+                        ...option,
+                        id: option.id || crypto.randomUUID(),
+                        priceMode:
+                          option.type === "IMAGE" &&
+                          !/^\d+$/.test(option.price.replace(/,/g, ""))
+                            ? "INQUIRY"
+                            : "FIXED",
+                      })),
+                    ],
+                  ),
+                ),
+        } satisfies PersistedOrderFormDraftState;
       },
+      onRehydrateStorage: () => (state) => {
+        state?.setHydrated();
+      },
+      partialize: (state) => ({
+        draftStoreId: state.draftStoreId,
+        isDirty: state.isDirty,
+        optionsByCategory: state.optionsByCategory,
+        templateId: state.templateId,
+      }),
     },
   ),
 );
