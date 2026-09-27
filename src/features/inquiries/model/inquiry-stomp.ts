@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient, type QueryKey } from "@tanstack/react-query";
+import { DEMO_MODE } from "@/demo/demo-config";
 import { appendTimelineItem } from "@/features/inquiries/model/inquiry-adapters";
 import { inquiryKeys } from "@/features/inquiries/model/inquiry-keys";
 import type {
@@ -11,15 +12,17 @@ import type {
 import { connectStomp, type StompConnection } from "@/lib/stomp/client";
 import { orderCalendarKeys } from "@/features/orders/model/order-calendar-keys";
 import { orderKeys } from "@/features/orders/model/order-keys";
+import { sendSellerDemoMessage } from "@/demo/demo-api";
 
 export function useSellerInquiryStomp(inquiryId: string, enabled = true) {
   const queryClient = useQueryClient();
   const connectionRef = useRef<StompConnection | null>(null);
   const receivedEventIdsRef = useRef<Set<string>>(new Set());
   const [error, setError] = useState<Error | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
+  const [isConnected, setIsConnected] = useState(DEMO_MODE);
 
   useEffect(() => {
+    if (DEMO_MODE) return;
     if (!enabled || !process.env.NEXT_PUBLIC_P3_API_BASE_URL) {
       return;
     }
@@ -47,7 +50,9 @@ export function useSellerInquiryStomp(inquiryId: string, enabled = true) {
         {
           destination: `/topic/inquiries/${inquiryId}`,
           onMessage: (message) => {
-            if (isDuplicateEvent(message.eventId, receivedEventIdsRef.current)) {
+            if (
+              isDuplicateEvent(message.eventId, receivedEventIdsRef.current)
+            ) {
               return;
             }
 
@@ -65,12 +70,16 @@ export function useSellerInquiryStomp(inquiryId: string, enabled = true) {
             });
 
             if (isCtaTimelineItem(message)) {
-              void queryClient.invalidateQueries({ queryKey: inquiryKeys.detail(inquiryId) });
+              void queryClient.invalidateQueries({
+                queryKey: inquiryKeys.detail(inquiryId),
+              });
             }
 
             if (message.type === "PAYMENT_COMPLETED") {
               void queryClient.invalidateQueries({ queryKey: orderKeys.all });
-              void queryClient.invalidateQueries({ queryKey: orderCalendarKeys.all });
+              void queryClient.invalidateQueries({
+                queryKey: orderCalendarKeys.all,
+              });
             }
           },
         },
@@ -99,6 +108,14 @@ export function useSellerInquiryStomp(inquiryId: string, enabled = true) {
 
   const sendMessage = useCallback(
     (content: string) => {
+      if (DEMO_MODE) {
+        sendSellerDemoMessage(inquiryId, content);
+        void queryClient.invalidateQueries({
+          queryKey: inquiryKeys.timeline(inquiryId),
+        });
+        void queryClient.invalidateQueries({ queryKey: inquiryKeys.all });
+        return;
+      }
       const connection = connectionRef.current;
 
       if (!connection) {
@@ -111,7 +128,7 @@ export function useSellerInquiryStomp(inquiryId: string, enabled = true) {
         content,
       });
     },
-    [inquiryId],
+    [inquiryId, queryClient],
   );
 
   return { error, isConnected, sendMessage };
@@ -125,7 +142,10 @@ function appendTimelineItemOnce(
   current: InquiryDetail | undefined,
   item: InquiryTimelineItemResponse,
 ) {
-  if (!current || current.messages.some((message) => message.id === item.eventId)) {
+  if (
+    !current ||
+    current.messages.some((message) => message.id === item.eventId)
+  ) {
     return current;
   }
 

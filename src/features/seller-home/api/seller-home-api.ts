@@ -1,4 +1,5 @@
 import { getSellerInquiries } from "@/features/inquiries/api/inquiries-api";
+import { DEMO_MODE } from "@/demo/demo-config";
 import {
   SELLER_HOME_WAITING_INQUIRY_STATUS,
   toSellerHomeDashboard,
@@ -11,8 +12,9 @@ import type {
 import { getJson } from "@/lib/api/client";
 
 const useFixtures =
-  process.env.NEXT_PUBLIC_P3_USE_MOCKS === "true" ||
-  !process.env.NEXT_PUBLIC_P3_API_BASE_URL;
+  !DEMO_MODE &&
+  (process.env.NEXT_PUBLIC_P3_USE_MOCKS === "true" ||
+    !process.env.NEXT_PUBLIC_P3_API_BASE_URL);
 
 export async function getSellerHomeDashboard(): Promise<SellerHomeDashboard> {
   if (useFixtures) {
