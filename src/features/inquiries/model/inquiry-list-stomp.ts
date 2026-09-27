@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient, type QueryKey } from "@tanstack/react-query";
+import { DEMO_MODE } from "@/demo/demo-config";
 import { toInquiryStatusLabel } from "@/features/inquiries/model/inquiry-adapters";
 import { inquiryKeys } from "@/features/inquiries/model/inquiry-keys";
 import type {
@@ -19,6 +20,7 @@ export function useSellerInquiryListStomp(userId?: string, enabled = true) {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    if (DEMO_MODE) return;
     if (!enabled || !userId || !process.env.NEXT_PUBLIC_P3_API_BASE_URL) {
       return undefined;
     }

@@ -1,4 +1,6 @@
 import { ApiError, type ApiErrorBody, type ApiResponse } from "@/lib/api/types";
+import { demoApiRequest, DemoApiError } from "@/demo/demo-api";
+import { DEMO_MODE } from "@/demo/demo-config";
 
 type AccessTokenProvider = () => string | null | Promise<string | null>;
 
@@ -22,6 +24,25 @@ export async function apiRequest<T>(
   path: string,
   { body, headers, requiresAuth = true, ...init }: ApiRequestOptions = {},
 ): Promise<T> {
+  if (DEMO_MODE) {
+    try {
+      const response = await demoApiRequest<T>(path, {
+        body,
+        headers,
+        ...init,
+      });
+      return response.data;
+    } catch (error) {
+      if (error instanceof DemoApiError) {
+        throw new ApiError(error.message, error.status, {
+          code: "DEMO_API_ERROR",
+          title: error.message,
+        });
+      }
+      throw error;
+    }
+  }
+
   const requestHeaders = new Headers(headers);
 
   if (requiresAuth) {

@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Button } from "@/components/common/button";
+import { DEMO_MODE } from "@/demo/demo-config";
 import { Header } from "@/components/common/header";
 import { IconButton } from "@/components/common/icon-button";
 import { SellerSidebar } from "@/components/widgets/seller-sidebar";
@@ -28,8 +29,9 @@ import { cn } from "@/lib/utils";
 
 const formatWon = (value: number) => `${value.toLocaleString("ko-KR")}원`;
 const useFixtures =
-  process.env.NEXT_PUBLIC_P3_USE_MOCKS === "true" ||
-  !process.env.NEXT_PUBLIC_P3_API_BASE_URL;
+  !DEMO_MODE &&
+  (process.env.NEXT_PUBLIC_P3_USE_MOCKS === "true" ||
+    !process.env.NEXT_PUBLIC_P3_API_BASE_URL);
 
 type SellerHomeTab = "pickup" | "selected-pickup" | "waiting";
 type SellerHomeView = "home" | "confirmation" | "chat" | "revision-chat";
@@ -301,10 +303,25 @@ function HomeHeader({ onMenu }: { onMenu: () => void }) {
       </div>
       <div className="flex h-11 w-24 shrink-0 items-center justify-end px-1">
         <span aria-hidden="true" className="grid size-11 place-items-center">
-          <Image alt="" height={44} src="/seller-home/header-bell.svg" width={44} />
+          <Image
+            alt=""
+            height={44}
+            src="/seller-home/header-bell.svg"
+            width={44}
+          />
         </span>
-        <button aria-label="메뉴" className="grid size-11 place-items-center" onClick={onMenu} type="button">
-          <Image alt="" height={44} src="/seller-home/header-hamburger.svg" width={44} />
+        <button
+          aria-label="메뉴"
+          className="grid size-11 place-items-center"
+          onClick={onMenu}
+          type="button"
+        >
+          <Image
+            alt=""
+            height={44}
+            src="/seller-home/header-hamburger.svg"
+            width={44}
+          />
         </button>
       </div>
     </header>
@@ -403,7 +420,8 @@ function DashboardOverview({
               aria-pressed={cell.date === selectedDate}
               className={cn(
                 "mx-auto flex aspect-square w-[51.142856px] max-w-full items-center justify-center rounded-seller-sm text-[15px] leading-[22px] font-semibold tracking-[-0.15px]",
-                cell.date === selectedDate && "bg-surface-inverse text-text-inverse",
+                cell.date === selectedDate &&
+                  "bg-surface-inverse text-text-inverse",
                 cell.disabled &&
                   cell.date !== selectedDate &&
                   "text-text-unavailable",
@@ -810,7 +828,8 @@ function PickupRow({
             {pickup.pickupTime}
           </p>
           <p className="w-full overflow-hidden text-[13px] leading-[18px] font-normal tracking-[-0.13px] text-ellipsis text-text-tertiary">
-            {formatPickupDateLabel(pickup.pickupDate)} · {pickup.customerMaskedName}
+            {formatPickupDateLabel(pickup.pickupDate)} ·{" "}
+            {pickup.customerMaskedName}
           </p>
           <p className="text-[15px] leading-[22px] font-semibold tracking-[-0.15px] text-text-secondary">
             {formatWon(pickup.totalPrice)}
