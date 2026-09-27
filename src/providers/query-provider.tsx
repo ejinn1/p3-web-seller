@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import { setCognitoTokenProvider } from "@/features/auth/model/cognito";
 import { ApiError } from "@/lib/api/types";
+import { DemoModeNotice } from "@/demo/demo-mode-notice";
 
 setCognitoTokenProvider();
 
@@ -26,6 +27,9 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      {children}
+      <DemoModeNotice />
+    </QueryClientProvider>
   );
 }

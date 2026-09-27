@@ -6,6 +6,7 @@ import {
   hasCognitoSession,
   startCognitoSignIn,
 } from "@/features/auth/model/cognito";
+import { DEMO_MODE } from "@/demo/demo-config";
 import { resolveAuthenticatedEntryRoute } from "@/features/auth/model/authenticated-entry-route";
 import Image from "next/image";
 import { useEffect, useState } from "react";
@@ -17,6 +18,10 @@ export function LoginScreen() {
 
   useEffect(() => {
     async function redirectAuthenticatedUser() {
+      if (DEMO_MODE) {
+        window.location.replace("/seller/home");
+        return;
+      }
       if (!hasCognitoSession()) {
         setIsResolvingSession(false);
         return;
